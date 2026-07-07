@@ -77,8 +77,8 @@ function Login() {
   return (
     <main className="login-shell">
       <form className="login-card" onSubmit={submit}>
-        <div className="brand-mark">CT</div>
-        <h1>Chemie SR-Trainer</h1>
+        <div className="brand-mark">TU</div>
+        <h1>TU Chemie SR-Trainer</h1>
         <p>Chemische Technologien organischer Stoffe, fokussiert auf Manuels Pruefung am 21.09.</p>
         <label>
           Benutzer
@@ -144,6 +144,7 @@ function Home({ data, startSession, setRoute, refresh }) {
       <section className="hero">
         <div className="days">{data.days_until_exam}</div>
         <div>
+          <span className="hero-kicker">Technische Universität · Prüfungsvorbereitung</span>
           <h1>Chemische Technologien organischer Stoffe</h1>
           <p>Manuels Anki-Style Trainer bis zur Pruefung am 21.09.2026.</p>
           <div className="hero-actions">
