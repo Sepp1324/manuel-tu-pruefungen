@@ -16,7 +16,7 @@ env:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, organicsr]
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout
@@ -40,4 +40,4 @@ jobs:
           kubectl -n "$NAMESPACE" set image deployment/organicsr organicsr="$IMAGE:$TAG"
 
       - name: Rollout abwarten
-        run: kubectl -n "$NAMESPACE" rollout status deployment/psychosr --timeout=180s
+        run: kubectl -n "$NAMESPACE" rollout status deployment/organicsr --timeout=180s
