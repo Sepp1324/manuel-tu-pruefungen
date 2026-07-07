@@ -146,6 +146,13 @@ class CardEditIn(BaseModel):
     review_note: str = ""
 
 
+class CardTriageIn(BaseModel):
+    action: str = Field(pattern="^(approve|needs_review|suspend)$")
+    q: str | None = Field(default=None, min_length=3)
+    a: str | None = Field(default=None, min_length=3)
+    review_note: str = ""
+
+
 class ManualCardIn(BaseModel):
     module: str = "organic"
     kap: int = Field(ge=1, le=11)
@@ -312,6 +319,7 @@ def stats(module: str = "organic"):
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
     weaknesses = db.weakness_heatmap(conn, now, module)
+    tags = db.tag_stats(conn, module)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
     conn.close()
@@ -327,6 +335,7 @@ def stats(module: str = "organic"):
         "forecast": _forecast(st, chapters),
         "study_plan": _study_plan(st, chapters),
         "weaknesses": weaknesses,
+        "tags": tags,
         "xp": xp,
         "streak": streak,
     }
@@ -347,6 +356,7 @@ def dashboard(module: str = "organic"):
         "forecast": _forecast(st, chapters),
         "study_plan": _study_plan(st, chapters),
         "weaknesses": db.weakness_heatmap(conn, now, module),
+        "tags": db.tag_stats(conn, module),
         "xp": db.xp_summary(conn),
         "streak": db.streak(conn),
     }
@@ -374,12 +384,21 @@ def recall_exam(n: int = 20, mode: str = "mixed", module: str = "organic"):
 
 @app.get("/api/cards")
 def cards(status: str = "needs_review", limit: int = 80, kap: int | None = None,
-          q: str = "", module: str = "organic"):
+          q: str = "", module: str = "organic", tag: str = ""):
     module = _valid_module(module)
     if status not in ("all", "active", "needs_review", "suspended"):
         raise HTTPException(400, "ungueltiger Status")
     conn = db.get_conn()
-    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip(), module)
+    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip(), module, tag.strip())
+    conn.close()
+    return out
+
+
+@app.get("/api/triage")
+def triage(module: str = "organic", limit: int = 10, tag: str = ""):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = db.triage_cards(conn, module, max(1, min(limit, 30)), tag.strip())
     conn.close()
     return out
 
@@ -388,6 +407,20 @@ def cards(status: str = "needs_review", limit: int = 80, kap: int | None = None,
 def edit_card(card_id: str, inp: CardEditIn):
     conn = db.get_conn()
     card = db.update_card(conn, card_id, inp.q, inp.a, inp.status, inp.review_note, _now_iso())
+    conn.close()
+    if not card:
+        raise HTTPException(404, "Karte nicht gefunden")
+    return {"ok": True, "card": card}
+
+
+@app.post("/api/cards/{card_id:path}/triage")
+def triage_card(card_id: str, inp: CardTriageIn):
+    conn = db.get_conn()
+    try:
+        card = db.triage_card(conn, card_id, inp.action, _now_iso(), inp.q, inp.a, inp.review_note)
+    except ValueError:
+        conn.close()
+        raise HTTPException(400, "ungueltige Aktion")
     conn.close()
     if not card:
         raise HTTPException(404, "Karte nicht gefunden")

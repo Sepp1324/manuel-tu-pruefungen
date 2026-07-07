@@ -261,6 +261,34 @@ button:disabled { cursor: default; opacity: .48; }
   font-size: 11px;
   font-style: normal;
 }
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.tag-cloud button {
+  align-items: center;
+  background: var(--paper);
+  display: inline-flex;
+  gap: 7px;
+}
+.tag-cloud button.active {
+  background: var(--tu-blue);
+  border-color: var(--tu-blue);
+  color: white;
+}
+.tag-cloud b { font-size: 13px; }
+.tag-cloud span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.tag-cloud button.active span { color: rgba(255,255,255,.8); }
+.tag-cloud.compact {
+  align-content: start;
+  max-height: 520px;
+  overflow: auto;
+}
 .day-card.behind { border-left-color: var(--tu-blue); }
 .day-card.done { border-left-color: var(--cyan); }
 .goal-ring {
@@ -535,6 +563,11 @@ textarea {
   color: var(--tu-blue);
   font-size: 12px;
 }
+.quality-items em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+}
 .quality-items span {
   color: var(--ink);
   font-size: 13px;
@@ -546,6 +579,23 @@ textarea {
   display: grid;
   gap: 12px;
   align-content: start;
+}
+.triage-layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(260px, .7fr) minmax(360px, 1.3fr);
+}
+.triage-side, .triage-card { min-width: 0; }
+.triage-card {
+  align-content: start;
+  display: grid;
+  gap: 12px;
+}
+.triage-card label {
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  gap: 5px;
 }
 .chart-grid {
   display: grid;
@@ -656,7 +706,7 @@ textarea {
   .wrap { padding: 18px 12px 60px; }
   .hero, .day-card, .forecast { display: grid; grid-template-columns: 1fr; }
   .days { font-size: 50px; }
-  .stats, .ratings, .chart-grid, .chapter-grid, .heatmap, .form-grid, .quality-layout, .result-grid { grid-template-columns: 1fr; }
+  .stats, .ratings, .chart-grid, .chapter-grid, .heatmap, .form-grid, .quality-layout, .triage-layout, .result-grid { grid-template-columns: 1fr; }
   .filters { grid-template-columns: 1fr; }
   .filters input, .filters button { grid-column: auto; }
   .chapter-row { grid-template-columns: 44px 1fr; }

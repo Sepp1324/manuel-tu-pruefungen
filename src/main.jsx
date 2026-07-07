@@ -12,6 +12,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Tag,
   Target,
   Trophy,
 } from "lucide-react";
@@ -188,6 +189,29 @@ function WeaknessHeatmap({ items = [], startSession }) {
   );
 }
 
+function TagPanel({ tags = [], onPick }) {
+  if (!tags.length) return null;
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div>
+          <h2>Themen-Tags</h2>
+          <p>Schneller Einstieg in fachliche Schwaechen statt nur VO-weise zu lernen.</p>
+        </div>
+        <Tag size={22} />
+      </div>
+      <div className="tag-cloud">
+        {tags.slice(0, 14).map((t) => (
+          <button key={t.tag} onClick={() => onPick?.(t.tag)}>
+            <b>{t.tag}</b>
+            <span>{t.total} Karten</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function AnswerContent({ html = "" }) {
   const plain = html.replace(/<[^>]*>/g, " ");
   const hasProcess = plain.includes("->") || plain.includes("→");
@@ -257,6 +281,7 @@ function Home({ data, startSession, setRoute, refresh, module, setModule }) {
       </section>
 
       <WeaknessHeatmap items={(data.weaknesses || []).slice(0, 6)} startSession={startSession} />
+      <TagPanel tags={data.tags || []} onPick={() => setRoute("triage")} />
 
       <section className="deck wide">
         <div className="deck-head">
@@ -468,6 +493,7 @@ function Dashboard({ startSession, module }) {
       </section>
 
       <WeaknessHeatmap items={data.weaknesses || []} startSession={startSession} />
+      <TagPanel tags={data.tags || []} />
     </>
   );
 }
@@ -549,6 +575,7 @@ function ManualCardPage({ onDone, module }) {
 function CardReviewPage({ onDone, module }) {
   const [status, setStatus] = useState("needs_review");
   const [kap, setKap] = useState("");
+  const [tag, setTag] = useState("");
   const [query, setQuery] = useState("");
   const [data, setData] = useState({ cards: [], summary: {} });
   const [selected, setSelected] = useState(null);
@@ -557,12 +584,13 @@ function CardReviewPage({ onDone, module }) {
   async function load() {
     const qs = new URLSearchParams({ status, limit: "80", module });
     if (kap) qs.set("kap", kap);
+    if (tag) qs.set("tag", tag);
     if (query) qs.set("q", query);
     const res = await api(`/api/cards?${qs}`);
     setData(res);
     setSelected(res.cards?.[0] || null);
   }
-  useEffect(() => { load().catch(() => {}); }, [status, kap, module]);
+  useEffect(() => { load().catch(() => {}); }, [status, kap, tag, module]);
 
   function select(card) {
     setSelected({ ...card });
@@ -606,6 +634,7 @@ function CardReviewPage({ onDone, module }) {
             <option value="">Alle VO</option>
             {Array.from({ length: 11 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>VO{n}</option>)}
           </select>
+          <input placeholder="Tag" value={tag} onChange={(e) => setTag(e.target.value)} />
           <input placeholder="Suchen" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
           <button onClick={load}>Filtern</button>
         </div>
@@ -618,6 +647,7 @@ function CardReviewPage({ onDone, module }) {
           {(data.cards || []).map((card) => (
             <button key={card.id} className={selected?.id === card.id ? "active" : ""} onClick={() => select(card)}>
               <b>VO{card.kap} · {card.status}</b>
+              <em>{(card.tags || []).join(" · ")}</em>
               <span dangerouslySetInnerHTML={{ __html: card.q }} />
             </button>
           ))}
@@ -643,6 +673,104 @@ function CardReviewPage({ onDone, module }) {
             {msg && <div className="form-msg">{msg}</div>}
           </>
         ) : <p className="muted">Keine Karte ausgewaehlt.</p>}
+      </div>
+    </section>
+  );
+}
+
+function TriagePage({ module, onDone }) {
+  const [data, setData] = useState({ cards: [], tags: [], remaining: 0 });
+  const [idx, setIdx] = useState(0);
+  const [tag, setTag] = useState("");
+  const [draft, setDraft] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  async function load(nextTag = tag) {
+    const qs = new URLSearchParams({ module, limit: "10" });
+    if (nextTag) qs.set("tag", nextTag);
+    const res = await api(`/api/triage?${qs}`);
+    setData(res);
+    setIdx(0);
+    setDraft(res.cards?.[0] ? { ...res.cards[0] } : null);
+  }
+  useEffect(() => { load().catch(() => {}); }, [module]);
+  useEffect(() => {
+    setDraft(data.cards?.[idx] ? { ...data.cards[idx] } : null);
+    setMsg("");
+  }, [idx, data.cards]);
+
+  async function act(action) {
+    if (!draft) return;
+    await api(`/api/cards/${encodeURIComponent(draft.id)}/triage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action,
+        q: draft.q,
+        a: draft.a,
+        review_note: action === "needs_review" ? (draft.review_note || "Bitte spaeter ueberarbeiten") : "",
+      }),
+    });
+    setMsg("Gespeichert.");
+    if (idx + 1 < data.cards.length) setIdx(idx + 1);
+    else await load();
+    onDone?.();
+  }
+
+  function pickTag(nextTag) {
+    setTag(nextTag);
+    load(nextTag).catch(() => {});
+  }
+
+  return (
+    <section className="triage-layout">
+      <div className="panel triage-side">
+        <div className="section-head">
+          <div>
+            <h2>Karten-Triage</h2>
+            <p>{data.remaining || 0} ungepruefte Karten in diesem Modul.</p>
+          </div>
+          <ClipboardList size={22} />
+        </div>
+        <div className="tag-cloud compact">
+          <button className={!tag ? "active" : ""} onClick={() => pickTag("")}>Alle</button>
+          {(data.tags || []).slice(0, 12).map((t) => (
+            <button key={t.tag} className={tag === t.tag ? "active" : ""} onClick={() => pickTag(t.tag)}>
+              <b>{t.tag}</b><span>{t.total}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="panel triage-card">
+        {draft ? (
+          <>
+            <div className="study-meta">
+              <span className="deck-pill">VO{draft.kap}</span>
+              <span>{draft.source}</span>
+              <span>Score {draft.quality_score || 0}</span>
+              {(draft.tags || []).map((t) => <span key={t}>{t}</span>)}
+            </div>
+            <label>Frage
+              <textarea value={draft.q || ""} onChange={(e) => setDraft({ ...draft, q: e.target.value })} rows={5} />
+            </label>
+            <label>Antwort
+              <textarea value={draft.a || ""} onChange={(e) => setDraft({ ...draft, a: e.target.value })} rows={9} />
+            </label>
+            <div className="button-row-inline">
+              <button className="primary" onClick={() => act("approve")}><Check size={16} /> Gut</button>
+              <button onClick={() => act("approve")}><Edit3 size={16} /> Bearbeiten speichern</button>
+              <button onClick={() => act("needs_review")}>Review</button>
+              <button onClick={() => act("suspend")}>Aus</button>
+            </div>
+            {msg && <div className="form-msg">{msg}</div>}
+          </>
+        ) : (
+          <div className="done">
+            <Check size={30} />
+            <h2>Triage leer</h2>
+            <p>Fuer diesen Filter gibt es gerade keine Karten.</p>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -686,6 +814,7 @@ function App() {
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
     if (route === "exam") return <ExamPage startExam={startExam} />;
+    if (route === "triage") return <TriagePage module={module} onDone={load} />;
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
     if (route === "add") return <ManualCardPage onDone={load} module={module} />;
     return <Home data={data} startSession={startSession} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
@@ -699,6 +828,7 @@ function App() {
         <button className={route === "home" ? "active" : ""} onClick={() => setRoute("home")}><BookOpenCheck size={16} /> Trainer</button>
         <button className={route === "dashboard" ? "active" : ""} onClick={() => setRoute("dashboard")}><BarChart3 size={16} /> Dashboard</button>
         <button className={route === "exam" ? "active" : ""} onClick={() => setRoute("exam")}><Target size={16} /> Pruefung</button>
+        <button className={route === "triage" ? "active" : ""} onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage</button>
         <button className={route === "quality" ? "active" : ""} onClick={() => setRoute("quality")}><ClipboardList size={16} /> Kartenqualitaet</button>
         <button className={route === "add" ? "active" : ""} onClick={() => setRoute("add")}><Plus size={16} /> Eigene Karte</button>
       </nav>

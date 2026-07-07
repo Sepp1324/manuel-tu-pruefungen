@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS cards (
     status      TEXT NOT NULL DEFAULT 'active',
     review_note TEXT NOT NULL DEFAULT '',
     updated_at  TEXT,
+    quality_checked_at TEXT,
     payload     TEXT NOT NULL,
     state       INTEGER NOT NULL DEFAULT 0,
     stability   REAL    NOT NULL DEFAULT 0,
@@ -117,6 +118,7 @@ def migrate(conn: sqlite3.Connection) -> None:
         "status": "ALTER TABLE cards ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
         "review_note": "ALTER TABLE cards ADD COLUMN review_note TEXT NOT NULL DEFAULT ''",
         "updated_at": "ALTER TABLE cards ADD COLUMN updated_at TEXT",
+        "quality_checked_at": "ALTER TABLE cards ADD COLUMN quality_checked_at TEXT",
     }
     for col, sql in migrations.items():
         if col not in cols:
@@ -229,10 +231,103 @@ def seed(conn: sqlite3.Connection) -> int:
     return added
 
 
+TAG_RULES = {
+    "organic": [
+        ("Raffinerie", ["raffin", "erdöl", "erdoel", "crack", "destillation", "naphta", "naphtha", "benzin", "diesel"]),
+        ("Fossile Rohstoffe", ["fossil", "erdgas", "kohle", "rohöl", "rohoel", "petroleum"]),
+        ("Nachwachsende Rohstoffe", ["nachwachs", "nawaro", "biomasse", "biofuel", "btl", "fett", "öl", "oel"]),
+        ("Kohlenhydrate", ["kohlenhydrat", "stärke", "staerke", "zucker", "glucose", "sacchar"]),
+        ("Cellulose", ["cellulose", "papier", "lignin", "hemicellulose", "viskose"]),
+        ("Polymere", ["polymer", "polyamid", "polyethylen", "polypropylen", "kunststoff", "recycling"]),
+        ("Farbstoffe", ["farbstoff", "farbe", "pigment", "chromophor"]),
+    ],
+    "inorganic": [
+        ("Metallurgie", ["metallurgie", "erz", "roest", "röst", "reduktion", "schlacke", "sinter", "pyro", "hydro"]),
+        ("Eisen/Stahl", ["eisen", "stahl", "hochofen", "blast", "corex", "midrex", "roheisen"]),
+        ("Kupfer/Aluminium", ["kupfer", "cu", "aluminium", "al ", "bauxit", "hall", "heroult", "heroult"]),
+        ("Stickstoff", ["stickstoff", "ammoniak", "haber", "salpeter", "nitrat", "nh3", "no3"]),
+        ("Chloralkali/Soda", ["chlor", "natron", "naoh", "soda", "nacl", "solvay", "chloralkali"]),
+        ("Schwefel", ["schwefel", "sulfat", "sulfid", "so2", "so3", "h2so4", "kontaktverfahren"]),
+        ("Bindemittel", ["zement", "kalk", "gips", "klinker", "portland", "calcium"]),
+        ("Glas/Keramik", ["glas", "keramik", "silikat", "ton", "porzellan", "sintern"]),
+        ("Rohstoffe", ["rohstoff", "lagerstätte", "lagerstaette", "mineral", "abbau"]),
+    ],
+}
+
+CHAPTER_TAGS = {
+    "organic": {
+        1: "Fossile Rohstoffe",
+        2: "Raffinerie",
+        3: "Raffinerie",
+        4: "Raffinerie",
+        5: "Nachwachsende Rohstoffe",
+        6: "Kohlenhydrate",
+        7: "Cellulose",
+        8: "Cellulose",
+        9: "Polymere",
+        10: "Polymere",
+        11: "Pruefung",
+    },
+    "inorganic": {
+        1: "Grundlagen",
+        2: "Rohstoffe",
+        3: "Metallurgie",
+        4: "Metallurgie",
+        5: "Eisen/Stahl",
+        6: "Kupfer/Aluminium",
+        7: "Stickstoff",
+        8: "Chloralkali/Soda",
+        9: "Schwefel",
+        10: "Bindemittel",
+        11: "Glas/Keramik",
+    },
+}
+
+
+def infer_tags(card: dict) -> list[str]:
+    existing = card.get("tags")
+    if isinstance(existing, list) and existing:
+        return sorted({str(t) for t in existing if str(t).strip()})
+    module = card.get("module", "organic")
+    text = " ".join(str(card.get(k, "")) for k in ("q", "a", "source", "subname")).lower()
+    tags: set[str] = set()
+    chapter_tag = CHAPTER_TAGS.get(module, {}).get(card.get("kap"))
+    if chapter_tag:
+        tags.add(chapter_tag)
+    for tag, needles in TAG_RULES.get(module, []):
+        if any(needle in text for needle in needles):
+            tags.add(tag)
+    return sorted(tags)
+
+
+def quality_score(card: dict) -> int:
+    q = str(card.get("q", ""))
+    a = str(card.get("a", ""))
+    text = f"{q} {a}"
+    score = 0
+    if card.get("status") == "needs_review" or card.get("review_note"):
+        score += 80
+    if "_____" in q:
+        score += 16
+    if any(x in text for x in ["•", "", "→", "-->", " - (", "[Seite"]):
+        score += 18
+    if len(q) > 220 or len(a) > 650:
+        score += 18
+    if text.count("(") != text.count(")"):
+        score += 12
+    if card.get("lapses", 0) > 0:
+        score += min(40, card.get("lapses", 0) * 8)
+    if card.get("reps", 0) == 0:
+        score += 5
+    return score
+
+
 def row_to_card(row: sqlite3.Row) -> dict:
     d = dict(row)
     payload = json.loads(d.pop("payload"))
     payload.update(d)
+    payload["tags"] = infer_tags(payload)
+    payload["quality_score"] = quality_score(payload)
     return payload
 
 
@@ -408,8 +503,27 @@ def random_cards(conn: sqlite3.Connection, limit: int = 20, mode: str = "mixed",
     return [row_to_card(r) for r in rows]
 
 
+def tag_stats(conn: sqlite3.Connection, module: str = "organic") -> list[dict]:
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status='active'""",
+        (module,),
+    ).fetchall()
+    counts: dict[str, dict] = {}
+    for row in rows:
+        card = row_to_card(row)
+        for tag in card.get("tags", []):
+            item = counts.setdefault(tag, {"tag": tag, "total": 0, "due": 0, "again": 0})
+            item["total"] += 1
+            if card.get("due") is not None:
+                item["due"] += 1
+            item["again"] += card.get("lapses", 0) or 0
+    return sorted(counts.values(), key=lambda x: (-x["again"], -x["due"], -x["total"], x["tag"]))
+
+
 def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: int = 80,
-               kap: int | None = None, q: str = "", module: str = "organic") -> dict:
+               kap: int | None = None, q: str = "", module: str = "organic",
+               tag: str = "") -> dict:
     clauses = ["module=?", "deck='anki'"]
     params: list[object] = [module]
     if status != "all":
@@ -425,13 +539,18 @@ def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: in
         clauses.append("payload LIKE ?")
         params.append(f"%{q}%")
     where = " AND ".join(clauses)
+    fetch_limit = limit if not tag else max(limit * 8, 300)
     rows = conn.execute(
         f"""SELECT * FROM cards WHERE {where}
             ORDER BY CASE status WHEN 'needs_review' THEN 0 WHEN 'active' THEN 1 ELSE 2 END,
                      lapses DESC, reps ASC, kap ASC, ord ASC
             LIMIT ?""",
-        (*params, limit),
+        (*params, fetch_limit),
     ).fetchall()
+    cards = [row_to_card(r) for r in rows]
+    if tag:
+        cards = [c for c in cards if tag in c.get("tags", [])]
+    cards = cards[:limit]
     summary_rows = conn.execute(
         "SELECT status, COUNT(*) c FROM cards WHERE module=? AND deck='anki' GROUP BY status",
         (module,),
@@ -439,7 +558,31 @@ def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: in
     summary = {"active": 0, "needs_review": 0, "suspended": 0}
     for r in summary_rows:
         summary[r["status"] or "active"] = r["c"] or 0
-    return {"cards": [row_to_card(r) for r in rows], "summary": summary}
+    return {"cards": cards, "summary": summary}
+
+
+def triage_cards(conn: sqlite3.Connection, module: str = "organic", limit: int = 10,
+                 tag: str = "") -> dict:
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+           ORDER BY CASE WHEN quality_checked_at IS NULL THEN 0 ELSE 1 END,
+                    CASE status WHEN 'needs_review' THEN 0 ELSE 1 END,
+                    lapses DESC, reps ASC, kap ASC, ord ASC
+           LIMIT 500""",
+        (module,),
+    ).fetchall()
+    cards = [row_to_card(r) for r in rows]
+    if tag:
+        cards = [c for c in cards if tag in c.get("tags", [])]
+    cards.sort(key=lambda c: (c.get("quality_checked_at") is not None, -c.get("quality_score", 0), c.get("kap") or 99, c.get("ord") or 0))
+    unchecked = conn.execute(
+        """SELECT COUNT(*) c FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+             AND quality_checked_at IS NULL""",
+        (module,),
+    ).fetchone()["c"]
+    return {"cards": cards[:limit], "remaining": unchecked or 0, "tags": tag_stats(conn, module)}
 
 
 def update_card(conn: sqlite3.Connection, card_id: str, q: str, a: str,
@@ -452,9 +595,34 @@ def update_card(conn: sqlite3.Connection, card_id: str, q: str, a: str,
     payload["a"] = a
     payload["status"] = status
     conn.execute(
-        """UPDATE cards SET status=?, review_note=?, updated_at=?, payload=?
+        """UPDATE cards SET status=?, review_note=?, updated_at=?,
+           quality_checked_at=CASE WHEN ?='active' THEN ? ELSE quality_checked_at END,
+           payload=?
            WHERE id=?""",
-        (status, review_note, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
+        (status, review_note, updated_at, status, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
+    )
+    conn.commit()
+    return get_card(conn, card_id)
+
+
+def triage_card(conn: sqlite3.Connection, card_id: str, action: str, updated_at: str,
+                q: str | None = None, a: str | None = None, review_note: str = "") -> dict | None:
+    card = get_card(conn, card_id)
+    if not card:
+        return None
+    if action not in {"approve", "needs_review", "suspend"}:
+        raise ValueError("invalid action")
+    status = {"approve": "active", "needs_review": "needs_review", "suspend": "suspended"}[action]
+    payload = dict(card)
+    if q is not None:
+        payload["q"] = q
+    if a is not None:
+        payload["a"] = a
+    payload["status"] = status
+    conn.execute(
+        """UPDATE cards SET status=?, review_note=?, updated_at=?, quality_checked_at=?, payload=?
+           WHERE id=?""",
+        (status, review_note, updated_at, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
     )
     conn.commit()
     return get_card(conn, card_id)
