@@ -2,21 +2,21 @@ name: build-and-deploy
 
 on:
   push:
-    branches: [master]
+    branches: [main]
 
 concurrency:
-  group: psychosr-deploy-main
+  group: organicsr-deploy-main
   cancel-in-progress: false
 
 env:
   REGISTRY: registry.stoegerer-home.at
   IMAGE: registry.stoegerer-home.at/psychosr
   KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-  NAMESPACE: psychologie
+  NAMESPACE: organicsr
 
 jobs:
   deploy:
-    runs-on: [self-hosted, psychosr]
+    runs-on: [self-hosted, organicsr]
 
     steps:
       - name: Checkout
@@ -37,7 +37,7 @@ jobs:
       - name: Manifeste anwenden
         run: |
           kubectl -n "$NAMESPACE" apply -k k8s
-          kubectl -n "$NAMESPACE" set image deployment/psychosr psychosr="$IMAGE:$TAG"
+          kubectl -n "$NAMESPACE" set image deployment/organicsr organicsr="$IMAGE:$TAG"
 
       - name: Rollout abwarten
         run: kubectl -n "$NAMESPACE" rollout status deployment/psychosr --timeout=180s
