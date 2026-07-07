@@ -10,7 +10,7 @@ concurrency:
 
 env:
   REGISTRY: registry.stoegerer-home.at
-  IMAGE: registry.stoegerer-home.at/psychosr
+  IMAGE: registry.stoegerer-home.at/organicsr
   KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   NAMESPACE: organicsr
 
