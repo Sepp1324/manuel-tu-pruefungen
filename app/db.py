@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import sqlite3
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -21,6 +22,9 @@ CREATE TABLE IF NOT EXISTS cards (
     subname     TEXT,
     source      TEXT,
     ord         INTEGER NOT NULL DEFAULT 0,
+    status      TEXT NOT NULL DEFAULT 'active',
+    review_note TEXT NOT NULL DEFAULT '',
+    updated_at  TEXT,
     payload     TEXT NOT NULL,
     state       INTEGER NOT NULL DEFAULT 0,
     stability   REAL    NOT NULL DEFAULT 0,
@@ -95,6 +99,7 @@ def init_db() -> None:
     conn = get_conn()
     conn.executescript(SCHEMA)
     conn.executescript(AUTH_SCHEMA)
+    migrate(conn)
     try:
         conn.execute(f"PRAGMA journal_mode={JOURNAL_MODE}")
     except sqlite3.DatabaseError:
@@ -102,6 +107,19 @@ def init_db() -> None:
     seed(conn)
     conn.commit()
     conn.close()
+
+
+def migrate(conn: sqlite3.Connection) -> None:
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(cards)").fetchall()}
+    migrations = {
+        "status": "ALTER TABLE cards ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
+        "review_note": "ALTER TABLE cards ADD COLUMN review_note TEXT NOT NULL DEFAULT ''",
+        "updated_at": "ALTER TABLE cards ADD COLUMN updated_at TEXT",
+    }
+    for col, sql in migrations.items():
+        if col not in cols:
+            conn.execute(sql)
+    conn.commit()
 
 
 def init_auth_tables(conn: sqlite3.Connection) -> None:
@@ -178,8 +196,8 @@ def seed(conn: sqlite3.Connection) -> int:
         if exists:
             continue
         conn.execute(
-            """INSERT INTO cards(id, deck, kap, sub, subname, source, ord, payload)
-               VALUES(?,?,?,?,?,?,?,?)""",
+            """INSERT INTO cards(id, deck, kap, sub, subname, source, ord, status, payload)
+               VALUES(?,?,?,?,?,?,?,?,?)""",
             (
                 card["id"],
                 card.get("deck", "anki"),
@@ -188,6 +206,7 @@ def seed(conn: sqlite3.Connection) -> int:
                 card.get("subname"),
                 card.get("source"),
                 card.get("order", 0),
+                card.get("status", "active"),
                 json.dumps(card, ensure_ascii=False),
             ),
         )
@@ -226,7 +245,7 @@ def due_cards(conn: sqlite3.Connection, now_iso: str, limit: int = 30, kap: int 
         params.append(kap)
     due = conn.execute(
         f"""SELECT * FROM cards
-            WHERE deck='anki' AND due IS NOT NULL AND due<=? {kap_sql}
+            WHERE deck='anki' AND status='active' AND due IS NOT NULL AND due<=? {kap_sql}
             ORDER BY due ASC LIMIT ?""",
         (*params, limit),
     ).fetchall()
@@ -240,7 +259,7 @@ def due_cards(conn: sqlite3.Connection, now_iso: str, limit: int = 30, kap: int 
             new_params.append(kap)
         new = conn.execute(
             f"""SELECT * FROM cards
-                WHERE deck='anki' AND due IS NULL {kap_new_sql}
+                WHERE deck='anki' AND status='active' AND due IS NULL {kap_new_sql}
                 ORDER BY kap ASC, ord ASC, id ASC LIMIT ?""",
             (*new_params, remaining),
         ).fetchall()
@@ -276,7 +295,7 @@ def deck_stats(conn: sqlite3.Connection, now_iso: str) -> dict:
                   SUM(CASE WHEN state=1 OR state=3 THEN 1 ELSE 0 END) learning,
                   SUM(CASE WHEN state=2 THEN 1 ELSE 0 END) review,
                   SUM(CASE WHEN last_review IS NOT NULL THEN 1 ELSE 0 END) seen
-           FROM cards WHERE deck='anki'""",
+           FROM cards WHERE deck='anki' AND status='active'""",
         (now_iso,),
     ).fetchone()
     today = now_iso[:10]
@@ -306,23 +325,153 @@ def chapter_stats(conn: sqlite3.Connection, now_iso: str) -> list[dict]:
                   SUM(CASE WHEN due IS NOT NULL AND due<=? THEN 1 ELSE 0 END) due,
                   SUM(CASE WHEN last_review IS NOT NULL THEN 1 ELSE 0 END) seen,
                   AVG(CASE WHEN last_review IS NOT NULL THEN stability ELSE NULL END) avg_stability
-           FROM cards WHERE deck='anki'
+           FROM cards WHERE deck='anki' AND status='active'
            GROUP BY kap, subname ORDER BY kap""",
         (now_iso,),
     ).fetchall()
-    return [
-        {
+    out = []
+    for r in rows:
+        review_row = conn.execute(
+            """SELECT COUNT(*) reviews,
+                      SUM(CASE WHEN rating>=3 THEN 1 ELSE 0 END) correct,
+                      SUM(CASE WHEN rating=1 THEN 1 ELSE 0 END) again
+               FROM reviews rv
+               JOIN cards c ON c.id=rv.card_id
+               WHERE c.kap=? AND c.status='active'""",
+            (r["kap"],),
+        ).fetchone()
+        reviews = review_row["reviews"] or 0
+        correct = review_row["correct"] or 0
+        again = review_row["again"] or 0
+        hit_rate = round(correct / reviews * 100) if reviews else None
+        progress = round(((r["seen"] or 0) / (r["total"] or 1)) * 100)
+        due = r["due"] or 0
+        new = r["new"] or 0
+        weak_score = round((100 - progress) * .45 + due * 1.4 + again * 2.5 + (100 - (hit_rate if hit_rate is not None else 60)) * .35)
+        out.append({
             "kap": r["kap"],
             "name": r["subname"],
             "total": r["total"] or 0,
             "new": r["new"] or 0,
             "due": r["due"] or 0,
             "seen": r["seen"] or 0,
-            "progress": round(((r["seen"] or 0) / (r["total"] or 1)) * 100),
+            "progress": progress,
             "avg_stability": round(r["avg_stability"] or 0, 1),
-        }
-        for r in rows
-    ]
+            "reviews": reviews,
+            "again": again,
+            "hit_rate": hit_rate,
+            "weak_score": weak_score,
+        })
+    return out
+
+
+def weakness_heatmap(conn: sqlite3.Connection, now_iso: str) -> list[dict]:
+    rows = chapter_stats(conn, now_iso)
+    return sorted(rows, key=lambda r: (-r["weak_score"], r["kap"]))
+
+
+def random_cards(conn: sqlite3.Connection, limit: int = 20, mode: str = "mixed") -> list[dict]:
+    where = "deck='anki' AND status='active'"
+    if mode == "weak":
+        where += " AND (lapses>0 OR reps=0 OR difficulty>=6.5)"
+    rows = conn.execute(
+        f"""SELECT * FROM cards WHERE {where}
+            ORDER BY RANDOM() LIMIT ?""",
+        (limit,),
+    ).fetchall()
+    if mode == "weak" and not rows:
+        rows = conn.execute(
+            """SELECT * FROM cards
+               WHERE deck='anki' AND status='active'
+               ORDER BY RANDOM() LIMIT ?""",
+            (limit,),
+        ).fetchall()
+    return [row_to_card(r) for r in rows]
+
+
+def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: int = 80,
+               kap: int | None = None, q: str = "") -> dict:
+    clauses = ["deck='anki'"]
+    params: list[object] = []
+    if status != "all":
+        if status == "needs_review":
+            clauses.append("(status='needs_review' OR review_note<>'' OR payload LIKE '%[Seite%' OR payload LIKE '%_____%')")
+        else:
+            clauses.append("status=?")
+            params.append(status)
+    if kap:
+        clauses.append("kap=?")
+        params.append(kap)
+    if q:
+        clauses.append("payload LIKE ?")
+        params.append(f"%{q}%")
+    where = " AND ".join(clauses)
+    rows = conn.execute(
+        f"""SELECT * FROM cards WHERE {where}
+            ORDER BY CASE status WHEN 'needs_review' THEN 0 WHEN 'active' THEN 1 ELSE 2 END,
+                     lapses DESC, reps ASC, kap ASC, ord ASC
+            LIMIT ?""",
+        (*params, limit),
+    ).fetchall()
+    summary_rows = conn.execute(
+        "SELECT status, COUNT(*) c FROM cards WHERE deck='anki' GROUP BY status"
+    ).fetchall()
+    summary = {"active": 0, "needs_review": 0, "suspended": 0}
+    for r in summary_rows:
+        summary[r["status"] or "active"] = r["c"] or 0
+    return {"cards": [row_to_card(r) for r in rows], "summary": summary}
+
+
+def update_card(conn: sqlite3.Connection, card_id: str, q: str, a: str,
+                status: str, review_note: str, updated_at: str) -> dict | None:
+    card = get_card(conn, card_id)
+    if not card:
+        return None
+    payload = dict(card)
+    payload["q"] = q
+    payload["a"] = a
+    payload["status"] = status
+    conn.execute(
+        """UPDATE cards SET status=?, review_note=?, updated_at=?, payload=?
+           WHERE id=?""",
+        (status, review_note, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
+    )
+    conn.commit()
+    return get_card(conn, card_id)
+
+
+def add_manual_card(conn: sqlite3.Connection, kap: int, question: str, answer: str,
+                    source: str, created_at: str) -> dict:
+    chapter = conn.execute(
+        "SELECT subname FROM cards WHERE kap=? AND subname IS NOT NULL LIMIT 1", (kap,)
+    ).fetchone()
+    subname = chapter["subname"] if chapter else f"VO{kap}"
+    card_id = f"manual:{secrets.token_hex(8)}"
+    max_ord = conn.execute("SELECT COALESCE(MAX(ord),0) m FROM cards WHERE kap=?", (kap,)).fetchone()["m"] or 0
+    payload = {
+        "id": card_id,
+        "deck": "anki",
+        "kap": kap,
+        "sub": f"VO{kap}",
+        "subname": subname,
+        "source": source or "Manuell",
+        "kind": "manual",
+        "q": question,
+        "a": answer,
+        "order": max_ord + 1,
+        "status": "active",
+    }
+    conn.execute(
+        """INSERT INTO cards(id, deck, kap, sub, subname, source, ord, status,
+                             updated_at, payload)
+           VALUES(?,?,?,?,?,?,?,?,?,?)""",
+        (
+            card_id, "anki", kap, payload["sub"], subname, payload["source"],
+            max_ord + 1, "active", created_at, json.dumps(payload, ensure_ascii=False),
+        ),
+    )
+    conn.commit()
+    return get_card(conn, card_id)
 
 
 def reviews_timeline(conn: sqlite3.Connection, days: int = 21) -> list[dict]:

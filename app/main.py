@@ -99,6 +99,21 @@ class LoginIn(BaseModel):
 class ReviewIn(BaseModel):
     card_id: str
     rating: int = Field(ge=1, le=4)
+    source: str = "review"
+
+
+class CardEditIn(BaseModel):
+    q: str = Field(min_length=3)
+    a: str = Field(min_length=3)
+    status: str = Field(pattern="^(active|needs_review|suspended)$")
+    review_note: str = ""
+
+
+class ManualCardIn(BaseModel):
+    kap: int = Field(ge=1, le=11)
+    q: str = Field(min_length=3)
+    a: str = Field(min_length=3)
+    source: str = "Manuell"
 
 
 def _daily_goal(stats: dict, chapters: list[dict]) -> dict:
@@ -162,6 +177,41 @@ def _forecast(stats: dict, chapters: list[dict]) -> dict:
     }
 
 
+def _study_plan(stats: dict, chapters: list[dict]) -> dict:
+    days = _days_left()
+    open_cards = (stats.get("new") or 0) + (stats.get("due") or 0)
+    if days <= 0:
+        phase = "exam_day"
+        title = "Pruefungstag"
+        new_limit = 0
+        message = "Nur warm laufen: leichte Wiederholung, keine neuen Karten."
+    elif days <= 7:
+        phase = "final_review"
+        title = "Finale Wiederholung"
+        new_limit = 0
+        message = "Keine neuen Karten mehr. Fokus auf faellige Karten und Schwachstellen."
+    elif days <= 21:
+        phase = "consolidate"
+        title = "Konsolidieren"
+        new_limit = max(5, min(18, -(-max(stats.get("new") or 0, 0) // max(days - 7, 1))))
+        message = "Neue Karten dosieren, aber jeden Tag Schwachstellen wiederholen."
+    else:
+        phase = "build"
+        title = "Aufbauphase"
+        new_limit = max(8, min(25, -(-max(stats.get("new") or 0, 0) // max(days - 14, 1))))
+        message = "Stoff breit aufbauen. Danach wird automatisch staerker wiederholt."
+    focus = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c["kap"]))[:4]
+    return {
+        "phase": phase,
+        "title": title,
+        "message": message,
+        "new_cards_today": new_limit,
+        "reviews_today": min(90, max(20, stats.get("due") or 0)),
+        "open_cards": open_cards,
+        "focus": focus,
+    }
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
@@ -221,6 +271,7 @@ def stats():
     now = _now_iso()
     st = db.deck_stats(conn, now)
     chapters = db.chapter_stats(conn, now)
+    weaknesses = db.weakness_heatmap(conn, now)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
     conn.close()
@@ -232,6 +283,8 @@ def stats():
         "chapters": chapters,
         "daily_goal": _daily_goal(st, chapters),
         "forecast": _forecast(st, chapters),
+        "study_plan": _study_plan(st, chapters),
+        "weaknesses": weaknesses,
         "xp": xp,
         "streak": streak,
     }
@@ -248,6 +301,8 @@ def dashboard():
         "chapters": chapters,
         "timeline": db.reviews_timeline(conn, 21),
         "forecast": _forecast(st, chapters),
+        "study_plan": _study_plan(st, chapters),
+        "weaknesses": db.weakness_heatmap(conn, now),
         "xp": db.xp_summary(conn),
         "streak": db.streak(conn),
     }
@@ -261,6 +316,43 @@ def study(limit: int = 30, kap: int | None = None):
     cards = db.due_cards(conn, _now_iso(), limit, kap)
     conn.close()
     return {"deck": "anki", "cards": cards}
+
+
+@app.get("/api/exam/recall")
+def recall_exam(n: int = 20, mode: str = "mixed"):
+    conn = db.get_conn()
+    cards = db.random_cards(conn, max(5, min(n, 60)), mode if mode in ("mixed", "weak") else "mixed")
+    conn.close()
+    return {"deck": "exam", "mode": mode, "cards": cards}
+
+
+@app.get("/api/cards")
+def cards(status: str = "needs_review", limit: int = 80, kap: int | None = None, q: str = ""):
+    if status not in ("all", "active", "needs_review", "suspended"):
+        raise HTTPException(400, "ungueltiger Status")
+    conn = db.get_conn()
+    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip())
+    conn.close()
+    return out
+
+
+@app.patch("/api/cards/{card_id:path}")
+def edit_card(card_id: str, inp: CardEditIn):
+    conn = db.get_conn()
+    card = db.update_card(conn, card_id, inp.q, inp.a, inp.status, inp.review_note, _now_iso())
+    conn.close()
+    if not card:
+        raise HTTPException(404, "Karte nicht gefunden")
+    return {"ok": True, "card": card}
+
+
+@app.post("/api/cards/manual")
+def add_manual_card(inp: ManualCardIn):
+    conn = db.get_conn()
+    card = db.add_manual_card(conn, inp.kap, inp.q, inp.a, inp.source, _now_iso())
+    xp = db.add_xp_event(conn, 15, "manual_card", "Manuelle Karte ergaenzt", card["id"], _now_iso())
+    conn.close()
+    return {"ok": True, "card": card, "xp": xp}
 
 
 @app.get("/api/preview/{card_id:path}")
@@ -285,7 +377,7 @@ def review(inp: ReviewIn):
     if card.get("last_review"):
         elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
     updated = sched.review(card, inp.rating, now, max_interval_days=_max_fsrs_interval_days(now))
-    db.apply_review(conn, inp.card_id, updated, inp.rating, elapsed)
+    db.apply_review(conn, inp.card_id, updated, inp.rating, elapsed, deck=inp.source if inp.source == "exam" else "anki")
     xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
     xp = db.add_xp_event(conn, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
     conn.close()
