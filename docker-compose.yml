@@ -1,0 +1,14 @@
+services:
+  organicsr:
+    build: .
+    container_name: organicsr
+    restart: unless-stopped
+    ports:
+      - "8080:8000"          # host 8080 -> container 8000; reverse-proxy via Caddy
+    volumes:
+      - ./data:/data
+    environment:
+      - SR_DB_PATH=/data/organicsr.db
+      - ADMIN_USER=manuel
+      - ADMIN_PASSWORD=change-me-locally
+      - AUTH_COOKIE_SECURE=0

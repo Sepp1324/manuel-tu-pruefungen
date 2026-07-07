@@ -1,0 +1,7 @@
+actions-runnter/
+node_modules/
+dist/
+.vite/
+.venv/
+app/__pycache__/
+*.pyc

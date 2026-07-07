@@ -1,0 +1,88 @@
+# Image-Referenz: an deine Registry anpassen.
+# Beispiel: registry.stoegerer-home.at/organicsr:1.0.0
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: organicsr
+  namespace: organicsr
+  labels:
+    app: organicsr
+spec:
+  replicas: 1                 # SQLite -> genau EIN Writer. Nicht hochskalieren.
+  strategy:
+    type: Recreate           # alten Pod erst beenden, dann neuen -> nie zwei Writer auf der DB
+  selector:
+    matchLabels:
+      app: organicsr
+  template:
+    metadata:
+      labels:
+        app: organicsr
+    spec:
+      containers:
+        - name: organicsr
+          image: registry.stoegerer-home.at/organicsr:1.0.0   # <-- ANPASSEN
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: SR_DB_PATH
+              value: /data/organicsr.db
+            - name: SR_JOURNAL_MODE
+              value: "DELETE"        # über NFS kein WAL
+            # --- Authentifizierung ---
+            - name: ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: organicsr-secrets
+                  key: admin-user
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: organicsr-secrets
+                  key: admin-password
+            # Öffentlich hinter HTTPS -> Session-Cookie nur über TLS senden.
+            - name: AUTH_COOKIE_SECURE
+              value: "1"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+              claimName: organicsr-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: organicsr
+  namespace: organicsr
+  labels:
+    app: organicsr
+spec:
+  selector:
+    app: organicsr
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

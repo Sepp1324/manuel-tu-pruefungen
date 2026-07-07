@@ -1,0 +1,43 @@
+name: build-and-deploy
+
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: psychosr-deploy-main
+  cancel-in-progress: false
+
+env:
+  REGISTRY: registry.stoegerer-home.at
+  IMAGE: registry.stoegerer-home.at/psychosr
+  KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  NAMESPACE: psychologie
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, psychosr]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Image-Tag = Git-SHA
+        run: echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
+      - name: Image bauen
+        run: docker build -t "$IMAGE:$TAG" .
+
+      - name: Image pushen
+        run: docker push "$IMAGE:$TAG"
+
+      - name: Namespace sicherstellen
+        run: kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Manifeste anwenden
+        run: |
+          kubectl -n "$NAMESPACE" apply -k k8s
+          kubectl -n "$NAMESPACE" set image deployment/psychosr psychosr="$IMAGE:$TAG"
+
+      - name: Rollout abwarten
+        run: kubectl -n "$NAMESPACE" rollout status deployment/psychosr --timeout=180s
