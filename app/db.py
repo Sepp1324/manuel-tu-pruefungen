@@ -37,7 +37,6 @@ CREATE TABLE IF NOT EXISTS cards (
 );
 CREATE INDEX IF NOT EXISTS idx_cards_deck_due ON cards(deck, due);
 CREATE INDEX IF NOT EXISTS idx_cards_kap ON cards(kap);
-CREATE INDEX IF NOT EXISTS idx_cards_module ON cards(module);
 
 CREATE TABLE IF NOT EXISTS reviews (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,6 +121,7 @@ def migrate(conn: sqlite3.Connection) -> None:
     for col, sql in migrations.items():
         if col not in cols:
             conn.execute(sql)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module ON cards(module)")
     conn.commit()
 
 
