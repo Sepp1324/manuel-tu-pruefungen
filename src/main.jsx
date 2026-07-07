@@ -206,17 +206,32 @@ function AnswerContent({ html = "" }) {
   );
 }
 
-function Home({ data, startSession, setRoute, refresh }) {
+function ModuleSwitch({ modules = {}, active, onChange }) {
+  const entries = Object.entries(modules);
+  if (entries.length <= 1) return null;
+  return (
+    <div className="module-switch">
+      {entries.map(([key, mod]) => (
+        <button key={key} className={active === key ? "active" : ""} onClick={() => onChange(key)}>
+          {mod.title || mod.full_title || key}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Home({ data, startSession, setRoute, refresh, module, setModule }) {
   const st = data.anki || {};
   const goal = data.daily_goal || {};
   const forecast = data.forecast || {};
   return (
     <>
+      <ModuleSwitch modules={data.modules || {}} active={module} onChange={setModule} />
       <section className="hero">
         <div className="days">{data.days_until_exam}</div>
         <div>
           <span className="hero-kicker">Technische Universität · Prüfungsvorbereitung</span>
-          <h1>Chemische Technologien organischer Stoffe</h1>
+          <h1>{data.title}</h1>
           <p>Manuels Anki-Style Trainer bis zur Pruefung am 21.09.2026.</p>
           <div className="hero-actions">
             <button className="primary" onClick={() => startSession("anki")}>Session starten</button>
@@ -247,7 +262,7 @@ function Home({ data, startSession, setRoute, refresh }) {
         <div className="deck-head">
           <div>
             <h2>Anki-Karten</h2>
-            <p>620 Karten aus Skripten, Vokabelsammlungen und Beispielpruefungen. Keine MC-Fragen.</p>
+            <p>{st.total || 0} Karten aus den Skripten. Keine MC-Fragen.</p>
           </div>
           <div className="button-row-inline">
             <button className="primary" disabled={!((st.due || 0) + (st.new || 0))} onClick={() => startSession("anki")}>Lernen</button>
@@ -395,11 +410,11 @@ function Study({ session, setSession, finish }) {
   );
 }
 
-function Dashboard({ startSession }) {
+function Dashboard({ startSession, module }) {
   const [data, setData] = useState(null);
   useEffect(() => {
-    api("/api/dashboard").then(setData).catch(() => {});
-  }, []);
+    api(`/api/dashboard?module=${encodeURIComponent(module)}`).then(setData).catch(() => {});
+  }, [module]);
   if (!data) return <div className="loading">Dashboard laedt...</div>;
   const maxReviews = Math.max(1, ...data.timeline.map((d) => d.reviews || 0));
   return (
@@ -487,7 +502,7 @@ function ExamPage({ startExam }) {
   );
 }
 
-function ManualCardPage({ onDone }) {
+function ManualCardPage({ onDone, module }) {
   const [form, setForm] = useState({ kap: 1, q: "", a: "", source: "Manuell" });
   const [msg, setMsg] = useState("");
   async function submit(e) {
@@ -497,7 +512,7 @@ function ManualCardPage({ onDone }) {
       await api("/api/cards/manual", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, kap: Number(form.kap) }),
+        body: JSON.stringify({ ...form, module, kap: Number(form.kap) }),
       });
       setForm({ kap: form.kap, q: "", a: "", source: "Manuell" });
       setMsg("Karte gespeichert.");
@@ -531,7 +546,7 @@ function ManualCardPage({ onDone }) {
   );
 }
 
-function CardReviewPage({ onDone }) {
+function CardReviewPage({ onDone, module }) {
   const [status, setStatus] = useState("needs_review");
   const [kap, setKap] = useState("");
   const [query, setQuery] = useState("");
@@ -540,14 +555,14 @@ function CardReviewPage({ onDone }) {
   const [msg, setMsg] = useState("");
 
   async function load() {
-    const qs = new URLSearchParams({ status, limit: "80" });
+    const qs = new URLSearchParams({ status, limit: "80", module });
     if (kap) qs.set("kap", kap);
     if (query) qs.set("q", query);
     const res = await api(`/api/cards?${qs}`);
     setData(res);
     setSelected(res.cards?.[0] || null);
   }
-  useEffect(() => { load().catch(() => {}); }, [status, kap]);
+  useEffect(() => { load().catch(() => {}); }, [status, kap, module]);
 
   function select(card) {
     setSelected({ ...card });
@@ -636,27 +651,29 @@ function CardReviewPage({ onDone }) {
 function App() {
   const isLogin = window.location.pathname === "/login";
   const [route, setRoute] = useState("home");
+  const [module, setModule] = useState("organic");
   const [data, setData] = useState(null);
   const [session, setSession] = useState(null);
 
   async function load() {
-    setData(await api("/api/stats"));
+    setData(await api(`/api/stats?module=${encodeURIComponent(module)}`));
   }
   useEffect(() => {
     if (!isLogin) load().catch(() => {});
-  }, [isLogin]);
+  }, [isLogin, module]);
 
   async function startSession(deck = "anki", kap = null) {
     const qs = new URLSearchParams({ limit: "30" });
     if (kap) qs.set("kap", String(kap));
+    qs.set("module", module);
     const res = await api(`/api/study/${deck}?${qs}`);
-    setSession({ deck, cards: res.cards || [], idx: 0, kap });
+    setSession({ deck, module, cards: res.cards || [], idx: 0, kap });
   }
 
   async function startExam(count = 20, mode = "mixed") {
-    const qs = new URLSearchParams({ n: String(count), mode });
+    const qs = new URLSearchParams({ n: String(count), mode, module });
     const res = await api(`/api/exam/recall?${qs}`);
-    setSession({ deck: "exam", cards: res.cards || [], idx: 0, mode, results: [] });
+    setSession({ deck: "exam", module, cards: res.cards || [], idx: 0, mode, results: [] });
   }
 
   async function finishSession() {
@@ -667,12 +684,12 @@ function App() {
   const content = useMemo(() => {
     if (!data) return <div className="loading">Laedt...</div>;
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
-    if (route === "dashboard") return <Dashboard startSession={startSession} />;
+    if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
     if (route === "exam") return <ExamPage startExam={startExam} />;
-    if (route === "quality") return <CardReviewPage onDone={load} />;
-    if (route === "add") return <ManualCardPage onDone={load} />;
-    return <Home data={data} startSession={startSession} setRoute={setRoute} refresh={load} />;
-  }, [data, session, route]);
+    if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
+    if (route === "add") return <ManualCardPage onDone={load} module={module} />;
+    return <Home data={data} startSession={startSession} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
+  }, [data, session, route, module]);
 
   if (isLogin) return <Login />;
   return (

@@ -1,7 +1,7 @@
-# Organische Chemie SR-Trainer
+# TU Chemie SR-Trainer
 
 Eigenstaendige Spaced-Repetition-Website fuer Manuels Pruefung
-**Chemische Technologien Organischer Stoffe** am **21.09.2026**.
+am **21.09.2026**.
 
 Die App basiert technisch auf der Psychologie-SR-Website, ist aber davon
 getrennt:
@@ -11,7 +11,9 @@ getrennt:
 - eigener k3s-Namespace (`organicsr`)
 - eigener Benutzer-Bootstrap (`manuel`)
 - keine Multiple-Choice-, Englisch- oder Methodik-Modi
-- 620 Anki-Style Karten aus den hochgeladenen Skripten, Vokabelsammlungen und Beispielpruefungen
+- Modulumschalter fuer Organische und Anorganische Chemie
+- 620 Anki-Style Karten fuer Organische Chemie
+- 760 Anki-Style Karten fuer Anorganische Chemie
 
 ## Lokal starten
 
@@ -39,6 +41,13 @@ so erzeugt:
 
 ```bash
 python3 organicsr/tools/generate_organic_cards.py
+```
+
+Anorganische Chemie wird aus den PDF-Einheiten im ZIP erzeugt. Das ZIP zuerst in
+einen temporaren Ordner mit sauberen Dateinamen extrahieren und dann:
+
+```bash
+INORG_SOURCE_DIR=/private/tmp/anorganik_sources_clean python3 tools/generate_inorganic_cards.py
 ```
 
 Das schreibt:

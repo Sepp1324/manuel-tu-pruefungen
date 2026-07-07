@@ -16,6 +16,7 @@ SEED_PATH = Path(__file__).parent / "seed_data.json"
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS cards (
     id          TEXT PRIMARY KEY,
+    module      TEXT NOT NULL DEFAULT 'organic',
     deck        TEXT NOT NULL DEFAULT 'anki',
     kap         INTEGER,
     sub         TEXT,
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS cards (
 );
 CREATE INDEX IF NOT EXISTS idx_cards_deck_due ON cards(deck, due);
 CREATE INDEX IF NOT EXISTS idx_cards_kap ON cards(kap);
+CREATE INDEX IF NOT EXISTS idx_cards_module ON cards(module);
 
 CREATE TABLE IF NOT EXISTS reviews (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,6 +114,7 @@ def init_db() -> None:
 def migrate(conn: sqlite3.Connection) -> None:
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(cards)").fetchall()}
     migrations = {
+        "module": "ALTER TABLE cards ADD COLUMN module TEXT NOT NULL DEFAULT 'organic'",
         "status": "ALTER TABLE cards ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
         "review_note": "ALTER TABLE cards ADD COLUMN review_note TEXT NOT NULL DEFAULT ''",
         "updated_at": "ALTER TABLE cards ADD COLUMN updated_at TEXT",
@@ -196,10 +199,11 @@ def seed(conn: sqlite3.Connection) -> int:
         if exists:
             continue
         conn.execute(
-            """INSERT INTO cards(id, deck, kap, sub, subname, source, ord, status, payload)
-               VALUES(?,?,?,?,?,?,?,?,?)""",
+            """INSERT INTO cards(id, module, deck, kap, sub, subname, source, ord, status, payload)
+               VALUES(?,?,?,?,?,?,?,?,?,?)""",
             (
                 card["id"],
+                card.get("module", "organic"),
                 card.get("deck", "anki"),
                 card.get("kap"),
                 card.get("sub"),
@@ -237,7 +241,8 @@ def get_card(conn: sqlite3.Connection, card_id: str) -> dict | None:
     return row_to_card(row) if row else None
 
 
-def due_cards(conn: sqlite3.Connection, now_iso: str, limit: int = 30, kap: int | None = None) -> list[dict]:
+def due_cards(conn: sqlite3.Connection, now_iso: str, limit: int = 30,
+              kap: int | None = None, module: str = "organic") -> list[dict]:
     params: list[object] = [now_iso]
     kap_sql = ""
     if kap:
@@ -245,9 +250,9 @@ def due_cards(conn: sqlite3.Connection, now_iso: str, limit: int = 30, kap: int 
         params.append(kap)
     due = conn.execute(
         f"""SELECT * FROM cards
-            WHERE deck='anki' AND status='active' AND due IS NOT NULL AND due<=? {kap_sql}
+            WHERE module=? AND deck='anki' AND status='active' AND due IS NOT NULL AND due<=? {kap_sql}
             ORDER BY due ASC LIMIT ?""",
-        (*params, limit),
+        (module, *params, limit),
     ).fetchall()
     remaining = max(limit - len(due), 0)
     new: list[sqlite3.Row] = []
@@ -259,9 +264,9 @@ def due_cards(conn: sqlite3.Connection, now_iso: str, limit: int = 30, kap: int 
             new_params.append(kap)
         new = conn.execute(
             f"""SELECT * FROM cards
-                WHERE deck='anki' AND status='active' AND due IS NULL {kap_new_sql}
+                WHERE module=? AND deck='anki' AND status='active' AND due IS NULL {kap_new_sql}
                 ORDER BY kap ASC, ord ASC, id ASC LIMIT ?""",
-            (*new_params, remaining),
+            (module, *new_params, remaining),
         ).fetchall()
     return [row_to_card(r) for r in [*due, *new]]
 
@@ -287,7 +292,7 @@ def apply_review(conn: sqlite3.Connection, card_id: str, updated: dict, rating: 
     conn.commit()
 
 
-def deck_stats(conn: sqlite3.Connection, now_iso: str) -> dict:
+def deck_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic") -> dict:
     row = conn.execute(
         """SELECT COUNT(*) total,
                   SUM(CASE WHEN due IS NULL THEN 1 ELSE 0 END) new,
@@ -295,15 +300,28 @@ def deck_stats(conn: sqlite3.Connection, now_iso: str) -> dict:
                   SUM(CASE WHEN state=1 OR state=3 THEN 1 ELSE 0 END) learning,
                   SUM(CASE WHEN state=2 THEN 1 ELSE 0 END) review,
                   SUM(CASE WHEN last_review IS NOT NULL THEN 1 ELSE 0 END) seen
-           FROM cards WHERE deck='anki' AND status='active'""",
-        (now_iso,),
+           FROM cards WHERE module=? AND deck='anki' AND status='active'""",
+        (now_iso, module),
     ).fetchone()
     today = now_iso[:10]
     reviews_today = conn.execute(
-        "SELECT COUNT(*) c FROM reviews WHERE substr(reviewed_at,1,10)=?", (today,)
+        """SELECT COUNT(*) c FROM reviews rv
+           JOIN cards c ON c.id=rv.card_id
+           WHERE c.module=? AND substr(rv.reviewed_at,1,10)=?""",
+        (module, today),
     ).fetchone()["c"]
-    total_reviews = conn.execute("SELECT COUNT(*) c FROM reviews").fetchone()["c"]
-    ok = conn.execute("SELECT COUNT(*) c FROM reviews WHERE rating>=3").fetchone()["c"]
+    total_reviews = conn.execute(
+        """SELECT COUNT(*) c FROM reviews rv
+           JOIN cards c ON c.id=rv.card_id
+           WHERE c.module=?""",
+        (module,),
+    ).fetchone()["c"]
+    ok = conn.execute(
+        """SELECT COUNT(*) c FROM reviews rv
+           JOIN cards c ON c.id=rv.card_id
+           WHERE c.module=? AND rv.rating>=3""",
+        (module,),
+    ).fetchone()["c"]
     return {
         "total": row["total"] or 0,
         "new": row["new"] or 0,
@@ -317,7 +335,7 @@ def deck_stats(conn: sqlite3.Connection, now_iso: str) -> dict:
     }
 
 
-def chapter_stats(conn: sqlite3.Connection, now_iso: str) -> list[dict]:
+def chapter_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic") -> list[dict]:
     rows = conn.execute(
         """SELECT kap, subname,
                   COUNT(*) total,
@@ -325,9 +343,9 @@ def chapter_stats(conn: sqlite3.Connection, now_iso: str) -> list[dict]:
                   SUM(CASE WHEN due IS NOT NULL AND due<=? THEN 1 ELSE 0 END) due,
                   SUM(CASE WHEN last_review IS NOT NULL THEN 1 ELSE 0 END) seen,
                   AVG(CASE WHEN last_review IS NOT NULL THEN stability ELSE NULL END) avg_stability
-           FROM cards WHERE deck='anki' AND status='active'
+           FROM cards WHERE module=? AND deck='anki' AND status='active'
            GROUP BY kap, subname ORDER BY kap""",
-        (now_iso,),
+        (now_iso, module),
     ).fetchall()
     out = []
     for r in rows:
@@ -337,8 +355,8 @@ def chapter_stats(conn: sqlite3.Connection, now_iso: str) -> list[dict]:
                       SUM(CASE WHEN rating=1 THEN 1 ELSE 0 END) again
                FROM reviews rv
                JOIN cards c ON c.id=rv.card_id
-               WHERE c.kap=? AND c.status='active'""",
-            (r["kap"],),
+               WHERE c.module=? AND c.kap=? AND c.status='active'""",
+            (module, r["kap"]),
         ).fetchone()
         reviews = review_row["reviews"] or 0
         correct = review_row["correct"] or 0
@@ -365,34 +383,35 @@ def chapter_stats(conn: sqlite3.Connection, now_iso: str) -> list[dict]:
     return out
 
 
-def weakness_heatmap(conn: sqlite3.Connection, now_iso: str) -> list[dict]:
-    rows = chapter_stats(conn, now_iso)
+def weakness_heatmap(conn: sqlite3.Connection, now_iso: str, module: str = "organic") -> list[dict]:
+    rows = chapter_stats(conn, now_iso, module)
     return sorted(rows, key=lambda r: (-r["weak_score"], r["kap"]))
 
 
-def random_cards(conn: sqlite3.Connection, limit: int = 20, mode: str = "mixed") -> list[dict]:
-    where = "deck='anki' AND status='active'"
+def random_cards(conn: sqlite3.Connection, limit: int = 20, mode: str = "mixed",
+                 module: str = "organic") -> list[dict]:
+    where = "module=? AND deck='anki' AND status='active'"
     if mode == "weak":
         where += " AND (lapses>0 OR reps=0 OR difficulty>=6.5)"
     rows = conn.execute(
         f"""SELECT * FROM cards WHERE {where}
             ORDER BY RANDOM() LIMIT ?""",
-        (limit,),
+        (module, limit),
     ).fetchall()
     if mode == "weak" and not rows:
         rows = conn.execute(
             """SELECT * FROM cards
-               WHERE deck='anki' AND status='active'
+               WHERE module=? AND deck='anki' AND status='active'
                ORDER BY RANDOM() LIMIT ?""",
-            (limit,),
+            (module, limit),
         ).fetchall()
     return [row_to_card(r) for r in rows]
 
 
 def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: int = 80,
-               kap: int | None = None, q: str = "") -> dict:
-    clauses = ["deck='anki'"]
-    params: list[object] = []
+               kap: int | None = None, q: str = "", module: str = "organic") -> dict:
+    clauses = ["module=?", "deck='anki'"]
+    params: list[object] = [module]
     if status != "all":
         if status == "needs_review":
             clauses.append("(status='needs_review' OR review_note<>'' OR payload LIKE '%[Seite%' OR payload LIKE '%_____%')")
@@ -414,7 +433,8 @@ def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: in
         (*params, limit),
     ).fetchall()
     summary_rows = conn.execute(
-        "SELECT status, COUNT(*) c FROM cards WHERE deck='anki' GROUP BY status"
+        "SELECT status, COUNT(*) c FROM cards WHERE module=? AND deck='anki' GROUP BY status",
+        (module,),
     ).fetchall()
     summary = {"active": 0, "needs_review": 0, "suspended": 0}
     for r in summary_rows:
@@ -441,15 +461,20 @@ def update_card(conn: sqlite3.Connection, card_id: str, q: str, a: str,
 
 
 def add_manual_card(conn: sqlite3.Connection, kap: int, question: str, answer: str,
-                    source: str, created_at: str) -> dict:
+                    source: str, created_at: str, module: str = "organic") -> dict:
     chapter = conn.execute(
-        "SELECT subname FROM cards WHERE kap=? AND subname IS NOT NULL LIMIT 1", (kap,)
+        "SELECT subname FROM cards WHERE module=? AND kap=? AND subname IS NOT NULL LIMIT 1",
+        (module, kap),
     ).fetchone()
     subname = chapter["subname"] if chapter else f"VO{kap}"
-    card_id = f"manual:{secrets.token_hex(8)}"
-    max_ord = conn.execute("SELECT COALESCE(MAX(ord),0) m FROM cards WHERE kap=?", (kap,)).fetchone()["m"] or 0
+    card_id = f"manual:{module}:{secrets.token_hex(8)}"
+    max_ord = conn.execute(
+        "SELECT COALESCE(MAX(ord),0) m FROM cards WHERE module=? AND kap=?",
+        (module, kap),
+    ).fetchone()["m"] or 0
     payload = {
         "id": card_id,
+        "module": module,
         "deck": "anki",
         "kap": kap,
         "sub": f"VO{kap}",
@@ -462,11 +487,11 @@ def add_manual_card(conn: sqlite3.Connection, kap: int, question: str, answer: s
         "status": "active",
     }
     conn.execute(
-        """INSERT INTO cards(id, deck, kap, sub, subname, source, ord, status,
+        """INSERT INTO cards(id, module, deck, kap, sub, subname, source, ord, status,
                              updated_at, payload)
-           VALUES(?,?,?,?,?,?,?,?,?,?)""",
+           VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
         (
-            card_id, "anki", kap, payload["sub"], subname, payload["source"],
+            card_id, module, "anki", kap, payload["sub"], subname, payload["source"],
             max_ord + 1, "active", created_at, json.dumps(payload, ensure_ascii=False),
         ),
     )
@@ -474,14 +499,16 @@ def add_manual_card(conn: sqlite3.Connection, kap: int, question: str, answer: s
     return get_card(conn, card_id)
 
 
-def reviews_timeline(conn: sqlite3.Connection, days: int = 21) -> list[dict]:
+def reviews_timeline(conn: sqlite3.Connection, days: int = 21, module: str = "organic") -> list[dict]:
     start = (date.today() - timedelta(days=days - 1)).isoformat()
     rows = conn.execute(
-        """SELECT substr(reviewed_at,1,10) d, COUNT(*) reviews,
-                  SUM(CASE WHEN rating>=3 THEN 1 ELSE 0 END) correct
-           FROM reviews WHERE reviewed_at>=?
+        """SELECT substr(rv.reviewed_at,1,10) d, COUNT(*) reviews,
+                  SUM(CASE WHEN rv.rating>=3 THEN 1 ELSE 0 END) correct
+           FROM reviews rv
+           JOIN cards c ON c.id=rv.card_id
+           WHERE c.module=? AND rv.reviewed_at>=?
            GROUP BY d""",
-        (start,),
+        (module, start),
     ).fetchall()
     by_day = {r["d"]: dict(r) for r in rows}
     out = []

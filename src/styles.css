@@ -75,6 +75,26 @@ button:disabled { cursor: default; opacity: .48; }
   border-color: var(--tu-blue);
   color: white;
 }
+.module-switch {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 6px;
+}
+.module-switch button {
+  border-color: transparent;
+  font-size: 13px;
+  font-weight: 800;
+}
+.module-switch button.active {
+  background: var(--tu-blue);
+  border-color: var(--tu-blue);
+  color: white;
+}
 .hero {
   align-items: center;
   background:

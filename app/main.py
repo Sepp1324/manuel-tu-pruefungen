@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -18,6 +19,7 @@ app = FastAPI(title="Organische Chemie SR-Trainer")
 sched = Scheduler()
 
 EXAM_DATE = date.fromisoformat(os.environ.get("EXAM_DATE", "2026-09-21"))
+SEED_PATH = Path(__file__).parent / "seed_data.json"
 SPA_DIR = Path(os.environ.get("SPA_DIR", Path(__file__).parent / "spa"))
 if not SPA_DIR.exists() and (Path(__file__).parent.parent / "dist").exists():
     SPA_DIR = Path(__file__).parent.parent / "dist"
@@ -27,6 +29,41 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 PUBLIC_EXACT = {"/healthz", "/login", "/api/auth/login"}
 PUBLIC_PREFIXES = ("/assets/", "/static/")
+
+
+def _module_catalog() -> dict:
+    fallback = {
+        "organic": {
+            "key": "organic",
+            "title": "Organische Chemie",
+            "full_title": "Chemische Technologien Organischer Stoffe",
+            "chapters": {},
+        }
+    }
+    try:
+        payload = json.loads(SEED_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return fallback
+    if "modules" in payload:
+        return {
+            key: {"key": key, **value}
+            for key, value in payload["modules"].items()
+        }
+    return {
+        "organic": {
+            "key": "organic",
+            "title": "Organische Chemie",
+            "full_title": payload.get("title", "Chemische Technologien Organischer Stoffe"),
+            "chapters": payload.get("chapters", {}),
+        }
+    }
+
+
+def _valid_module(module: str) -> str:
+    modules = _module_catalog()
+    if module not in modules:
+        raise HTTPException(400, "ungueltiges Modul")
+    return module
 
 
 def _now_iso() -> str:
@@ -110,6 +147,7 @@ class CardEditIn(BaseModel):
 
 
 class ManualCardIn(BaseModel):
+    module: str = "organic"
     kap: int = Field(ge=1, le=11)
     q: str = Field(min_length=3)
     a: str = Field(min_length=3)
@@ -266,17 +304,21 @@ def me(request: Request):
 
 
 @app.get("/api/stats")
-def stats():
+def stats(module: str = "organic"):
+    module = _valid_module(module)
+    modules = _module_catalog()
     conn = db.get_conn()
     now = _now_iso()
-    st = db.deck_stats(conn, now)
-    chapters = db.chapter_stats(conn, now)
-    weaknesses = db.weakness_heatmap(conn, now)
+    st = db.deck_stats(conn, now, module)
+    chapters = db.chapter_stats(conn, now, module)
+    weaknesses = db.weakness_heatmap(conn, now, module)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
     conn.close()
     return {
-        "title": "Chemische Technologien Organischer Stoffe",
+        "title": modules[module].get("full_title", modules[module].get("title", module)),
+        "module": module,
+        "modules": modules,
         "exam_date": EXAM_DATE.isoformat(),
         "days_until_exam": _days_left(),
         "anki": st,
@@ -291,18 +333,20 @@ def stats():
 
 
 @app.get("/api/dashboard")
-def dashboard():
+def dashboard(module: str = "organic"):
+    module = _valid_module(module)
     conn = db.get_conn()
     now = _now_iso()
-    st = db.deck_stats(conn, now)
-    chapters = db.chapter_stats(conn, now)
+    st = db.deck_stats(conn, now, module)
+    chapters = db.chapter_stats(conn, now, module)
     out = {
+        "module": module,
         "stats": st,
         "chapters": chapters,
-        "timeline": db.reviews_timeline(conn, 21),
+        "timeline": db.reviews_timeline(conn, 21, module),
         "forecast": _forecast(st, chapters),
         "study_plan": _study_plan(st, chapters),
-        "weaknesses": db.weakness_heatmap(conn, now),
+        "weaknesses": db.weakness_heatmap(conn, now, module),
         "xp": db.xp_summary(conn),
         "streak": db.streak(conn),
     }
@@ -311,27 +355,31 @@ def dashboard():
 
 
 @app.get("/api/study/anki")
-def study(limit: int = 30, kap: int | None = None):
+def study(limit: int = 30, kap: int | None = None, module: str = "organic"):
+    module = _valid_module(module)
     conn = db.get_conn()
-    cards = db.due_cards(conn, _now_iso(), limit, kap)
+    cards = db.due_cards(conn, _now_iso(), limit, kap, module)
     conn.close()
-    return {"deck": "anki", "cards": cards}
+    return {"deck": "anki", "module": module, "cards": cards}
 
 
 @app.get("/api/exam/recall")
-def recall_exam(n: int = 20, mode: str = "mixed"):
+def recall_exam(n: int = 20, mode: str = "mixed", module: str = "organic"):
+    module = _valid_module(module)
     conn = db.get_conn()
-    cards = db.random_cards(conn, max(5, min(n, 60)), mode if mode in ("mixed", "weak") else "mixed")
+    cards = db.random_cards(conn, max(5, min(n, 60)), mode if mode in ("mixed", "weak") else "mixed", module)
     conn.close()
-    return {"deck": "exam", "mode": mode, "cards": cards}
+    return {"deck": "exam", "mode": mode, "module": module, "cards": cards}
 
 
 @app.get("/api/cards")
-def cards(status: str = "needs_review", limit: int = 80, kap: int | None = None, q: str = ""):
+def cards(status: str = "needs_review", limit: int = 80, kap: int | None = None,
+          q: str = "", module: str = "organic"):
+    module = _valid_module(module)
     if status not in ("all", "active", "needs_review", "suspended"):
         raise HTTPException(400, "ungueltiger Status")
     conn = db.get_conn()
-    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip())
+    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip(), module)
     conn.close()
     return out
 
@@ -348,8 +396,9 @@ def edit_card(card_id: str, inp: CardEditIn):
 
 @app.post("/api/cards/manual")
 def add_manual_card(inp: ManualCardIn):
+    module = _valid_module(inp.module)
     conn = db.get_conn()
-    card = db.add_manual_card(conn, inp.kap, inp.q, inp.a, inp.source, _now_iso())
+    card = db.add_manual_card(conn, inp.kap, inp.q, inp.a, inp.source, _now_iso(), module)
     xp = db.add_xp_event(conn, 15, "manual_card", "Manuelle Karte ergaenzt", card["id"], _now_iso())
     conn.close()
     return {"ok": True, "card": card, "xp": xp}
