@@ -1,0 +1,21 @@
+# SQLite-Datenbank auf lokaler k3s-Node-Storage.
+#
+# Kein NFS: k3s bringt ueblicherweise die StorageClass `local-path` mit. Die
+# Daten liegen damit auf der Node, auf der der Pod geplant wird. Fuer SQLite ist
+# das robuster als ein NFS-Mount und passt zu replicas=1 + Recreate.
+#
+# Wenn spaeter eine bestimmte Node erzwungen werden soll, im Deployment
+# nodeSelector/affinity setzen und die PVC beibehalten.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: organicsr-data-local
+  namespace: organicsr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi

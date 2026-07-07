@@ -30,7 +30,7 @@ spec:
             - name: SR_DB_PATH
               value: /data/organicsr.db
             - name: SR_JOURNAL_MODE
-              value: "DELETE"        # über NFS kein WAL
+              value: "WAL"
             # --- Authentifizierung ---
             - name: ADMIN_USER
               valueFrom:
@@ -70,7 +70,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-              claimName: organicsr-data
+            claimName: organicsr-data-local
 ---
 apiVersion: v1
 kind: Service
