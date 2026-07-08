@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Edit3,
   Flame,
+  ImagePlus,
   LogOut,
   Plus,
   RefreshCw,
@@ -68,6 +69,58 @@ async function api(path, opts) {
     throw new Error(message);
   }
   return res.json();
+}
+
+function appendHtml(value = "", html = "") {
+  return [value.trimEnd(), html].filter(Boolean).join("\n\n");
+}
+
+async function uploadPhoto(file) {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch("/api/uploads/photo", { method: "POST", body });
+  if (!res.ok) {
+    let message = await res.text();
+    try {
+      message = JSON.parse(message).detail || message;
+    } catch {
+      // keep raw response
+    }
+    if (res.status === 401 && message === "nicht angemeldet") window.location.href = "/login";
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+function PhotoButton({ onInsert, label = "Foto" }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  async function change(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      const uploaded = await uploadPhoto(file);
+      onInsert?.(uploaded.html);
+      setMsg("eingefuegt");
+    } catch (err) {
+      setMsg(err.message || "Upload fehlgeschlagen");
+    } finally {
+      setBusy(false);
+      e.target.value = "";
+    }
+  }
+  return (
+    <span className="photo-upload">
+      <label className={`photo-upload-button ${busy ? "busy" : ""}`}>
+        <ImagePlus size={16} />
+        {busy ? "Laedt..." : label}
+        <input type="file" accept="image/*" onChange={change} />
+      </label>
+      {msg && <small>{msg}</small>}
+    </span>
+  );
 }
 
 function pct(n, d) {
@@ -1326,9 +1379,11 @@ function ManualCardPage({ onDone, module }) {
         <label>Frage
           <textarea value={form.q} onChange={(e) => setForm({ ...form, q: e.target.value })} rows={4} />
         </label>
+        <PhotoButton label="Foto in Frage" onInsert={(html) => setForm((old) => ({ ...old, q: appendHtml(old.q, html) }))} />
         <label>Antwort
           <textarea value={form.a} onChange={(e) => setForm({ ...form, a: e.target.value })} rows={6} />
         </label>
+        <PhotoButton label="Foto in Antwort" onInsert={(html) => setForm((old) => ({ ...old, a: appendHtml(old.a, html) }))} />
         <button className="primary"><Plus size={16} /> Speichern</button>
       </form>
       {msg && <div className="form-msg">{msg}</div>}
@@ -1423,9 +1478,11 @@ function CardReviewPage({ onDone, module }) {
             <label>Frage
               <textarea value={selected.q || ""} onChange={(e) => setSelected({ ...selected, q: e.target.value })} rows={5} />
             </label>
+            <PhotoButton label="Foto in Frage" onInsert={(html) => setSelected((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
             <label>Antwort
               <textarea value={selected.a || ""} onChange={(e) => setSelected({ ...selected, a: e.target.value })} rows={9} />
             </label>
+            <PhotoButton label="Foto in Antwort" onInsert={(html) => setSelected((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
             <label>Notiz
               <input value={selected.review_note || ""} onChange={(e) => setSelected({ ...selected, review_note: e.target.value })} />
             </label>
@@ -1522,9 +1579,11 @@ function TriagePage({ module, onDone }) {
             <label>Frage
               <textarea value={draft.q || ""} onChange={(e) => setDraft({ ...draft, q: e.target.value })} rows={5} />
             </label>
+            <PhotoButton label="Foto in Frage" onInsert={(html) => setDraft((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
             <label>Antwort
               <textarea value={draft.a || ""} onChange={(e) => setDraft({ ...draft, a: e.target.value })} rows={9} />
             </label>
+            <PhotoButton label="Foto in Antwort" onInsert={(html) => setDraft((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
             <div className="reason-options">
               {TRIAGE_REASONS.map(([key, label]) => (
                 <button

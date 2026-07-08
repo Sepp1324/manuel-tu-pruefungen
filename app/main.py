@@ -3,10 +3,12 @@ from __future__ import annotations
 import os
 import json
 import re
+import uuid
 from datetime import date, datetime, timedelta, timezone
+from html import escape
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -24,6 +26,8 @@ SEED_PATH = Path(__file__).parent / "seed_data.json"
 SPA_DIR = Path(os.environ.get("SPA_DIR", Path(__file__).parent / "spa"))
 if not SPA_DIR.exists() and (Path(__file__).parent.parent / "dist").exists():
     SPA_DIR = Path(__file__).parent.parent / "dist"
+UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "/data/uploads"))
+MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(8 * 1024 * 1024)))
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "manuel").strip()
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
@@ -85,6 +89,12 @@ EXAM_ERROR_TYPES = {
     "example": "Beispiel fehlt",
 }
 CONFIDENCE_LEVELS = {"sure", "unsure", "none", ""}
+ALLOWED_IMAGE_TYPES = {
+    "image/jpeg": (".jpg", lambda data: data.startswith(b"\xff\xd8\xff")),
+    "image/png": (".png", lambda data: data.startswith(b"\x89PNG\r\n\x1a\n")),
+    "image/webp": (".webp", lambda data: data.startswith(b"RIFF") and data[8:12] == b"WEBP"),
+    "image/gif": (".gif", lambda data: data.startswith((b"GIF87a", b"GIF89a"))),
+}
 
 
 def _module_catalog() -> dict:
@@ -410,6 +420,23 @@ def _clean_error_types(values: list[str]) -> list[str]:
         if value in EXAM_ERROR_TYPES and value not in out:
             out.append(value)
     return out[:5]
+
+
+def _safe_alt_text(filename: str | None) -> str:
+    stem = Path(filename or "Foto").stem
+    stem = re.sub(r"[^A-Za-z0-9ÄÖÜäöüß _.-]+", " ", stem)
+    return re.sub(r"\s+", " ", stem).strip()[:80] or "Foto"
+
+
+def _image_type(content_type: str, data: bytes) -> tuple[str, str]:
+    normalized = (content_type or "").split(";", 1)[0].strip().lower()
+    item = ALLOWED_IMAGE_TYPES.get(normalized)
+    if not item:
+        raise HTTPException(400, "Nur JPG, PNG, WebP oder GIF erlaubt")
+    ext, check = item
+    if not check(data):
+        raise HTTPException(400, "Datei passt nicht zum Bildformat")
+    return normalized, ext
 
 
 def _rubric_category(text: str) -> str:
@@ -1318,9 +1345,35 @@ def reset():
     return {"ok": True}
 
 
+@app.post("/api/uploads/photo")
+async def upload_photo(file: UploadFile = File(...)):
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    if not data:
+        raise HTTPException(400, "Leere Datei")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, "Foto ist zu gross")
+    content_type, ext = _image_type(file.content_type or "", data)
+    target_dir = UPLOAD_DIR / "cards"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}{ext}"
+    target = target_dir / filename
+    target.write_bytes(data)
+    url = f"/uploads/cards/{filename}"
+    alt = _safe_alt_text(file.filename)
+    return {
+        "ok": True,
+        "url": url,
+        "content_type": content_type,
+        "html": f'<img class="card-photo" src="{url}" alt="{escape(alt)}" loading="lazy">',
+    }
+
+
 @app.get("/login")
 def login_page():
     return FileResponse(SPA_DIR / "index.html")
+
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR, check_dir=False), name="uploads")
 
 
 if SPA_DIR.exists():

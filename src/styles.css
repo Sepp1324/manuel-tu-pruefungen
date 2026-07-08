@@ -458,6 +458,19 @@ button:disabled { cursor: default; opacity: .48; }
   color: var(--muted);
   font-size: 12px;
 }
+.card-photo {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: block;
+  height: auto;
+  margin: 12px 0;
+  max-height: 440px;
+  max-width: min(100%, 760px);
+  object-fit: contain;
+}
+.study-card h2 .card-photo {
+  margin-top: 14px;
+}
 .reveal { min-width: 180px; }
 .ratings {
   display: grid;
@@ -1127,6 +1140,37 @@ textarea {
   margin-top: 12px;
 }
 .card-form button { justify-self: start; }
+.photo-upload {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.photo-upload-button {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--tu-blue);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+.photo-upload-button.busy {
+  opacity: .62;
+  pointer-events: none;
+}
+.photo-upload-button input {
+  display: none;
+}
+.photo-upload small {
+  color: var(--muted);
+  font-size: 12px;
+}
 .quality-layout {
   display: grid;
   gap: 14px;
@@ -1187,6 +1231,9 @@ textarea {
   max-height: 3.9em;
   overflow: hidden;
   white-space: pre-line;
+}
+.quality-items .card-photo {
+  display: none;
 }
 .quality-editor {
   display: grid;
