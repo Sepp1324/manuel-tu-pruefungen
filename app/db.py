@@ -16,12 +16,11 @@ SEED_PATH = Path(__file__).parent / "seed_data.json"
 
 ENGLISH_ARTIFACT_RE = re.compile(
     r"(?i)("
-    r"\btake-home messages\b|\bplastics recycling paths\b|\bmechanical recycling\b|"
-    r"\bdissolution recycling\b|\bchemical recycling\b|\bdepolymerization\b|"
-    r"\bpolymerization\b|\bpolymerzation\b|\bethylene polymerization\b|"
+    r"\btake-home messages\b|\bplastics recycling paths\b|"
+    r"\bethylene polymerization\b|"
     r"\binput for new polymerization\b|\bfresh virgin polymers\b|\bvirgin polymers\b|"
-    r"\bre[- ]use of\b|\bentire material\b|\bpolymer chains\b|\bfillers\b|"
-    r"\badditives\b|\bpigments\b|\bcontamination\b|\bstabilizers\b|"
+    r"\bre[- ]use of the entire material\b|\bre[- ]use of the polymer chains\b|"
+    r"\bpolymer chains\+fillers\+additives\+pigments\+contamination\b|"
     r"\bseparation, upgrading\b|\byoutube\b|\byou\.\s*tube\b|"
     r"\bfood packaging\b|\bmedical grades\b|\bexternal use\b|\binternal confidential\b|"
     r"\bglobal organization\b|\bcompany overview\b|\bheadquarters\b|\bmanufacturing sites\b|"
@@ -48,6 +47,8 @@ GERMAN_CARD_WORDS = {
     "herstellung", "eigenschaften", "anwendung", "beispiel", "rohstoff",
     "kunststoff", "recycling", "polymerisation", "depolymerisation",
 }
+OLD_ENGLISH_ARTIFACT_NOTE = "Automatisch deaktiviert: englische Folien- oder Quellenartefakte"
+ENGLISH_ARTIFACT_NOTE = "Auto-Review: englische Folien- oder Quellenartefakte pruefen"
 
 
 SCHEMA = """
@@ -340,7 +341,9 @@ def seed(conn: sqlite3.Connection) -> int:
                   AND id NOT IN ({placeholders})""",
             tuple(seed_ids),
         )
-    suspend_english_noise(conn, updated_at=datetime.now(timezone.utc).isoformat())
+    seed_updated_at = datetime.now(timezone.utc).isoformat()
+    restore_english_artifact_suspensions(conn, updated_at=seed_updated_at)
+    flag_english_noise(conn, updated_at=seed_updated_at)
     conn.execute(
         """INSERT INTO meta(key, value) VALUES('seed_title', ?)
            ON CONFLICT(key) DO UPDATE SET value=excluded.value""",
@@ -588,10 +591,10 @@ def mark_card_needs_review(conn: sqlite3.Connection, card_id: str, note: str, up
     conn.commit()
 
 
-def suspend_english_noise(conn: sqlite3.Connection, module: str | None = None,
-                          updated_at: str | None = None) -> int:
-    clauses = ["deck='anki'", "status<>'suspended'"]
-    params: list[object] = []
+def restore_english_artifact_suspensions(conn: sqlite3.Connection, module: str | None = None,
+                                         updated_at: str | None = None) -> int:
+    clauses = ["deck='anki'", "status='suspended'", "review_note=?"]
+    params: list[object] = [OLD_ENGLISH_ARTIFACT_NOTE]
     if module:
         clauses.append("module=?")
         params.append(module)
@@ -601,31 +604,72 @@ def suspend_english_noise(conn: sqlite3.Connection, module: str | None = None,
     ).fetchall()
     changed = 0
     changed_at = updated_at or datetime.now(timezone.utc).isoformat()
-    note = "Automatisch deaktiviert: englische Folien- oder Quellenartefakte"
+    for row in rows:
+        card = row_to_card(row)
+        note = ENGLISH_ARTIFACT_NOTE if english_noise(card) else ""
+        payload = dict(card)
+        payload["status"] = "active"
+        payload["review_note"] = note
+        conn.execute(
+            """UPDATE cards
+               SET status='active', review_note=?, updated_at=?, payload=?
+               WHERE id=?""",
+            (note, changed_at, json.dumps(payload, ensure_ascii=False), card["id"]),
+        )
+        conn.execute(
+            """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
+               VALUES(?,?,?,?,?,?)""",
+            (
+                card["id"], card.get("module", module or "organic"), "auto_quality",
+                "english_noise_restored", "Auto-Deaktivierung zurueckgenommen", changed_at,
+            ),
+        )
+        changed += 1
+    return changed
+
+
+def flag_english_noise(conn: sqlite3.Connection, module: str | None = None,
+                       updated_at: str | None = None) -> int:
+    clauses = ["deck='anki'", "status='active'", "review_note<>?"]
+    params: list[object] = []
+    params.append(ENGLISH_ARTIFACT_NOTE)
+    if module:
+        clauses.append("module=?")
+        params.append(module)
+    rows = conn.execute(
+        f"SELECT * FROM cards WHERE {' AND '.join(clauses)}",
+        params,
+    ).fetchall()
+    changed = 0
+    changed_at = updated_at or datetime.now(timezone.utc).isoformat()
     for row in rows:
         card = row_to_card(row)
         if not english_noise(card):
             continue
         payload = dict(card)
-        payload["status"] = "suspended"
-        payload["review_note"] = note
+        payload["status"] = "active"
+        payload["review_note"] = ENGLISH_ARTIFACT_NOTE
         conn.execute(
             """UPDATE cards
-               SET status='suspended', review_note=?, updated_at=?, quality_checked_at=?, payload=?
+               SET status='active', review_note=?, updated_at=?, payload=?
                WHERE id=?""",
-            (note, changed_at, changed_at, json.dumps(payload, ensure_ascii=False), card["id"]),
+            (ENGLISH_ARTIFACT_NOTE, changed_at, json.dumps(payload, ensure_ascii=False), card["id"]),
         )
         conn.execute(
             """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
                VALUES(?,?,?,?,?,?)""",
-            (card["id"], card.get("module", module or "organic"), "auto_quality", "english_noise", note, changed_at),
+            (
+                card["id"], card.get("module", module or "organic"), "auto_quality",
+                "english_noise", ENGLISH_ARTIFACT_NOTE, changed_at,
+            ),
         )
         changed += 1
     return changed
 
 
 def auto_quality_sweep(conn: sqlite3.Connection, module: str, updated_at: str) -> int:
-    changed = suspend_english_noise(conn, module, updated_at)
+    changed = restore_english_artifact_suspensions(conn, module, updated_at)
+    changed += flag_english_noise(conn, module, updated_at)
     rows = conn.execute(
         """SELECT * FROM cards
            WHERE module=? AND deck='anki' AND status='active'
