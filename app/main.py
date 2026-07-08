@@ -234,6 +234,7 @@ class OpenExamResultIn(BaseModel):
     sub_scores: list[str] = Field(default_factory=list)
     confidence: str = ""
     error_types: list[str] = Field(default_factory=list)
+    answer_note: str = ""
 
 
 class OpenExamSubmitIn(BaseModel):
@@ -1000,7 +1001,7 @@ def formula_exam(module: str = "organic", n: int = 10):
         "id": f"{module}-formula-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
         "module": module,
         "mode": "formula",
-        "title": "Reaktions- und Strukturformel-Trainer",
+        "title": "Skizzen- und Formeltrainer",
         "minutes": 35,
         "total_points": len(selected) * 4,
         "questions": [_exam_question(card, i + 1, module, formula=True) for i, card in enumerate(selected)],
@@ -1212,12 +1213,13 @@ def submit_open_exam(inp: OpenExamSubmitIn):
             "confidence": confidence,
             "error_types": error_types,
             "sub_scores": result.sub_scores,
+            "answer_note": result.answer_note[:4000],
             "repair": ratio < .85,
         })
         reviewed += 1
     moved = db.auto_quality_sweep(conn, module, _now_iso())
     pct_score = round((earned / total_points) * 100) if total_points else 0
-    title = "Kann ich erklaeren?" if inp.mode == "explain" else "Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
+    title = "Kann ich erklaeren?" if inp.mode == "explain" else "Skizzen- und Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
     attempt_id = db.record_exam_attempt(
         conn,
         module,
@@ -1248,12 +1250,14 @@ def submit_open_exam(inp: OpenExamSubmitIn):
 
 @app.get("/api/cards")
 def cards(status: str = "needs_review", limit: int = 80, kap: int | None = None,
-          q: str = "", module: str = "organic", tag: str = ""):
+          q: str = "", module: str = "organic", tag: str = "", media: str = "all"):
     module = _valid_module(module)
     if status not in ("all", "active", "needs_review", "suspended"):
         raise HTTPException(400, "ungueltiger Status")
+    if media not in ("all", "with_photo", "without_photo", "photo_recommended"):
+        raise HTTPException(400, "ungueltiger Medienfilter")
     conn = db.get_conn()
-    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip(), module, tag.strip())
+    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip(), module, tag.strip(), media)
     conn.close()
     return out
 

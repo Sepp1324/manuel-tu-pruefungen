@@ -405,7 +405,27 @@ def quality_score(card: dict) -> int:
         score += min(40, card.get("lapses", 0) * 8)
     if card.get("reps", 0) == 0:
         score += 5
+    if photo_recommended(card):
+        score += 22
     return score
+
+
+def has_photo(card: dict) -> bool:
+    text = f"{card.get('q', '')} {card.get('a', '')}".lower()
+    return "<img" in text or "card-photo" in text or "/uploads/cards/" in text
+
+
+def photo_recommended(card: dict) -> bool:
+    if has_photo(card):
+        return False
+    text = f"{card.get('q', '')} {card.get('a', '')} {card.get('kind', '')}".lower()
+    markers = (
+        "strukturformel", "reaktionsformel", "diagramm", "schema",
+        "schaubild", "skizz", "zeichnen", "chemischen aufbau",
+        "wiederholeinheit", "prozessschema", "apparatur", "mechanismus",
+        "monomer", "polymerarchitektur",
+    )
+    return any(marker in text for marker in markers)
 
 
 def row_to_card(row: sqlite3.Row) -> dict:
@@ -413,6 +433,8 @@ def row_to_card(row: sqlite3.Row) -> dict:
     payload = json.loads(d.pop("payload"))
     payload.update(d)
     payload["tags"] = infer_tags(payload)
+    payload["has_photo"] = has_photo(payload)
+    payload["photo_recommended"] = photo_recommended(payload)
     payload["quality_score"] = quality_score(payload)
     return payload
 
@@ -528,6 +550,41 @@ def auto_quality_sweep(conn: sqlite3.Connection, module: str, updated_at: str) -
             (card["id"], module, "auto_quality", "wiederholt_schwach", note, updated_at),
         )
         changed += 1
+    photo_rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status='active'
+             AND quality_checked_at IS NULL
+             AND review_note NOT LIKE 'Foto empfohlen:%'
+             AND payload NOT LIKE '%<img%'
+             AND payload NOT LIKE '%/uploads/cards/%'
+             AND (
+                payload LIKE '%Strukturformel%' OR payload LIKE '%Reaktionsformel%'
+                OR payload LIKE '%Diagramm%' OR payload LIKE '%Schema%'
+                OR payload LIKE '%Skizz%' OR payload LIKE '%zeichnen%'
+                OR payload LIKE '%Wiederholeinheit%' OR payload LIKE '%Mechanismus%'
+                OR payload LIKE '%chemischen Aufbau%' OR payload LIKE '%Monomer%'
+             )
+           LIMIT 25""",
+        (module,),
+    ).fetchall()
+    for row in photo_rows:
+        card = row_to_card(row)
+        if not photo_recommended(card):
+            continue
+        payload = dict(card)
+        payload["status"] = card.get("status", "active")
+        note = "Foto empfohlen: Struktur, Formel, Schema oder Mechanismus visuell ergaenzen"
+        conn.execute(
+            """UPDATE cards SET review_note=?, updated_at=?, payload=?
+               WHERE id=?""",
+            (note, updated_at, json.dumps(payload, ensure_ascii=False), card["id"]),
+        )
+        conn.execute(
+            """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
+               VALUES(?,?,?,?,?,?)""",
+            (card["id"], module, "auto_quality", "foto_empfohlen", note, updated_at),
+        )
+        changed += 1
     conn.commit()
     return changed
 
@@ -565,11 +622,19 @@ def quality_summary(conn: sqlite3.Connection, module: str = "organic") -> dict:
     by_status = {"active": 0, "needs_review": 0, "suspended": 0}
     for row in status_rows:
         by_status[row["status"] or "active"] = row["c"] or 0
+    media_rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')""",
+        (module,),
+    ).fetchall()
+    media_cards = [row_to_card(row) for row in media_rows]
     return {
         "unchecked": unchecked or 0,
         "active": by_status["active"],
         "needs_review": by_status["needs_review"],
         "suspended": by_status["suspended"],
+        "with_photo": sum(1 for card in media_cards if card.get("has_photo")),
+        "photo_recommended": sum(1 for card in media_cards if card.get("photo_recommended")),
         "reasons": [
             {
                 "event_type": r["event_type"],
@@ -847,7 +912,7 @@ def tag_stats(conn: sqlite3.Connection, module: str = "organic") -> list[dict]:
 
 def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: int = 80,
                kap: int | None = None, q: str = "", module: str = "organic",
-               tag: str = "") -> dict:
+               tag: str = "", media: str = "all") -> dict:
     clauses = ["module=?", "deck='anki'"]
     params: list[object] = [module]
     if status != "all":
@@ -862,8 +927,12 @@ def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: in
     if q:
         clauses.append("payload LIKE ?")
         params.append(f"%{q}%")
+    if media == "with_photo":
+        clauses.append("(payload LIKE '%<img%' OR payload LIKE '%/uploads/cards/%')")
+    elif media in {"without_photo", "photo_recommended"}:
+        clauses.append("payload NOT LIKE '%<img%' AND payload NOT LIKE '%/uploads/cards/%'")
     where = " AND ".join(clauses)
-    fetch_limit = limit if not tag else max(limit * 8, 300)
+    fetch_limit = limit if not tag and media != "photo_recommended" else max(limit * 8, 300)
     rows = conn.execute(
         f"""SELECT * FROM cards WHERE {where}
             ORDER BY CASE status WHEN 'needs_review' THEN 0 WHEN 'active' THEN 1 ELSE 2 END,
@@ -874,6 +943,8 @@ def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: in
     cards = [row_to_card(r) for r in rows]
     if tag:
         cards = [c for c in cards if tag in c.get("tags", [])]
+    if media == "photo_recommended":
+        cards = [c for c in cards if c.get("photo_recommended")]
     cards = cards[:limit]
     summary_rows = conn.execute(
         "SELECT status, COUNT(*) c FROM cards WHERE module=? AND deck='anki' GROUP BY status",

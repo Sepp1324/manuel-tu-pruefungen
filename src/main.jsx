@@ -16,6 +16,7 @@ import {
   Tag,
   Target,
   Trophy,
+  X,
 } from "lucide-react";
 import "./styles.css";
 
@@ -49,7 +50,14 @@ const EXAM_REASONS = [
   ...EXAM_ERROR_TYPES.map(([key, label]) => [`exam_${key}`, label]),
   ["exam_confidence_trap", "Sicher, aber falsch"],
 ];
-const ALL_REASONS = [...TRIAGE_REASONS, ...REVIEW_REASONS, ...EXAM_REASONS];
+const QUALITY_REASONS = [
+  ["foto_empfohlen", "Foto empfohlen"],
+  ["wiederholt_schwach", "Wiederholt schwach"],
+  ["pruefung_miss", "Pruefung nicht gewusst"],
+  ["archiv_partial", "Archiv teilweise"],
+  ["archiv_miss", "Archiv nicht gewusst"],
+];
+const ALL_REASONS = [...TRIAGE_REASONS, ...REVIEW_REASONS, ...EXAM_REASONS, ...QUALITY_REASONS];
 const EXAM_EVALS = [
   ["full", "voll"],
   ["partial", "teilweise"],
@@ -120,6 +128,41 @@ function PhotoButton({ onInsert, label = "Foto" }) {
       </label>
       {msg && <small>{msg}</small>}
     </span>
+  );
+}
+
+function CardRenderPreview({ question = "", answer = "" }) {
+  if (!question.trim() && !answer.trim()) return null;
+  return (
+    <div className="card-render-preview">
+      <div>
+        <b>Frage Vorschau</b>
+        <div className="preview-html" dangerouslySetInnerHTML={{ __html: question || "<span>Leer</span>" }} />
+      </div>
+      <div>
+        <b>Antwort Vorschau</b>
+        <div className="preview-html" dangerouslySetInnerHTML={{ __html: answer || "<span>Leer</span>" }} />
+      </div>
+    </div>
+  );
+}
+
+function PhotoLightbox({ photo, onClose }) {
+  useEffect(() => {
+    if (!photo) return undefined;
+    function onKey(e) {
+      if (e.key === "Escape") onClose?.();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [photo, onClose]);
+  if (!photo) return null;
+  return (
+    <div className="photo-lightbox" onClick={onClose}>
+      <button title="Schliessen" onClick={onClose}><X size={18} /></button>
+      <img src={photo.src} alt={photo.alt || "Foto"} onClick={(e) => e.stopPropagation()} />
+      {photo.alt && <span>{photo.alt}</span>}
+    </div>
   );
 }
 
@@ -697,9 +740,9 @@ function FormulaChecklistPanel({ checklist, onStart }) {
       <div className="section-head">
         <div>
           <h2>Formel- und Reaktionschecklisten</h2>
-          <p>Getrennt nach Zeichnen/Skizzieren und Erklaeren.</p>
+          <p>Getrennt nach Zeichnen/Skizzieren und Erklaeren. Im Trainer kann Manuel seine Skizze fotografieren.</p>
         </div>
-        <button onClick={onStart}>Trainer starten</button>
+        <button onClick={onStart}>Skizzenmodus starten</button>
       </div>
       <div className="checklist-grid">
         {groups.map(([key, title, items]) => (
@@ -877,6 +920,7 @@ function scoreForQuestion(scores = {}, question) {
 function OpenExamRunner({ exam, module, onClose }) {
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState({});
+  const [answers, setAnswers] = useState({});
   const [scores, setScores] = useState({});
   const [confidence, setConfidence] = useState({});
   const [errorTypes, setErrorTypes] = useState({});
@@ -888,6 +932,7 @@ function OpenExamRunner({ exam, module, onClose }) {
 
   useEffect(() => {
     setSecondsLeft((exam.minutes || 0) * 60);
+    setAnswers({});
     setScores({});
     setConfidence({});
     setErrorTypes({});
@@ -921,6 +966,7 @@ function OpenExamRunner({ exam, module, onClose }) {
         sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || "miss"),
         confidence: confidence[q.card_id] || "",
         error_types: errorTypes[q.card_id] || [],
+        answer_note: answers[q.card_id] || "",
       })),
     };
     const res = await api("/api/exam/open/submit", {
@@ -951,6 +997,8 @@ function OpenExamRunner({ exam, module, onClose }) {
   if (!question) return null;
   const currentScores = scores[question.card_id] || {};
   const currentErrors = errorTypes[question.card_id] || [];
+  const currentAnswer = answers[question.card_id] || "";
+  const isFormulaMode = exam.mode === "formula";
   return (
     <section className="open-exam">
       <div className="exam-toolbar">
@@ -974,6 +1022,25 @@ function OpenExamRunner({ exam, module, onClose }) {
           <span>{question.points} Punkte</span>
         </div>
         <h2 dangerouslySetInnerHTML={{ __html: question.question }} />
+        <label className="exam-answer-editor">
+          {isFormulaMode ? "Meine Skizze / Formel / Antwort" : "Meine Antwort"}
+          <textarea
+            rows={8}
+            value={currentAnswer}
+            onChange={(e) => setAnswers((old) => ({ ...old, [question.card_id]: e.target.value }))}
+            placeholder={isFormulaMode ? "Formel, Reaktionsgleichung oder kurze Erklaerung notieren. Foto/Skizze kann direkt eingefuegt werden." : "Antwort wie in der Pruefung formulieren, danach mit Geruest und Musterantwort vergleichen."}
+          />
+        </label>
+        <PhotoButton
+          label={isFormulaMode ? "Skizze/Foto einfuegen" : "Foto zur Antwort"}
+          onInsert={(html) => setAnswers((old) => ({ ...old, [question.card_id]: appendHtml(old[question.card_id] || "", html) }))}
+        />
+        {!!currentAnswer.trim() && (
+          <div className="exam-answer-preview">
+            <b>Meine Antwort gerendert</b>
+            <div dangerouslySetInnerHTML={{ __html: currentAnswer }} />
+          </div>
+        )}
         <div className="subquestion-list">
           {(question.subquestions || []).map((sub) => (
             <div key={sub.id} className="subquestion">
@@ -1006,10 +1073,22 @@ function OpenExamRunner({ exam, module, onClose }) {
         {revealed[question.card_id] && (
           <div className="exam-solution">
             <h3>Antwort-Geruest</h3>
+            {!!currentAnswer.trim() && (
+              <div className="answer-compare">
+                <div>
+                  <h3>Meine Antwort</h3>
+                  <div dangerouslySetInnerHTML={{ __html: currentAnswer }} />
+                </div>
+                <div>
+                  <h3>Musterantwort</h3>
+                  <AnswerContent html={question.answer} />
+                </div>
+              </div>
+            )}
             <div className="scaffold-list">
               {(question.scaffold || []).map((item) => <span key={item}>{item}</span>)}
             </div>
-            <AnswerContent html={question.answer} />
+            {!currentAnswer.trim() && <AnswerContent html={question.answer} />}
           </div>
         )}
       </article>
@@ -1297,7 +1376,7 @@ function ExamPage({ startExam, startSession, module }) {
           <button className="primary" onClick={() => startOpen("full")}>2h-Pruefung starten</button>
           <button onClick={() => startOpen("mini")}>Schwaechen-Mini-Pruefung</button>
           <button onClick={() => startOpen("explain")}>Kann ich erklaeren?</button>
-          <button onClick={startFormula}>Reaktions-/Strukturtrainer</button>
+          <button onClick={startFormula}>Skizzen-/Formelmodus</button>
         </div>
       </div>
 
@@ -1384,6 +1463,7 @@ function ManualCardPage({ onDone, module }) {
           <textarea value={form.a} onChange={(e) => setForm({ ...form, a: e.target.value })} rows={6} />
         </label>
         <PhotoButton label="Foto in Antwort" onInsert={(html) => setForm((old) => ({ ...old, a: appendHtml(old.a, html) }))} />
+        <CardRenderPreview question={form.q} answer={form.a} />
         <button className="primary"><Plus size={16} /> Speichern</button>
       </form>
       {msg && <div className="form-msg">{msg}</div>}
@@ -1395,6 +1475,7 @@ function CardReviewPage({ onDone, module }) {
   const [status, setStatus] = useState("needs_review");
   const [kap, setKap] = useState("");
   const [tag, setTag] = useState("");
+  const [media, setMedia] = useState("all");
   const [query, setQuery] = useState("");
   const [data, setData] = useState({ cards: [], summary: {} });
   const [selected, setSelected] = useState(null);
@@ -1404,12 +1485,13 @@ function CardReviewPage({ onDone, module }) {
     const qs = new URLSearchParams({ status, limit: "80", module });
     if (kap) qs.set("kap", kap);
     if (tag) qs.set("tag", tag);
+    if (media !== "all") qs.set("media", media);
     if (query) qs.set("q", query);
     const res = await api(`/api/cards?${qs}`);
     setData(res);
     setSelected(res.cards?.[0] || null);
   }
-  useEffect(() => { load().catch(() => {}); }, [status, kap, tag, module]);
+  useEffect(() => { load().catch(() => {}); }, [status, kap, tag, media, module]);
 
   function select(card) {
     setSelected({ ...card });
@@ -1453,6 +1535,12 @@ function CardReviewPage({ onDone, module }) {
             <option value="">Alle VO</option>
             {Array.from({ length: 11 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>VO{n}</option>)}
           </select>
+          <select value={media} onChange={(e) => setMedia(e.target.value)}>
+            <option value="all">Alle Medien</option>
+            <option value="with_photo">Mit Foto</option>
+            <option value="without_photo">Ohne Foto</option>
+            <option value="photo_recommended">Foto empfohlen</option>
+          </select>
           <input placeholder="Tag" value={tag} onChange={(e) => setTag(e.target.value)} />
           <input placeholder="Suchen" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
           <button onClick={load}>Filtern</button>
@@ -1466,7 +1554,7 @@ function CardReviewPage({ onDone, module }) {
           {(data.cards || []).map((card) => (
             <button key={card.id} className={selected?.id === card.id ? "active" : ""} onClick={() => select(card)}>
               <b>VO{card.kap} · {card.status}</b>
-              <em>{(card.tags || []).join(" · ")}</em>
+              <em>{[(card.tags || []).join(" · "), card.has_photo ? "Foto" : "", card.photo_recommended ? "Foto empfohlen" : ""].filter(Boolean).join(" · ")}</em>
               <span dangerouslySetInnerHTML={{ __html: card.q }} />
             </button>
           ))}
@@ -1486,6 +1574,7 @@ function CardReviewPage({ onDone, module }) {
             <label>Notiz
               <input value={selected.review_note || ""} onChange={(e) => setSelected({ ...selected, review_note: e.target.value })} />
             </label>
+            <CardRenderPreview question={selected.q || ""} answer={selected.a || ""} />
             <div className="button-row-inline">
               <button className="primary" onClick={() => save("active")}><Edit3 size={16} /> Aktiv speichern</button>
               <button onClick={() => save("needs_review")}>Review markieren</button>
@@ -1584,6 +1673,7 @@ function TriagePage({ module, onDone }) {
               <textarea value={draft.a || ""} onChange={(e) => setDraft({ ...draft, a: e.target.value })} rows={9} />
             </label>
             <PhotoButton label="Foto in Antwort" onInsert={(html) => setDraft((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
+            <CardRenderPreview question={draft.q || ""} answer={draft.a || ""} />
             <div className="reason-options">
               {TRIAGE_REASONS.map(([key, label]) => (
                 <button
@@ -1637,7 +1727,9 @@ function QualityCenter({ data, setRoute }) {
           <span><b>{quality.unchecked || 0}</b> ungeprueft</span>
           <span><b>{quality.needs_review || 0}</b> im Review</span>
           <span><b>{quality.suspended || 0}</b> deaktiviert</span>
-          <span><b>{autoQuality.moved || 0}</b> auto verschoben</span>
+          <span><b>{quality.with_photo || 0}</b> mit Foto</span>
+          <span><b>{quality.photo_recommended || 0}</b> Foto empfohlen</span>
+          <span><b>{autoQuality.moved || 0}</b> auto markiert</span>
         </div>
         <div className="button-row-inline">
           <button className="primary" onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage starten</button>
@@ -1684,6 +1776,7 @@ function App() {
   const [module, setModule] = useState("organic");
   const [data, setData] = useState(null);
   const [session, setSession] = useState(null);
+  const [lightbox, setLightbox] = useState(null);
 
   async function load() {
     setData(await api(`/api/stats?module=${encodeURIComponent(module)}`));
@@ -1725,7 +1818,14 @@ function App() {
 
   if (isLogin) return <Login />;
   return (
-    <main className="wrap">
+    <main
+      className="wrap"
+      onClick={(e) => {
+        const img = e.target.closest?.("img.card-photo");
+        if (!img) return;
+        setLightbox({ src: img.getAttribute("src"), alt: img.getAttribute("alt") || "Foto" });
+      }}
+    >
       <AuthBar />
       <nav className="tabs">
         <button className={route === "home" ? "active" : ""} onClick={() => setRoute("home")}><BookOpenCheck size={16} /> Trainer</button>
@@ -1737,6 +1837,7 @@ function App() {
         <button className={route === "add" ? "active" : ""} onClick={() => setRoute("add")}><Plus size={16} /> Eigene Karte</button>
       </nav>
       {content}
+      <PhotoLightbox photo={lightbox} onClose={() => setLightbox(null)} />
     </main>
   );
 }
