@@ -72,6 +72,10 @@ ENGLISH_NOISE_RE = re.compile(
     r"(?i)\b("
     r"take-home messages|if we look towards|technology and innovation|ownership of|"
     r"leading innovation|mechanical recycling|chemical recycling|plastics recycling paths|"
+    r"dissolution recycling|depolymerization|polymerization|polymerzation|"
+    r"ethylene polymerization|input for new polymerization|fresh virgin polymers|"
+    r"re-use of|entire material|polymer chains|fillers|additives|pigments|contamination|"
+    r"virgin polymers|stabilizers|youtube|you\.\s*tube|"
     r"dissolving wood pulp|paper pulp|challenge:|circular economy|open hearth furnace|"
     r"basic oxygen furnace|blast furnace|fluidized beds|global organization|"
     r"high-quality|food packaging|medical grades|external use|internal confidential|"
@@ -187,14 +191,11 @@ def main() -> None:
     keep = []
     removed = []
     for card in payload.get("cards", []):
-        if irrelevant(card):
+        sanitized = sanitize_answer(card)
+        if sanitized is None or irrelevant(sanitized):
             removed.append(card)
         else:
-            sanitized = sanitize_answer(card)
-            if sanitized is None or irrelevant(sanitized):
-                removed.append(card)
-            else:
-                keep.append(sanitized)
+            keep.append(sanitized)
     payload["cards"] = keep
     SEED_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"removed {len(removed)} irrelevant cards, kept {len(keep)}")

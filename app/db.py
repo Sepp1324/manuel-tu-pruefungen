@@ -2,15 +2,52 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import secrets
 import sqlite3
 from datetime import date, datetime, timedelta, timezone
+from html import unescape
 from pathlib import Path
 
 
 DB_PATH = os.environ.get("SR_DB_PATH", "/data/organicsr.db")
 JOURNAL_MODE = os.environ.get("SR_JOURNAL_MODE", "WAL")
 SEED_PATH = Path(__file__).parent / "seed_data.json"
+
+ENGLISH_ARTIFACT_RE = re.compile(
+    r"(?i)("
+    r"\btake-home messages\b|\bplastics recycling paths\b|\bmechanical recycling\b|"
+    r"\bdissolution recycling\b|\bchemical recycling\b|\bdepolymerization\b|"
+    r"\bpolymerization\b|\bpolymerzation\b|\bethylene polymerization\b|"
+    r"\binput for new polymerization\b|\bfresh virgin polymers\b|\bvirgin polymers\b|"
+    r"\bre[- ]use of\b|\bentire material\b|\bpolymer chains\b|\bfillers\b|"
+    r"\badditives\b|\bpigments\b|\bcontamination\b|\bstabilizers\b|"
+    r"\bseparation, upgrading\b|\byoutube\b|\byou\.\s*tube\b|"
+    r"\bfood packaging\b|\bmedical grades\b|\bexternal use\b|\binternal confidential\b|"
+    r"\bglobal organization\b|\bcompany overview\b|\bheadquarters\b|\bmanufacturing sites\b|"
+    r"\bpatent applications\b|\bownership of\b|\bleading innovation\b"
+    r")"
+)
+ENGLISH_CARD_WORDS = {
+    "the", "and", "with", "for", "from", "this", "that", "which", "between",
+    "take", "home", "messages", "mechanical", "chemical", "plastics", "paths",
+    "dissolution", "depolymerization", "polymerization", "polymerzation",
+    "ethylene", "youtube", "input", "entire", "material", "chains", "fillers",
+    "additives", "pigments", "contamination", "target", "fraction", "monomer",
+    "molecule", "molecules", "often", "diverse", "mixture", "thereof", "need",
+    "undergo", "further", "separation", "upgrading", "treatment", "conversion",
+    "before", "potentially", "introduced", "processes", "make", "fresh", "virgin",
+    "polymers", "compounded", "stabilizers", "company", "global", "headquarters",
+    "manufacturing", "ownership", "innovation", "supporting", "reliable", "supply",
+    "external", "internal", "confidential", "medical", "grades", "packaging",
+}
+GERMAN_CARD_WORDS = {
+    "der", "die", "das", "und", "oder", "mit", "wird", "werden", "durch",
+    "bei", "zur", "zum", "aus", "von", "fuer", "für", "als", "eine", "einer",
+    "eines", "nicht", "nach", "vor", "verfahren", "prozess", "reaktion",
+    "herstellung", "eigenschaften", "anwendung", "beispiel", "rohstoff",
+    "kunststoff", "recycling", "polymerisation", "depolymerisation",
+}
 
 
 SCHEMA = """
@@ -303,6 +340,7 @@ def seed(conn: sqlite3.Connection) -> int:
                   AND id NOT IN ({placeholders})""",
             tuple(seed_ids),
         )
+    suspend_english_noise(conn, updated_at=datetime.now(timezone.utc).isoformat())
     conn.execute(
         """INSERT INTO meta(key, value) VALUES('seed_title', ?)
            ON CONFLICT(key) DO UPDATE SET value=excluded.value""",
@@ -386,6 +424,32 @@ def infer_tags(card: dict) -> list[str]:
     return sorted(tags)
 
 
+def plain_card_text(card: dict) -> str:
+    raw = f"{card.get('q', '')} {card.get('a', '')} {card.get('source', '')} {card.get('subname', '')}"
+    raw = re.sub(r"<span[^>]*class=['\"]source['\"][^>]*>.*?</span>", " ", raw, flags=re.I | re.S)
+    raw = re.sub(r"<br\s*/?>", " ", raw, flags=re.I)
+    raw = re.sub(r"<[^>]+>", " ", raw)
+    raw = unescape(raw)
+    return re.sub(r"\s+", " ", raw).strip()
+
+
+def english_noise(card: dict) -> bool:
+    text = plain_card_text(card)
+    if not text:
+        return False
+    if ENGLISH_ARTIFACT_RE.search(text):
+        return True
+    tokens = re.findall(r"\b[a-z]{3,}\b", text.lower())
+    english = sum(1 for token in tokens if token in ENGLISH_CARD_WORDS)
+    german = sum(1 for token in tokens if token in GERMAN_CARD_WORDS)
+    has_german_chars = bool(re.search(r"[äöüßÄÖÜ]", text))
+    if english >= 8 and english >= german * 2 + 4:
+        return True
+    if english >= 5 and german <= 1 and not has_german_chars:
+        return True
+    return False
+
+
 def quality_score(card: dict) -> int:
     q = str(card.get("q", ""))
     a = str(card.get("a", ""))
@@ -405,6 +469,8 @@ def quality_score(card: dict) -> int:
         score += min(40, card.get("lapses", 0) * 8)
     if card.get("reps", 0) == 0:
         score += 5
+    if card.get("english_noise") or english_noise(card):
+        score += 120
     if photo_recommended(card):
         score += 22
     return score
@@ -435,6 +501,7 @@ def row_to_card(row: sqlite3.Row) -> dict:
     payload["tags"] = infer_tags(payload)
     payload["has_photo"] = has_photo(payload)
     payload["photo_recommended"] = photo_recommended(payload)
+    payload["english_noise"] = english_noise(payload)
     payload["quality_score"] = quality_score(payload)
     return payload
 
@@ -521,7 +588,44 @@ def mark_card_needs_review(conn: sqlite3.Connection, card_id: str, note: str, up
     conn.commit()
 
 
+def suspend_english_noise(conn: sqlite3.Connection, module: str | None = None,
+                          updated_at: str | None = None) -> int:
+    clauses = ["deck='anki'", "status<>'suspended'"]
+    params: list[object] = []
+    if module:
+        clauses.append("module=?")
+        params.append(module)
+    rows = conn.execute(
+        f"SELECT * FROM cards WHERE {' AND '.join(clauses)}",
+        params,
+    ).fetchall()
+    changed = 0
+    changed_at = updated_at or datetime.now(timezone.utc).isoformat()
+    note = "Automatisch deaktiviert: englische Folien- oder Quellenartefakte"
+    for row in rows:
+        card = row_to_card(row)
+        if not english_noise(card):
+            continue
+        payload = dict(card)
+        payload["status"] = "suspended"
+        payload["review_note"] = note
+        conn.execute(
+            """UPDATE cards
+               SET status='suspended', review_note=?, updated_at=?, quality_checked_at=?, payload=?
+               WHERE id=?""",
+            (note, changed_at, changed_at, json.dumps(payload, ensure_ascii=False), card["id"]),
+        )
+        conn.execute(
+            """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
+               VALUES(?,?,?,?,?,?)""",
+            (card["id"], card.get("module", module or "organic"), "auto_quality", "english_noise", note, changed_at),
+        )
+        changed += 1
+    return changed
+
+
 def auto_quality_sweep(conn: sqlite3.Connection, module: str, updated_at: str) -> int:
+    changed = suspend_english_noise(conn, module, updated_at)
     rows = conn.execute(
         """SELECT * FROM cards
            WHERE module=? AND deck='anki' AND status='active'
@@ -533,7 +637,6 @@ def auto_quality_sweep(conn: sqlite3.Connection, module: str, updated_at: str) -
            LIMIT 40""",
         (module, module),
     ).fetchall()
-    changed = 0
     for row in rows:
         card = row_to_card(row)
         payload = dict(card)

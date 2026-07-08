@@ -71,6 +71,10 @@ TABLE_FRAGMENT_RE = re.compile(
     r"hauptmerkmale\s+vorteile\s+nachteile|vorratsbunker|frischlanze|"
     r"einspulvorr|heizelektroden|verwendung\s+o\s+-?\s*einblasung|"
     r"ownership of|take-home messages|company|market|portfolio|headquarters|"
+    r"dissolution recycling|depolymerization|polymerization|polymerzation|"
+    r"ethylene polymerization|input for new polymerization|fresh virgin polymers|"
+    r"re-use of|entire material|polymer chains|fillers|additives|pigments|"
+    r"contamination|virgin polymers|stabilizers|youtube|you\.\s*tube|"
     r"manufacturing sites|innovation centers|patents|r&d|cagr|billion|metric tons"
     r")\b"
 )
@@ -78,6 +82,10 @@ ENGLISH_PHRASE_RE = re.compile(
     r"(?i)\b("
     r"take-home messages|if we look towards|technology and innovation|ownership of|"
     r"leading innovation|mechanical recycling|chemical recycling|plastics recycling paths|"
+    r"dissolution recycling|depolymerization|polymerization|polymerzation|"
+    r"ethylene polymerization|input for new polymerization|fresh virgin polymers|"
+    r"re-use of|entire material|polymer chains|fillers|additives|pigments|contamination|"
+    r"virgin polymers|stabilizers|youtube|you\.\s*tube|"
     r"dissolving wood pulp|paper pulp|challenge:|circular economy|open hearth furnace|"
     r"basic oxygen furnace|blast furnace|fluidized beds|global organization|"
     r"high-quality|food packaging|medical grades|external use|internal confidential|"
@@ -103,6 +111,12 @@ ENGLISH_WORDS = {
     "reliable", "supply", "consistent", "includes", "largest", "rabbit", "hole",
     "already", "wiki", "becomes", "solubilized", "through", "hydrolyzed", "digester",
     "sulfonation", "after", "before", "during", "following", "transfer", "toward",
+    "dissolution", "depolymerization", "polymerization", "polymerzation", "ethylene",
+    "youtube", "input", "entire", "chains", "fillers", "additives", "pigments",
+    "contamination", "fraction", "monomer", "molecule", "molecules", "often",
+    "diverse", "mixture", "thereof", "undergo", "further", "separation",
+    "upgrading", "treatment", "conversion", "potentially", "introduced", "make",
+    "fresh", "virgin", "polymers", "compounded", "stabilizers",
 }
 GERMAN_SIGNAL_WORDS = {
     "der", "die", "das", "und", "oder", "mit", "wird", "werden", "durch",
@@ -174,6 +188,10 @@ def normalize_german_terms(text: str) -> str:
         "depolymerization": "Depolymerisation",
         "Mechanical recycling": "mechanisches Recycling",
         "Chemical recycling": "chemisches Recycling",
+        "Dissolution recycling": "Loesungsrecycling",
+        "dissolution recycling": "Loesungsrecycling",
+        "Polymerization": "Polymerisation",
+        "polymerization": "Polymerisation",
         "Plastics Recycling": "Kunststoffrecycling",
         "block diagram": "Blockschema",
         "process flow diagram": "Verfahrensfliessschema",
