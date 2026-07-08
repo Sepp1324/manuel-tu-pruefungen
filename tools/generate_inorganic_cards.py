@@ -129,7 +129,7 @@ SOURCE_NOISE_RE = re.compile(
     r"(?i)\b(systematic review|meta-regression|doi:|trademark|trademarks|"
     r"company overview|company information|internal: confidential|global headquarters|"
     r"regional headquarters|patent applications|workforce|microsoft copilot|"
-    r"copyright|email:|web:)\b"
+    r"copyright|email:|web:|lv-evaluierung|tiss)\b"
 )
 COMPANY_RE = re.compile(
     r"\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+(AG|GmbH|Inc|Ltd|LLC|International)\b"
@@ -138,6 +138,14 @@ AUTHOR_RE = re.compile(
     r"\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-Z]\.?\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\b"
     r"|\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+,\s+"
     r"[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\b"
+)
+LECTURE_ADMIN_RE = re.compile(
+    r"(?i)\b(vor-?\s*(?:&amp;|&|und)\s*nachbereitung|vorlesungseinheiten|"
+    r"prüfungsbogen|pruefungsbogen|prüfungsbeginn|pruefungsbeginn|"
+    r"prüfungsantritt|pruefungsantritt|angabezettel|antwortzettel|"
+    r"abgabe am ende|zugewiesenen sitzplatz|digitale geräte|digitale geraete|"
+    r"sammelort|anmeldeformalitäten|anmeldeformalitaeten|"
+    r"positive absolvierung|mindestens 50% der punkte|vorlesungsteile)\b"
 )
 
 DOMAIN_BONUS = [
@@ -172,6 +180,8 @@ def irrelevant_source_fact(text: str) -> bool:
     if AUTHOR_RE.search(text) and re.search(r"(?i)\b(review|meta-regression|study|journal|doi)\b", text):
         return True
     if re.search(r"(?i)\b(location|headquarters|corporate hub|patent|source:|notes?:)\b", text):
+        return True
+    if LECTURE_ADMIN_RE.search(text):
         return True
     return False
 
