@@ -77,6 +77,15 @@ ARCHIVE_EXAMS = {
 PUBLIC_EXACT = {"/healthz", "/login", "/api/auth/login"}
 PUBLIC_PREFIXES = ("/assets/", "/static/")
 
+EXAM_ERROR_TYPES = {
+    "definition": "Definition fehlt",
+    "process": "Prozessschritte vertauscht",
+    "conditions": "Bedingungen fehlen",
+    "formula": "Formel/Reaktion fehlt",
+    "example": "Beispiel fehlt",
+}
+CONFIDENCE_LEVELS = {"sure", "unsure", "none", ""}
+
 
 def _module_catalog() -> dict:
     fallback = {
@@ -213,11 +222,15 @@ class ManualCardIn(BaseModel):
 class OpenExamResultIn(BaseModel):
     card_id: str
     sub_scores: list[str] = Field(default_factory=list)
+    confidence: str = ""
+    error_types: list[str] = Field(default_factory=list)
 
 
 class OpenExamSubmitIn(BaseModel):
     module: str = "organic"
     mode: str = "full"
+    exam_id: str = ""
+    duration_seconds: int = 0
     results: list[OpenExamResultIn] = Field(default_factory=list)
 
 
@@ -226,11 +239,15 @@ class ArchiveCorrectionResultIn(BaseModel):
     score: str = Field(pattern="^(full|partial|miss)$")
     card_ids: list[str] = Field(default_factory=list)
     note: str = ""
+    confidence: str = ""
+    error_types: list[str] = Field(default_factory=list)
+    rubric_scores: list[str] = Field(default_factory=list)
 
 
 class ArchiveCorrectionSubmitIn(BaseModel):
     module: str = "organic"
     exam_id: str
+    duration_seconds: int = 0
     results: list[ArchiveCorrectionResultIn] = Field(default_factory=list)
 
 
@@ -383,6 +400,47 @@ def _scaffold_for(card: dict, points: list[str]) -> list[str]:
     return out[:6]
 
 
+def _clean_confidence(value: str) -> str:
+    return value if value in CONFIDENCE_LEVELS else ""
+
+
+def _clean_error_types(values: list[str]) -> list[str]:
+    out = []
+    for value in values:
+        if value in EXAM_ERROR_TYPES and value not in out:
+            out.append(value)
+    return out[:5]
+
+
+def _rubric_category(text: str) -> str:
+    value = text.lower()
+    if any(x in value for x in ["defin", "nennen", "zusammensetzung", "struktur", "aufbau"]):
+        return "Definition"
+    if any(x in value for x in ["druck", "temperatur", "katalysator", "beding", "parameter"]):
+        return "Bedingungen"
+    if any(x in value for x in ["formel", "gleichung", "zeich", "wiederholeinheit", "strukturformel"]):
+        return "Formel/Reaktion"
+    if any(x in value for x in ["beispiel", "anwendung", "nutzung", "problem", "emission", "recycling"]):
+        return "Beispiel/Einordnung"
+    return "Ablauf/Erklaerung"
+
+
+def _rubric_for_prompts(prompts: list[str], total_points: float = 4) -> list[dict]:
+    if not prompts:
+        prompts = ["Definition/Prinzip", "Ablauf erklaeren", "Bedingungen oder Formel", "Beispiel oder Einordnung"]
+    base = round(total_points / max(len(prompts), 1), 2)
+    out = []
+    for i, prompt in enumerate(prompts):
+        points = round(total_points - base * (len(prompts) - 1), 2) if i == len(prompts) - 1 else base
+        out.append({
+            "id": f"r{i + 1}",
+            "category": _rubric_category(prompt),
+            "prompt": prompt,
+            "points": points,
+        })
+    return out
+
+
 def _exam_block(module: str, kap: int | None) -> str:
     kap = kap or 0
     if module == "organic":
@@ -426,7 +484,12 @@ def _exam_question(card: dict, idx: int, module: str, formula: bool = False) -> 
         else:
             fallback = ["Definition/Prinzip", "Prozess oder Aufbau", "Bedingungen/Formeln", "Beispiel/Anwendung", "Begruendung"][i]
             prompt = fallback
-        subquestions.append({"id": f"{idx}-{i}", "prompt": prompt, "points": point_value})
+        subquestions.append({
+            "id": f"{idx}-{i}",
+            "prompt": prompt,
+            "points": point_value,
+            "category": _rubric_category(prompt),
+        })
     if formula:
         question = f"Geben oder skizzieren Sie die pruefungsrelevanten Reaktions- oder Strukturformeln zu {title}."
     else:
@@ -638,6 +701,102 @@ def _final_plan(conn, module: str) -> dict:
     }
 
 
+def _score_from_label(score: str) -> int:
+    return {"full": 100, "partial": 50, "miss": 0}.get(score, 0)
+
+
+def _attempt_dashboard(conn, module: str) -> dict:
+    attempts = db.exam_attempt_history(conn, module, 24)
+    block_scores: dict[str, list[int]] = {}
+    error_counts: dict[str, int] = {}
+    confidence_traps = []
+    for attempt in attempts:
+        for q in (attempt.get("payload") or {}).get("questions", []):
+            score = q.get("pct")
+            if score is None:
+                score = _score_from_label(q.get("score", ""))
+            block = q.get("block") or "Archivfragen"
+            block_scores.setdefault(block, []).append(int(score or 0))
+            weak = q.get("repair") or (score or 0) < 60
+            if q.get("confidence") == "sure" and weak:
+                confidence_traps.append({
+                    "attempt_id": attempt["id"],
+                    "created_at": attempt["created_at"],
+                    "title": q.get("title") or q.get("topic") or "Pruefungsfrage",
+                    "score": score,
+                    "mode": attempt["mode"],
+                })
+            for err in q.get("error_types", []):
+                if err in EXAM_ERROR_TYPES:
+                    error_counts[err] = error_counts.get(err, 0) + 1
+    trend = [
+        {
+            "id": a["id"],
+            "date": a["created_at"][:10],
+            "title": a["title"],
+            "mode": a["mode"],
+            "pct": a["pct"],
+            "earned": a["earned"],
+            "total": a["total"],
+        }
+        for a in reversed(attempts[:10])
+    ]
+    return {
+        "attempts": attempts,
+        "trend": trend,
+        "blocks": [
+            {
+                "block": block,
+                "score": round(sum(values) / len(values)),
+                "count": len(values),
+            }
+            for block, values in sorted(block_scores.items())
+        ],
+        "errors": [
+            {"key": key, "label": EXAM_ERROR_TYPES[key], "count": count}
+            for key, count in sorted(error_counts.items(), key=lambda item: (-item[1], item[0]))
+        ],
+        "confidence_traps": confidence_traps[:8],
+    }
+
+
+def _weekly_plan(conn, module: str) -> dict:
+    today = date.today()
+    start = today if today <= EXAM_DATE else EXAM_DATE
+    weaknesses = db.weakness_heatmap(conn, _now_iso(), module)
+    focus = [f"VO{w['kap']} {w['name']}" for w in weaknesses[:8]]
+    weeks = []
+    current = start
+    idx = 0
+    while current <= EXAM_DATE and len(weeks) < 14:
+        end = min(current + timedelta(days=6), EXAM_DATE)
+        days_to_exam = max((EXAM_DATE - end).days, 0)
+        if days_to_exam <= 7:
+            phase = "Endspurt"
+            tasks = ["2 Archiv- oder offene Pruefungen", "keine neuen Karten", "Formelcheckliste abschliessen"]
+        elif days_to_exam <= 21:
+            phase = "Pruefungsmodus"
+            tasks = ["1 volle Simulation", "2 Schwaechen-Mini-Pruefungen", "Nachlern-Queue jeden zweiten Tag"]
+        else:
+            phase = "Aufbau"
+            tasks = ["faellige Karten taeglich", "1 offene Mini-Pruefung", "rote Mastery-Themen glätten"]
+        weeks.append({
+            "start": current.isoformat(),
+            "end": end.isoformat(),
+            "phase": phase,
+            "tasks": tasks,
+            "focus": focus[idx % max(len(focus), 1):][:3] if focus else [],
+        })
+        current = end + timedelta(days=1)
+        idx += 2
+    return {
+        "module": module,
+        "exam_date": EXAM_DATE.isoformat(),
+        "weeks": weeks,
+        "rule": "Wochenziele sind Sollwerte; nach jeder offenen Pruefung zieht die Nachlern-Queue die echten Luecken nach.",
+    }
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
@@ -764,6 +923,15 @@ def study(limit: int = 30, kap: int | None = None, module: str = "organic"):
     return {"deck": "anki", "module": module, "cards": cards}
 
 
+@app.get("/api/study/repair")
+def repair_study(limit: int = 30, module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    cards = db.exam_repair_cards(conn, module, max(5, min(limit, 60)))
+    conn.close()
+    return {"deck": "repair", "module": module, "cards": cards}
+
+
 @app.get("/api/exam/recall")
 def recall_exam(n: int = 20, mode: str = "mixed", module: str = "organic"):
     module = _valid_module(module)
@@ -832,7 +1000,11 @@ def exam_archive(module: str = "organic"):
     for exam in ARCHIVE_EXAMS.get(module, []):
         questions = []
         for q in exam["questions"]:
-            questions.append({**q, "matches": _matching_cards(conn, module, q["topic"])})
+            questions.append({
+                **q,
+                "rubric": _rubric_for_prompts(q.get("prompts", []), q.get("points", 4)),
+                "matches": _matching_cards(conn, module, q["topic"]),
+            })
         exams.append({**exam, "questions": questions})
     conn.close()
     return {"module": module, "exams": exams}
@@ -865,19 +1037,60 @@ def final_plan(module: str = "organic"):
     return {"module": module, **out}
 
 
+@app.get("/api/exam/weekly-plan")
+def weekly_plan(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _weekly_plan(conn, module)
+    conn.close()
+    return out
+
+
+@app.get("/api/exam/history")
+def exam_history(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _attempt_dashboard(conn, module)
+    repair = db.exam_repair_cards(conn, module, 12)
+    conn.close()
+    return {"module": module, **out, "repair_queue": repair}
+
+
 @app.post("/api/exam/archive/submit")
 def submit_archive_correction(inp: ArchiveCorrectionSubmitIn):
     module = _valid_module(inp.module)
     conn = db.get_conn()
     now = _now_iso()
+    exam_meta = next((exam for exam in ARCHIVE_EXAMS.get(module, []) if exam["id"] == inp.exam_id), None)
+    question_meta = {
+        q["topic"]: q
+        for q in (exam_meta or {}).get("questions", [])
+    }
     weights = {"full": 1.0, "partial": 0.5, "miss": 0.0}
     earned = 0.0
     total = 0.0
     touched = 0
+    attempt_questions = []
     for result in inp.results:
         ratio = weights.get(result.score, 0.0)
+        confidence = _clean_confidence(result.confidence)
+        error_types = _clean_error_types(result.error_types)
+        rubric_scores = [score for score in result.rubric_scores if score in weights][:8]
         earned += ratio * 4
         total += 4
+        meta = question_meta.get(result.topic, {})
+        attempt_questions.append({
+            "topic": result.topic,
+            "block": "Archivfragen",
+            "score": result.score,
+            "pct": _score_from_label(result.score),
+            "confidence": confidence,
+            "error_types": error_types,
+            "rubric_scores": rubric_scores,
+            "card_ids": result.card_ids,
+            "repair": result.score in {"partial", "miss"},
+            "rubric": _rubric_for_prompts(meta.get("prompts", []), meta.get("points", 4)),
+        })
         if result.score in {"partial", "miss"}:
             for card_id in result.card_ids[:6]:
                 card = db.get_card(conn, card_id)
@@ -886,13 +1099,31 @@ def submit_archive_correction(inp: ArchiveCorrectionSubmitIn):
                 reason = "archiv_partial" if result.score == "partial" else "archiv_miss"
                 note = result.note or f"Archiv-Korrektur {result.topic}: {result.score}"
                 db.add_quality_event(conn, card_id, module, "archive_correction", reason, note, now)
+                for err in error_types:
+                    db.add_quality_event(conn, card_id, module, "exam_error", f"exam_{err}", EXAM_ERROR_TYPES[err], now)
+                if confidence == "sure":
+                    db.add_quality_event(conn, card_id, module, "exam_error", "exam_confidence_trap", "Sicher gefuehlt, aber Punkte verloren", now)
                 if result.score == "miss":
                     db.mark_card_needs_review(conn, card_id, note, now)
                 touched += 1
     pct_score = round(earned / total * 100) if total else 0
+    attempt_id = db.record_exam_attempt(
+        conn,
+        module,
+        "archive",
+        "archive",
+        (exam_meta or {}).get("title", "Archivbogen"),
+        inp.exam_id,
+        round(earned, 1),
+        round(total, 1),
+        pct_score,
+        inp.duration_seconds,
+        {"questions": attempt_questions},
+        now,
+    )
     xp = db.add_xp_event(conn, max(8, round(earned * 3)), "archive_exam", f"Archiv-Korrektur: {pct_score}%", inp.exam_id, now)
     conn.close()
-    return {"ok": True, "earned": round(earned, 1), "total": round(total, 1), "pct": pct_score, "touched": touched, "xp": xp}
+    return {"ok": True, "attempt_id": attempt_id, "earned": round(earned, 1), "total": round(total, 1), "pct": pct_score, "touched": touched, "xp": xp}
 
 
 @app.post("/api/quality/autoprune")
@@ -910,13 +1141,17 @@ def submit_open_exam(inp: OpenExamSubmitIn):
     module = _valid_module(inp.module)
     conn = db.get_conn()
     now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
     total_points = 0.0
     earned = 0.0
     reviewed = 0
+    attempt_questions = []
     for result in inp.results:
         card = db.get_card(conn, result.card_id)
         if not card or card.get("module") != module:
             continue
+        confidence = _clean_confidence(result.confidence)
+        error_types = _clean_error_types(result.error_types)
         weights = {"full": 1.0, "partial": 0.5, "miss": 0.0}
         values = [weights.get(score, 0.0) for score in result.sub_scores]
         if not values:
@@ -932,13 +1167,49 @@ def submit_open_exam(inp: OpenExamSubmitIn):
         db.apply_review(conn, result.card_id, updated, rating, elapsed, deck="open_exam")
         if rating == 1:
             db.add_quality_event(conn, result.card_id, module, "open_exam", "pruefung_miss", "In offener Pruefung nicht beantwortet", updated["last_review"])
+        if ratio < .85:
+            for err in error_types:
+                db.add_quality_event(conn, result.card_id, module, "exam_error", f"exam_{err}", EXAM_ERROR_TYPES[err], updated["last_review"])
+            if confidence == "sure":
+                db.add_quality_event(conn, result.card_id, module, "exam_error", "exam_confidence_trap", "Sicher gefuehlt, aber Punkte verloren", updated["last_review"])
+        attempt_questions.append({
+            "card_id": result.card_id,
+            "card_ids": [result.card_id],
+            "title": _question_title(card),
+            "topic": _question_title(card),
+            "kap": card.get("kap"),
+            "block": _exam_block(module, card.get("kap")),
+            "score": "full" if ratio >= .85 else "partial" if ratio >= .35 else "miss",
+            "pct": round(ratio * 100),
+            "rating": rating,
+            "confidence": confidence,
+            "error_types": error_types,
+            "sub_scores": result.sub_scores,
+            "repair": ratio < .85,
+        })
         reviewed += 1
     moved = db.auto_quality_sweep(conn, module, _now_iso())
     pct_score = round((earned / total_points) * 100) if total_points else 0
+    title = "Kann ich erklaeren?" if inp.mode == "explain" else "Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
+    attempt_id = db.record_exam_attempt(
+        conn,
+        module,
+        "open",
+        inp.mode,
+        title,
+        inp.exam_id,
+        round(earned, 1),
+        round(total_points, 1),
+        pct_score,
+        inp.duration_seconds,
+        {"questions": attempt_questions, "auto_quality_moved": moved},
+        now_iso,
+    )
     xp = db.add_xp_event(conn, max(10, round(earned * 4)), "open_exam", f"Offene Pruefung: {pct_score}%", inp.mode, _now_iso())
     conn.close()
     return {
         "ok": True,
+        "attempt_id": attempt_id,
         "reviewed": reviewed,
         "earned": round(earned, 1),
         "total": round(total_points, 1),

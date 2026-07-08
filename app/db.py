@@ -73,6 +73,22 @@ CREATE TABLE IF NOT EXISTS quality_events (
 CREATE INDEX IF NOT EXISTS idx_quality_events_module ON quality_events(module, created_at);
 CREATE INDEX IF NOT EXISTS idx_quality_events_card ON quality_events(card_id);
 
+CREATE TABLE IF NOT EXISTS exam_attempts (
+    id           TEXT PRIMARY KEY,
+    module       TEXT NOT NULL,
+    attempt_type TEXT NOT NULL,
+    mode         TEXT NOT NULL,
+    title        TEXT NOT NULL,
+    ref_id       TEXT NOT NULL DEFAULT '',
+    earned       REAL NOT NULL DEFAULT 0,
+    total        REAL NOT NULL DEFAULT 0,
+    pct          INTEGER NOT NULL DEFAULT 0,
+    duration_seconds INTEGER NOT NULL DEFAULT 0,
+    created_at   TEXT NOT NULL,
+    payload      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_exam_attempts_module ON exam_attempts(module, created_at);
+
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -148,6 +164,21 @@ def migrate(conn: sqlite3.Connection) -> None:
     );
     CREATE INDEX IF NOT EXISTS idx_quality_events_module ON quality_events(module, created_at);
     CREATE INDEX IF NOT EXISTS idx_quality_events_card ON quality_events(card_id);
+    CREATE TABLE IF NOT EXISTS exam_attempts (
+        id           TEXT PRIMARY KEY,
+        module       TEXT NOT NULL,
+        attempt_type TEXT NOT NULL,
+        mode         TEXT NOT NULL,
+        title        TEXT NOT NULL,
+        ref_id       TEXT NOT NULL DEFAULT '',
+        earned       REAL NOT NULL DEFAULT 0,
+        total        REAL NOT NULL DEFAULT 0,
+        pct          INTEGER NOT NULL DEFAULT 0,
+        duration_seconds INTEGER NOT NULL DEFAULT 0,
+        created_at   TEXT NOT NULL,
+        payload      TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_exam_attempts_module ON exam_attempts(module, created_at);
     """)
     conn.commit()
 
@@ -564,6 +595,89 @@ def quality_summary(conn: sqlite3.Connection, module: str = "organic") -> dict:
             for r in recent
         ],
     }
+
+
+def record_exam_attempt(conn: sqlite3.Connection, module: str, attempt_type: str, mode: str,
+                        title: str, ref_id: str, earned: float, total: float,
+                        pct_score: int, duration_seconds: int, payload: dict,
+                        created_at: str) -> str:
+    attempt_id = f"attempt:{secrets.token_hex(8)}"
+    conn.execute(
+        """INSERT INTO exam_attempts(id, module, attempt_type, mode, title, ref_id, earned,
+                  total, pct, duration_seconds, created_at, payload)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (
+            attempt_id, module, attempt_type, mode, title, ref_id or "", earned,
+            total, pct_score, max(duration_seconds, 0), created_at,
+            json.dumps(payload, ensure_ascii=False),
+        ),
+    )
+    conn.commit()
+    return attempt_id
+
+
+def exam_attempt_history(conn: sqlite3.Connection, module: str = "organic",
+                         limit: int = 24) -> list[dict]:
+    rows = conn.execute(
+        """SELECT * FROM exam_attempts
+           WHERE module=?
+           ORDER BY created_at DESC
+           LIMIT ?""",
+        (module, limit),
+    ).fetchall()
+    out = []
+    for row in rows:
+        item = dict(row)
+        try:
+            item["payload"] = json.loads(item.get("payload") or "{}")
+        except json.JSONDecodeError:
+            item["payload"] = {}
+        out.append(item)
+    return out
+
+
+def exam_repair_cards(conn: sqlite3.Connection, module: str = "organic",
+                      limit: int = 30) -> list[dict]:
+    attempts = exam_attempt_history(conn, module, 30)
+    picked: dict[str, dict] = {}
+    for attempt in attempts:
+        for q in (attempt.get("payload") or {}).get("questions", []):
+            weak = q.get("repair") or (q.get("score") in {"partial", "miss"}) or (q.get("pct") or 100) < 85
+            if not weak:
+                continue
+            card_ids = q.get("card_ids") or ([q.get("card_id")] if q.get("card_id") else [])
+            for card_id in card_ids:
+                if card_id and card_id not in picked:
+                    picked[card_id] = {
+                        "attempt_id": attempt["id"],
+                        "created_at": attempt["created_at"],
+                        "reason": q.get("topic") or q.get("title") or "Pruefungsfehler",
+                        "score": q.get("score") or q.get("pct"),
+                        "confidence": q.get("confidence", ""),
+                        "error_types": q.get("error_types", []),
+                    }
+                if len(picked) >= limit * 2:
+                    break
+            if len(picked) >= limit * 2:
+                break
+        if len(picked) >= limit * 2:
+            break
+    if not picked:
+        return []
+    placeholders = ",".join("?" for _ in picked)
+    rows = conn.execute(
+        f"""SELECT * FROM cards
+            WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+              AND id IN ({placeholders})""",
+        (module, *picked.keys()),
+    ).fetchall()
+    cards = []
+    for row in rows:
+        card = row_to_card(row)
+        card["repair"] = picked.get(card["id"], {})
+        cards.append(card)
+    cards.sort(key=lambda c: list(picked).index(c["id"]) if c["id"] in picked else 999)
+    return cards[:limit]
 
 
 def deck_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic") -> dict:

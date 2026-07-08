@@ -33,7 +33,22 @@ const REVIEW_REASONS = [
   ["frage_unklar", "Frage unklar"],
   ["karte_schlecht", "Karte schlecht"],
 ];
-const ALL_REASONS = [...TRIAGE_REASONS, ...REVIEW_REASONS];
+const EXAM_ERROR_TYPES = [
+  ["definition", "Definition fehlt"],
+  ["process", "Prozessschritte vertauscht"],
+  ["conditions", "Bedingungen fehlen"],
+  ["formula", "Formel/Reaktion fehlt"],
+  ["example", "Beispiel fehlt"],
+];
+const CONFIDENCE_LEVELS = [
+  ["sure", "sicher"],
+  ["unsure", "unsicher"],
+];
+const EXAM_REASONS = [
+  ...EXAM_ERROR_TYPES.map(([key, label]) => [`exam_${key}`, label]),
+  ["exam_confidence_trap", "Sicher, aber falsch"],
+];
+const ALL_REASONS = [...TRIAGE_REASONS, ...REVIEW_REASONS, ...EXAM_REASONS];
 const EXAM_EVALS = [
   ["full", "voll"],
   ["partial", "teilweise"],
@@ -674,6 +689,133 @@ function FinalPlanPanel({ plan }) {
   );
 }
 
+function toggleArrayValue(values = [], value) {
+  return values.includes(value) ? values.filter((v) => v !== value) : [...values, value];
+}
+
+function ExamMetaControls({ confidence = "", onConfidence, errorTypes = [], onErrorTypes }) {
+  return (
+    <div className="exam-meta-controls">
+      <div>
+        <b>Confidence</b>
+        <span>
+          {CONFIDENCE_LEVELS.map(([key, label]) => (
+            <button key={key} className={confidence === key ? "active" : ""} onClick={() => onConfidence(confidence === key ? "" : key)}>
+              {label}
+            </button>
+          ))}
+        </span>
+      </div>
+      <div>
+        <b>Fehlerart</b>
+        <span>
+          {EXAM_ERROR_TYPES.map(([key, label]) => (
+            <button key={key} className={errorTypes.includes(key) ? "active" : ""} onClick={() => onErrorTypes(toggleArrayValue(errorTypes, key))}>
+              {label}
+            </button>
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function AttemptHistoryPanel({ history }) {
+  if (!history) return null;
+  const attempts = history.attempts || [];
+  const errors = history.errors || [];
+  return (
+    <section className="panel attempt-history">
+      <div className="section-head">
+        <div>
+          <h2>Pruefungsdiagnostik</h2>
+          <p>Verlauf, Fehlerarten und Confidence-Fallen aus den letzten offenen Pruefungen.</p>
+        </div>
+      </div>
+      <div className="attempt-grid">
+        <div>
+          <h3>Versuchsverlauf</h3>
+          <div className="attempt-list">
+            {attempts.length ? attempts.slice(0, 6).map((a) => (
+              <span key={a.id}>
+                <b>{a.pct}%</b>
+                <em>{formatDate(a.created_at)} - {a.title}</em>
+              </span>
+            )) : <p className="muted">Noch keine offene Pruefung gespeichert.</p>}
+          </div>
+        </div>
+        <div>
+          <h3>Haeufige Fehlerarten</h3>
+          <div className="error-chip-list">
+            {errors.length ? errors.map((e) => (
+              <span key={e.key}><b>{e.count}</b>{e.label}</span>
+            )) : <p className="muted">Fehlerarten erscheinen nach der ersten Auswertung.</p>}
+          </div>
+        </div>
+        <div>
+          <h3>Confidence-Fallen</h3>
+          <div className="trap-list">
+            {(history.confidence_traps || []).length ? history.confidence_traps.map((trap) => (
+              <span key={`${trap.attempt_id}-${trap.title}`}>
+                <b>{trap.score}%</b>{trap.title}
+              </span>
+            )) : <p className="muted">Noch keine sicheren Fehlgriffe erkannt.</p>}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RepairQueuePanel({ history, onStart }) {
+  const queue = history?.repair_queue || [];
+  return (
+    <section className="panel repair-queue">
+      <div className="section-head">
+        <div>
+          <h2>Nachlern-Queue</h2>
+          <p>Automatisch aus partial/miss, Confidence-Fallen und Fehlerarten erzeugt.</p>
+        </div>
+        <button className="primary" disabled={!queue.length} onClick={onStart}>Queue starten</button>
+      </div>
+      <div className="repair-list">
+        {queue.length ? queue.slice(0, 8).map((card) => (
+          <span key={card.id}>
+            <b>VO{card.kap}</b>
+            {card.repair?.reason || card.subname || card.id}
+            <em>{(card.repair?.error_types || []).map((key) => EXAM_ERROR_TYPES.find(([k]) => k === key)?.[1] || key).join(", ") || "Pruefungsfehler"}</em>
+          </span>
+        )) : <p className="muted">Sobald eine Pruefung bewertet ist, liegt hier der Reparaturstapel.</p>}
+      </div>
+    </section>
+  );
+}
+
+function WeeklyPlanPanel({ plan }) {
+  if (!plan) return null;
+  return (
+    <section className="panel weekly-plan">
+      <div className="section-head">
+        <div>
+          <h2>Wochenansicht bis 21.09.</h2>
+          <p>{plan.rule}</p>
+        </div>
+        <span className="deck-pill">{plan.exam_date}</span>
+      </div>
+      <div className="week-grid">
+        {(plan.weeks || []).map((week) => (
+          <article key={week.start}>
+            <b>{week.start} - {week.end}</b>
+            <h3>{week.phase}</h3>
+            <ul>{(week.tasks || []).map((task) => <li key={task}>{task}</li>)}</ul>
+            {!!week.focus?.length && <p>{week.focus.join(" - ")}</p>}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function scoreForQuestion(scores = {}, question) {
   const values = { full: 1, partial: .5, miss: 0 };
   return (question.subquestions || []).reduce((sum, sub) => sum + (values[scores[sub.id]] ?? 0) * (sub.points || 0), 0);
@@ -683,6 +825,9 @@ function OpenExamRunner({ exam, module, onClose }) {
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState({});
   const [scores, setScores] = useState({});
+  const [confidence, setConfidence] = useState({});
+  const [errorTypes, setErrorTypes] = useState({});
+  const [startedAt, setStartedAt] = useState(Date.now());
   const [secondsLeft, setSecondsLeft] = useState((exam.minutes || 0) * 60);
   const [result, setResult] = useState(null);
   const question = exam.questions[idx];
@@ -691,9 +836,12 @@ function OpenExamRunner({ exam, module, onClose }) {
   useEffect(() => {
     setSecondsLeft((exam.minutes || 0) * 60);
     setScores({});
+    setConfidence({});
+    setErrorTypes({});
     setRevealed({});
     setResult(null);
     setIdx(0);
+    setStartedAt(Date.now());
   }, [exam.id]);
 
   useEffect(() => {
@@ -713,9 +861,13 @@ function OpenExamRunner({ exam, module, onClose }) {
     const payload = {
       module,
       mode: exam.mode,
+      exam_id: exam.id,
+      duration_seconds: Math.round((Date.now() - startedAt) / 1000),
       results: (exam.questions || []).map((q) => ({
         card_id: q.card_id,
         sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || "miss"),
+        confidence: confidence[q.card_id] || "",
+        error_types: errorTypes[q.card_id] || [],
       })),
     };
     const res = await api("/api/exam/open/submit", {
@@ -737,6 +889,7 @@ function OpenExamRunner({ exam, module, onClose }) {
             <span key={q.card_id}><b>Frage {q.idx}</b>{scoreForQuestion(scores[q.card_id] || {}, q).toFixed(1)}/4</span>
           ))}
         </div>
+        <p className="muted">Versuch gespeichert: {result.attempt_id}. Schwache Fragen liegen jetzt in der Nachlern-Queue.</p>
         <button className="primary" onClick={onClose}>Zurueck</button>
       </section>
     );
@@ -744,6 +897,7 @@ function OpenExamRunner({ exam, module, onClose }) {
 
   if (!question) return null;
   const currentScores = scores[question.card_id] || {};
+  const currentErrors = errorTypes[question.card_id] || [];
   return (
     <section className="open-exam">
       <div className="exam-toolbar">
@@ -770,7 +924,7 @@ function OpenExamRunner({ exam, module, onClose }) {
         <div className="subquestion-list">
           {(question.subquestions || []).map((sub) => (
             <div key={sub.id} className="subquestion">
-              <p>{sub.prompt}</p>
+              <p><b>{sub.category}</b>{sub.prompt}</p>
               <span>{sub.points} P</span>
               <div>
                 {EXAM_EVALS.map(([key, label]) => (
@@ -782,6 +936,12 @@ function OpenExamRunner({ exam, module, onClose }) {
             </div>
           ))}
         </div>
+        <ExamMetaControls
+          confidence={confidence[question.card_id] || ""}
+          onConfidence={(value) => setConfidence((old) => ({ ...old, [question.card_id]: value }))}
+          errorTypes={currentErrors}
+          onErrorTypes={(values) => setErrorTypes((old) => ({ ...old, [question.card_id]: values }))}
+        />
         <div className="button-row-inline">
           <button onClick={() => setRevealed((old) => ({ ...old, [question.card_id]: !old[question.card_id] }))}>
             {revealed[question.card_id] ? "Loesung ausblenden" : "Geruest & Loesung zeigen"}
@@ -808,7 +968,11 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [scores, setScores] = useState({});
+  const [rubricScores, setRubricScores] = useState({});
+  const [confidence, setConfidence] = useState({});
+  const [errorTypes, setErrorTypes] = useState({});
   const [revealed, setRevealed] = useState({});
+  const [startedAt, setStartedAt] = useState(Date.now());
   const [result, setResult] = useState(null);
   const questions = exam.questions || [];
   const question = questions[idx];
@@ -820,21 +984,45 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
     setIdx(0);
     setAnswers({});
     setScores({});
+    setRubricScores({});
+    setConfidence({});
+    setErrorTypes({});
     setRevealed({});
     setResult(null);
+    setStartedAt(Date.now());
   }, [exam.id]);
+
+  function scoreFromRubric(items = {}, rubric = []) {
+    const values = { full: 1, partial: .5, miss: 0 };
+    const marked = rubric.map((r) => values[items[r.id]] ?? 0);
+    if (!marked.length) return "";
+    const ratio = marked.reduce((sum, n) => sum + n, 0) / marked.length;
+    return ratio >= .85 ? "full" : ratio >= .35 ? "partial" : "miss";
+  }
+
+  function markRubric(rubricId, value) {
+    const nextForQuestion = { ...(rubricScores[currentKey] || {}), [rubricId]: value };
+    const derived = scoreFromRubric(nextForQuestion, question.rubric || []);
+    setRubricScores((old) => ({ ...old, [currentKey]: nextForQuestion }));
+    if (derived) setScores((old) => ({ ...old, [currentKey]: derived }));
+  }
 
   async function finish() {
     const payload = {
       module,
       exam_id: exam.id,
+      duration_seconds: Math.round((Date.now() - startedAt) / 1000),
       results: questions.map((q, i) => {
         const key = keyFor(q, i);
+        const rubric = rubricScores[key] || {};
         return {
           topic: q.topic,
           score: scores[key] || "miss",
           card_ids: (q.matches || []).map((m) => m.id),
           note: answers[key] || "",
+          confidence: confidence[key] || "",
+          error_types: errorTypes[key] || [],
+          rubric_scores: (q.rubric || []).map((r) => rubric[r.id] || "miss"),
         };
       }),
     };
@@ -852,6 +1040,7 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
         <Check size={32} />
         <h2>Archivbogen korrigiert</h2>
         <p>{result.earned} von {result.total} Punkten, {result.pct}% geschaetzt. {result.touched} Karten wurden ins Qualitaetssystem gespiegelt.</p>
+        <p className="muted">Versuch gespeichert: {result.attempt_id}. Partial und Miss landen automatisch in der Nachlern-Queue.</p>
         <button className="primary" onClick={onClose}>Zurueck zum Pruefungsplatz</button>
       </section>
     );
@@ -859,6 +1048,8 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
 
   if (!question) return null;
   const currentScore = scores[currentKey] || "";
+  const currentRubric = rubricScores[currentKey] || {};
+  const currentErrors = errorTypes[currentKey] || [];
   return (
     <section className="correction-runner">
       <div className="exam-toolbar">
@@ -899,6 +1090,27 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
             </button>
           ))}
         </div>
+        <div className="rubric-checklist">
+          {(question.rubric || []).map((item) => (
+            <div key={item.id}>
+              <p><b>{item.category}</b>{item.prompt}</p>
+              <span>{item.points} P</span>
+              <em>
+                {EXAM_EVALS.map(([key, label]) => (
+                  <button key={key} className={currentRubric[item.id] === key ? "active" : ""} onClick={() => markRubric(item.id, key)}>
+                    {label}
+                  </button>
+                ))}
+              </em>
+            </div>
+          ))}
+        </div>
+        <ExamMetaControls
+          confidence={confidence[currentKey] || ""}
+          onConfidence={(value) => setConfidence((old) => ({ ...old, [currentKey]: value }))}
+          errorTypes={currentErrors}
+          onErrorTypes={(values) => setErrorTypes((old) => ({ ...old, [currentKey]: values }))}
+        />
         <div className="button-row-inline">
           <button onClick={() => setRevealed((old) => ({ ...old, [currentKey]: !old[currentKey] }))}>
             {revealed[currentKey] ? "Raster ausblenden" : "Bewertungsraster zeigen"}
@@ -911,7 +1123,7 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
           <div className="correction-raster">
             <div>
               <h3>Erwartete Punkte</h3>
-              <ul>{(question.prompts || []).map((p) => <li key={p}>{p}</li>)}</ul>
+              <ul>{(question.rubric || []).map((r) => <li key={r.id}>{r.category}: {r.prompt} ({r.points} P)</li>)}</ul>
             </div>
             <div>
               <h3>Passende Karten</h3>
@@ -957,7 +1169,7 @@ function ExamArchive({ archive, onStartCorrection }) {
               <b>{i + 1}. {q.topic}</b>
               <span>{q.points} Punkte</span>
             </div>
-            <ul>{(q.prompts || []).map((p) => <li key={p}>{p}</li>)}</ul>
+            <ul>{(q.rubric || []).map((r) => <li key={r.id}>{r.category}: {r.prompt} ({r.points} P)</li>)}</ul>
             <div className="match-strip">
               {(q.matches || []).map((m) => (
                 <span key={m.id}>VO{m.kap}: {m.title}</span>
@@ -970,7 +1182,7 @@ function ExamArchive({ archive, onStartCorrection }) {
   );
 }
 
-function ExamPage({ startExam, module }) {
+function ExamPage({ startExam, startSession, module }) {
   const [count, setCount] = useState(20);
   const [mode, setMode] = useState("mixed");
   const [exam, setExam] = useState(null);
@@ -980,13 +1192,21 @@ function ExamPage({ startExam, module }) {
   const [mastery, setMastery] = useState(null);
   const [checklist, setChecklist] = useState(null);
   const [finalPlan, setFinalPlan] = useState(null);
+  const [weeklyPlan, setWeeklyPlan] = useState(null);
+  const [history, setHistory] = useState(null);
 
-  useEffect(() => {
+  async function loadExamMeta() {
     api(`/api/exam/prognosis?module=${encodeURIComponent(module)}`).then(setPrognosis).catch(() => {});
     api(`/api/exam/archive?module=${encodeURIComponent(module)}`).then(setArchive).catch(() => {});
     api(`/api/exam/mastery?module=${encodeURIComponent(module)}`).then(setMastery).catch(() => {});
     api(`/api/exam/formula-checklist?module=${encodeURIComponent(module)}`).then(setChecklist).catch(() => {});
     api(`/api/exam/final-plan?module=${encodeURIComponent(module)}`).then(setFinalPlan).catch(() => {});
+    api(`/api/exam/weekly-plan?module=${encodeURIComponent(module)}`).then(setWeeklyPlan).catch(() => {});
+    api(`/api/exam/history?module=${encodeURIComponent(module)}`).then(setHistory).catch(() => {});
+  }
+
+  useEffect(() => {
+    loadExamMeta();
   }, [module]);
 
   async function startOpen(nextMode) {
@@ -1001,8 +1221,14 @@ function ExamPage({ startExam, module }) {
     setExam(res);
   }
 
-  if (correction) return <ArchiveCorrectionRunner exam={correction} module={module} onClose={() => setCorrection(null)} />;
-  if (exam) return <OpenExamRunner exam={exam} module={module} onClose={() => setExam(null)} />;
+  async function closeRunner() {
+    setExam(null);
+    setCorrection(null);
+    await loadExamMeta();
+  }
+
+  if (correction) return <ArchiveCorrectionRunner exam={correction} module={module} onClose={closeRunner} />;
+  if (exam) return <OpenExamRunner exam={exam} module={module} onClose={closeRunner} />;
 
   return (
     <section className="exam-workbench">
@@ -1023,8 +1249,11 @@ function ExamPage({ startExam, module }) {
       </div>
 
       <ExamScorePanel prognosis={prognosis} />
+      <AttemptHistoryPanel history={history} />
+      <RepairQueuePanel history={history} onStart={() => startSession?.("repair")} />
       <MasteryPanel mastery={mastery} />
       <FormulaChecklistPanel checklist={checklist} onStart={startFormula} />
+      <WeeklyPlanPanel plan={weeklyPlan} />
       <FinalPlanPanel plan={finalPlan} />
 
       <section className="panel exam-panel">
@@ -1427,7 +1656,7 @@ function App() {
     if (!data) return <div className="loading">Laedt...</div>;
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
-    if (route === "exam") return <ExamPage startExam={startExam} module={module} />;
+    if (route === "exam") return <ExamPage startExam={startExam} startSession={startSession} module={module} />;
     if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} />;
     if (route === "triage") return <TriagePage module={module} onDone={load} />;
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
