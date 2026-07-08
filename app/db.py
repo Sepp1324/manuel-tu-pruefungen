@@ -51,6 +51,11 @@ OLD_ENGLISH_ARTIFACT_NOTE = "Automatisch deaktiviert: englische Folien- oder Que
 ENGLISH_ARTIFACT_NOTE = "Auto-Review: englische Folien- oder Quellenartefakte pruefen"
 
 
+def auto_deactivation_note(note: str | None) -> bool:
+    text = str(note or "").strip()
+    return text.startswith("Automatisch deaktiviert:")
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS cards (
     id          TEXT PRIMARY KEY,
@@ -342,6 +347,7 @@ def seed(conn: sqlite3.Connection) -> int:
             tuple(seed_ids),
         )
     seed_updated_at = datetime.now(timezone.utc).isoformat()
+    restore_seed_auto_suspensions(conn, seed_ids, updated_at=seed_updated_at)
     restore_english_artifact_suspensions(conn, updated_at=seed_updated_at)
     flag_english_noise(conn, updated_at=seed_updated_at)
     conn.execute(
@@ -589,6 +595,44 @@ def mark_card_needs_review(conn: sqlite3.Connection, card_id: str, note: str, up
         (note, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
     )
     conn.commit()
+
+
+def restore_seed_auto_suspensions(conn: sqlite3.Connection, seed_ids: set[str],
+                                  updated_at: str | None = None) -> int:
+    if not seed_ids:
+        return 0
+    placeholders = ",".join("?" for _ in seed_ids)
+    rows = conn.execute(
+        f"""SELECT * FROM cards
+            WHERE deck='anki' AND status='suspended' AND id IN ({placeholders})""",
+        tuple(seed_ids),
+    ).fetchall()
+    changed = 0
+    changed_at = updated_at or datetime.now(timezone.utc).isoformat()
+    for row in rows:
+        if not auto_deactivation_note(row["review_note"]):
+            continue
+        card = row_to_card(row)
+        note = ENGLISH_ARTIFACT_NOTE if english_noise(card) else ""
+        payload = dict(card)
+        payload["status"] = "active"
+        payload["review_note"] = note
+        conn.execute(
+            """UPDATE cards
+               SET status='active', review_note=?, updated_at=?, payload=?
+               WHERE id=?""",
+            (note, changed_at, json.dumps(payload, ensure_ascii=False), card["id"]),
+        )
+        conn.execute(
+            """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
+               VALUES(?,?,?,?,?,?)""",
+            (
+                card["id"], card.get("module", "organic"), "auto_quality",
+                "seed_auto_suspension_restored", "Seed-Karte automatisch reaktiviert", changed_at,
+            ),
+        )
+        changed += 1
+    return changed
 
 
 def restore_english_artifact_suspensions(conn: sqlite3.Connection, module: str | None = None,
