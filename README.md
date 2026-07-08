@@ -12,8 +12,8 @@ getrennt:
 - eigener Benutzer-Bootstrap (`manuel`)
 - keine Multiple-Choice-, Englisch- oder Methodik-Modi
 - Modulumschalter fuer Organische und Anorganische Chemie
-- 620 Anki-Style Karten fuer Organische Chemie
-- 760 Anki-Style Karten fuer Anorganische Chemie
+- 341 pruefungsnahe Anki-Style Karten fuer Organische Chemie
+- 419 pruefungsnahe Anki-Style Karten fuer Anorganische Chemie
 
 ## Lokal starten
 
@@ -36,8 +36,10 @@ docker compose up --build
 
 ## Karten neu generieren
 
-Die Quellen liegen im Workspace unter `sources/organic_chem`. Neue Seeds werden
-so erzeugt:
+Die Quellen liegen im Workspace unter `sources/organic_chem`. Die Generatoren
+erstellen offene Pruefungsfragen im Stil der Beispielpruefungen:
+Erklaeren/Beschreiben/Nennen mit erwarteten Antwortpunkten statt
+Lueckentext-Fragmenten. Neue Seeds werden so erzeugt:
 
 ```bash
 python3 organicsr/tools/generate_organic_cards.py

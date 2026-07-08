@@ -38,6 +38,12 @@ LECTURE_ADMIN_RE = re.compile(
     r"sammelort|anmeldeformalitäten|anmeldeformalitaeten|"
     r"positive absolvierung|mindestens 50% der punkte|vorlesungsteile)\b"
 )
+DOMAIN_KEEP_RE = re.compile(
+    r"(?i)\b(haber-bosch|ostwald|bleikammer|claus|solvay|downs|bayer|"
+    r"hochofen|zement|ammoniak|salpetersäure|salpetersaeure|"
+    r"schwefelsäure|schwefelsaeure|chloralkali|elektrolyse|"
+    r"hydrotreatment|cracking|polymerisation|polykondensation)\b"
+)
 
 
 def plain(card: dict) -> str:
@@ -51,6 +57,8 @@ def plain(card: dict) -> str:
 def irrelevant(card: dict) -> bool:
     text = plain(card)
     lower = text.lower()
+    if DOMAIN_KEEP_RE.search(text) and not (SOURCE_NOISE_RE.search(text) or LECTURE_ADMIN_RE.search(text)):
+        return False
     if SOURCE_NOISE_RE.search(text):
         return True
     if COMPANY_RE.search(text):
