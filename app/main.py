@@ -137,6 +137,7 @@ class ReviewIn(BaseModel):
     card_id: str
     rating: int = Field(ge=1, le=4)
     source: str = "review"
+    feedback_reason: str = ""
 
 
 class CardEditIn(BaseModel):
@@ -151,6 +152,7 @@ class CardTriageIn(BaseModel):
     q: str | None = Field(default=None, min_length=3)
     a: str | None = Field(default=None, min_length=3)
     review_note: str = ""
+    reason: str = ""
 
 
 class ManualCardIn(BaseModel):
@@ -320,6 +322,7 @@ def stats(module: str = "organic"):
     chapters = db.chapter_stats(conn, now, module)
     weaknesses = db.weakness_heatmap(conn, now, module)
     tags = db.tag_stats(conn, module)
+    quality = db.quality_summary(conn, module)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
     conn.close()
@@ -336,6 +339,7 @@ def stats(module: str = "organic"):
         "study_plan": _study_plan(st, chapters),
         "weaknesses": weaknesses,
         "tags": tags,
+        "quality": quality,
         "xp": xp,
         "streak": streak,
     }
@@ -357,6 +361,7 @@ def dashboard(module: str = "organic"):
         "study_plan": _study_plan(st, chapters),
         "weaknesses": db.weakness_heatmap(conn, now, module),
         "tags": db.tag_stats(conn, module),
+        "quality": db.quality_summary(conn, module),
         "xp": db.xp_summary(conn),
         "streak": db.streak(conn),
     }
@@ -417,7 +422,7 @@ def edit_card(card_id: str, inp: CardEditIn):
 def triage_card(card_id: str, inp: CardTriageIn):
     conn = db.get_conn()
     try:
-        card = db.triage_card(conn, card_id, inp.action, _now_iso(), inp.q, inp.a, inp.review_note)
+        card = db.triage_card(conn, card_id, inp.action, _now_iso(), inp.q, inp.a, inp.review_note, inp.reason)
     except ValueError:
         conn.close()
         raise HTTPException(400, "ungueltige Aktion")
@@ -460,6 +465,11 @@ def review(inp: ReviewIn):
         elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
     updated = sched.review(card, inp.rating, now, max_interval_days=_max_fsrs_interval_days(now))
     db.apply_review(conn, inp.card_id, updated, inp.rating, elapsed, deck=inp.source if inp.source == "exam" else "anki")
+    if inp.feedback_reason:
+        note = f"Lernfeedback: {inp.feedback_reason}"
+        db.add_quality_event(conn, inp.card_id, card.get("module", "organic"), "review_feedback", inp.feedback_reason, note, updated["last_review"])
+        if inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
+            db.mark_card_needs_review(conn, inp.card_id, note, updated["last_review"])
     xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
     xp = db.add_xp_event(conn, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
     conn.close()

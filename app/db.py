@@ -61,6 +61,18 @@ CREATE TABLE IF NOT EXISTS xp_events (
 );
 CREATE INDEX IF NOT EXISTS idx_xp_events_created ON xp_events(created_at);
 
+CREATE TABLE IF NOT EXISTS quality_events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    card_id    TEXT NOT NULL,
+    module     TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    reason     TEXT NOT NULL,
+    note       TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_quality_events_module ON quality_events(module, created_at);
+CREATE INDEX IF NOT EXISTS idx_quality_events_card ON quality_events(card_id);
+
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -124,6 +136,19 @@ def migrate(conn: sqlite3.Connection) -> None:
         if col not in cols:
             conn.execute(sql)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module ON cards(module)")
+    conn.executescript("""
+    CREATE TABLE IF NOT EXISTS quality_events (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        card_id    TEXT NOT NULL,
+        module     TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        reason     TEXT NOT NULL,
+        note       TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_quality_events_module ON quality_events(module, created_at);
+    CREATE INDEX IF NOT EXISTS idx_quality_events_card ON quality_events(card_id);
+    """)
     conn.commit()
 
 
@@ -417,6 +442,97 @@ def apply_review(conn: sqlite3.Connection, card_id: str, updated: dict, rating: 
     conn.commit()
 
 
+def add_quality_event(conn: sqlite3.Connection, card_id: str, module: str, event_type: str,
+                      reason: str, note: str, created_at: str) -> None:
+    if not reason:
+        return
+    conn.execute(
+        """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
+           VALUES(?,?,?,?,?,?)""",
+        (card_id, module, event_type, reason, note or "", created_at),
+    )
+    conn.commit()
+
+
+def mark_card_needs_review(conn: sqlite3.Connection, card_id: str, note: str, updated_at: str) -> None:
+    card = get_card(conn, card_id)
+    if not card:
+        return
+    payload = dict(card)
+    payload["status"] = "needs_review"
+    conn.execute(
+        """UPDATE cards SET status='needs_review', review_note=?, updated_at=?, payload=?
+           WHERE id=?""",
+        (note, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
+    )
+    conn.commit()
+
+
+def quality_summary(conn: sqlite3.Connection, module: str = "organic") -> dict:
+    counts = conn.execute(
+        """SELECT event_type, reason, COUNT(*) c, MAX(created_at) latest
+           FROM quality_events
+           WHERE module=?
+           GROUP BY event_type, reason
+           ORDER BY c DESC, latest DESC""",
+        (module,),
+    ).fetchall()
+    recent = conn.execute(
+        """SELECT qe.id, qe.card_id, qe.event_type, qe.reason, qe.note, qe.created_at,
+                  c.kap, c.subname, c.status, c.payload
+           FROM quality_events qe
+           LEFT JOIN cards c ON c.id=qe.card_id
+           WHERE qe.module=?
+           ORDER BY qe.id DESC
+           LIMIT 12""",
+        (module,),
+    ).fetchall()
+    unchecked = conn.execute(
+        """SELECT COUNT(*) c FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+             AND quality_checked_at IS NULL""",
+        (module,),
+    ).fetchone()["c"]
+    status_rows = conn.execute(
+        """SELECT status, COUNT(*) c FROM cards
+           WHERE module=? AND deck='anki' GROUP BY status""",
+        (module,),
+    ).fetchall()
+    by_status = {"active": 0, "needs_review": 0, "suspended": 0}
+    for row in status_rows:
+        by_status[row["status"] or "active"] = row["c"] or 0
+    return {
+        "unchecked": unchecked or 0,
+        "active": by_status["active"],
+        "needs_review": by_status["needs_review"],
+        "suspended": by_status["suspended"],
+        "reasons": [
+            {
+                "event_type": r["event_type"],
+                "reason": r["reason"],
+                "count": r["c"] or 0,
+                "latest": r["latest"],
+            }
+            for r in counts
+        ],
+        "recent": [
+            {
+                "card_id": r["card_id"],
+                "id": r["id"],
+                "event_type": r["event_type"],
+                "reason": r["reason"],
+                "note": r["note"],
+                "created_at": r["created_at"],
+                "kap": r["kap"],
+                "subname": r["subname"],
+                "status": r["status"],
+                "question": (json.loads(r["payload"]).get("q", "") if r["payload"] else "")[:140],
+            }
+            for r in recent
+        ],
+    }
+
+
 def deck_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic") -> dict:
     row = conn.execute(
         """SELECT COUNT(*) total,
@@ -636,7 +752,8 @@ def update_card(conn: sqlite3.Connection, card_id: str, q: str, a: str,
 
 
 def triage_card(conn: sqlite3.Connection, card_id: str, action: str, updated_at: str,
-                q: str | None = None, a: str | None = None, review_note: str = "") -> dict | None:
+                q: str | None = None, a: str | None = None, review_note: str = "",
+                reason: str = "") -> dict | None:
     card = get_card(conn, card_id)
     if not card:
         return None
@@ -655,6 +772,8 @@ def triage_card(conn: sqlite3.Connection, card_id: str, action: str, updated_at:
         (status, review_note, updated_at, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
     )
     conn.commit()
+    if reason:
+        add_quality_event(conn, card_id, card.get("module", "organic"), "triage", reason, review_note, updated_at)
     return get_card(conn, card_id)
 
 

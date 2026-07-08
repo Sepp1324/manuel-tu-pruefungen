@@ -19,6 +19,21 @@ import {
 import "./styles.css";
 
 const RATING_LABELS = { 1: "Nochmal", 2: "Schwer", 3: "Gut", 4: "Leicht" };
+const TRIAGE_REASONS = [
+  ["kein_kontext", "Kein Kontext"],
+  ["person_firma", "Person/Firma"],
+  ["vorlesungsinfo", "Vorlesungsinfo"],
+  ["zu_spezifisch", "Zu spezifisch"],
+  ["unverstaendlich", "Unverstaendlich"],
+  ["falsch_extrahiert", "Falsch extrahiert"],
+];
+const REVIEW_REASONS = [
+  ["begriff_nicht_gewusst", "Begriff nicht gewusst"],
+  ["prozess_verwechselt", "Prozess verwechselt"],
+  ["frage_unklar", "Frage unklar"],
+  ["karte_schlecht", "Karte schlecht"],
+];
+const ALL_REASONS = [...TRIAGE_REASONS, ...REVIEW_REASONS];
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -43,6 +58,10 @@ function formatDate(s) {
   if (!s) return "neu";
   const d = new Date(s);
   return `${d.toLocaleDateString("de-AT")} ${d.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function reasonLabel(reason) {
+  return ALL_REASONS.find(([key]) => key === reason)?.[1] || reason || "Ohne Grund";
 }
 
 function AuthBar() {
@@ -354,12 +373,14 @@ function Study({ session, setSession, finish }) {
   const card = cards[session.idx];
   const [revealed, setRevealed] = useState(false);
   const [preview, setPreview] = useState({});
+  const [feedbackReason, setFeedbackReason] = useState("");
   const progress = pct(session.idx, Math.max(cards.length, 1));
   const isExam = session.deck === "exam";
 
   useEffect(() => {
     setRevealed(false);
     setPreview({});
+    setFeedbackReason("");
     if (card?.id) api(`/api/preview/${encodeURIComponent(card.id)}`).then(setPreview).catch(() => {});
   }, [card?.id]);
 
@@ -367,7 +388,12 @@ function Study({ session, setSession, finish }) {
     await api("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ card_id: card.id, rating, source: isExam ? "exam" : "review" }),
+      body: JSON.stringify({
+        card_id: card.id,
+        rating,
+        source: isExam ? "exam" : "review",
+        feedback_reason: rating === 1 ? feedbackReason : "",
+      }),
     });
     const nextResult = { card_id: card.id, rating, kap: card.kap, subname: card.subname };
     if (session.idx + 1 >= cards.length) {
@@ -432,6 +458,19 @@ function Study({ session, setSession, finish }) {
         {revealed ? (
           <>
             <AnswerContent html={card.a} />
+            <div className="feedback-strip">
+              <span>Nochmal-Grund</span>
+              {REVIEW_REASONS.map(([key, label]) => (
+                <button
+                  key={key}
+                  className={feedbackReason === key ? "active" : ""}
+                  onClick={() => setFeedbackReason(feedbackReason === key ? "" : key)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div className="ratings">
               {[1, 2, 3, 4].map((r) => (
                 <button key={r} className={`rating r${r}`} onClick={() => rate(r)}>
@@ -697,6 +736,7 @@ function TriagePage({ module, onDone }) {
   const [idx, setIdx] = useState(0);
   const [tag, setTag] = useState("");
   const [draft, setDraft] = useState(null);
+  const [reason, setReason] = useState("");
   const [msg, setMsg] = useState("");
 
   async function load(nextTag = tag) {
@@ -710,6 +750,7 @@ function TriagePage({ module, onDone }) {
   useEffect(() => { load().catch(() => {}); }, [module]);
   useEffect(() => {
     setDraft(data.cards?.[idx] ? { ...data.cards[idx] } : null);
+    setReason("");
     setMsg("");
   }, [idx, data.cards]);
 
@@ -722,7 +763,10 @@ function TriagePage({ module, onDone }) {
         action,
         q: draft.q,
         a: draft.a,
-        review_note: action === "needs_review" ? (draft.review_note || "Bitte spaeter ueberarbeiten") : "",
+        reason,
+        review_note: action === "needs_review" || action === "suspend"
+          ? [reason ? reasonLabel(reason) : "", draft.review_note || "Bitte spaeter ueberarbeiten"].filter(Boolean).join(": ")
+          : "",
       }),
     });
     setMsg("Gespeichert.");
@@ -770,6 +814,18 @@ function TriagePage({ module, onDone }) {
             <label>Antwort
               <textarea value={draft.a || ""} onChange={(e) => setDraft({ ...draft, a: e.target.value })} rows={9} />
             </label>
+            <div className="reason-options">
+              {TRIAGE_REASONS.map(([key, label]) => (
+                <button
+                  key={key}
+                  className={reason === key ? "active" : ""}
+                  onClick={() => setReason(reason === key ? "" : key)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div className="button-row-inline">
               <button className="primary" onClick={() => act("approve")}><Check size={16} /> Gut</button>
               <button onClick={() => act("approve")}><Edit3 size={16} /> Bearbeiten speichern</button>
@@ -785,6 +841,66 @@ function TriagePage({ module, onDone }) {
             <p>Fuer diesen Filter gibt es gerade keine Karten.</p>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+function QualityCenter({ data, setRoute }) {
+  const quality = data.quality || {};
+  const reasons = quality.reasons || [];
+  const recent = quality.recent || [];
+  const max = Math.max(1, ...reasons.map((r) => r.count || 0));
+
+  return (
+    <section className="quality-center">
+      <div className="panel">
+        <div className="section-head">
+          <div>
+            <h2>Qualitaetszentrum</h2>
+            <p>Kartenfehler sammeln, schlechte Extraktionen finden und die Lernkarten gezielt glaetten.</p>
+          </div>
+          <ClipboardList size={22} />
+        </div>
+        <div className="quality-metrics">
+          <span><b>{quality.unchecked || 0}</b> ungeprueft</span>
+          <span><b>{quality.needs_review || 0}</b> im Review</span>
+          <span><b>{quality.suspended || 0}</b> deaktiviert</span>
+        </div>
+        <div className="button-row-inline">
+          <button className="primary" onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage starten</button>
+          <button onClick={() => setRoute("quality")}><Search size={16} /> Karten bearbeiten</button>
+        </div>
+      </div>
+
+      <div className="quality-center-grid">
+        <div className="panel">
+          <h3>Haeufige Gruende</h3>
+          <div className="reason-bars">
+            {reasons.length ? reasons.map((r) => (
+              <div className="reason-row" key={`${r.event_type}-${r.reason}`}>
+                <b>{reasonLabel(r.reason)}</b>
+                <span><i style={{ width: `${Math.max(7, pct(r.count, max))}%` }} /></span>
+                <em>{r.count}</em>
+              </div>
+            )) : <p className="muted">Noch keine Qualitaetsgruende erfasst.</p>}
+          </div>
+        </div>
+
+        <div className="panel">
+          <h3>Letzte Meldungen</h3>
+          <div className="quality-feed">
+            {recent.length ? recent.map((item) => (
+              <article key={item.id || `${item.card_id}-${item.created_at}`}>
+                <div>
+                  <b>{reasonLabel(item.reason)}</b>
+                  <span>VO{item.kap || "?"} - {item.status || "aktiv"} - {formatDate(item.created_at)}</span>
+                </div>
+                <p>{item.note || item.question || item.card_id}</p>
+              </article>
+            )) : <p className="muted">Sobald Karten markiert werden, erscheint hier der Verlauf.</p>}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -828,6 +944,7 @@ function App() {
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
     if (route === "exam") return <ExamPage startExam={startExam} />;
+    if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} />;
     if (route === "triage") return <TriagePage module={module} onDone={load} />;
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
     if (route === "add") return <ManualCardPage onDone={load} module={module} />;
@@ -842,6 +959,7 @@ function App() {
         <button className={route === "home" ? "active" : ""} onClick={() => setRoute("home")}><BookOpenCheck size={16} /> Trainer</button>
         <button className={route === "dashboard" ? "active" : ""} onClick={() => setRoute("dashboard")}><BarChart3 size={16} /> Dashboard</button>
         <button className={route === "exam" ? "active" : ""} onClick={() => setRoute("exam")}><Target size={16} /> Pruefung</button>
+        <button className={route === "quality-center" ? "active" : ""} onClick={() => setRoute("quality-center")}><ClipboardList size={16} /> Qualitaet</button>
         <button className={route === "triage" ? "active" : ""} onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage</button>
         <button className={route === "quality" ? "active" : ""} onClick={() => setRoute("quality")}><ClipboardList size={16} /> Kartenqualitaet</button>
         <button className={route === "add" ? "active" : ""} onClick={() => setRoute("add")}><Plus size={16} /> Eigene Karte</button>
