@@ -649,6 +649,37 @@ def random_cards(conn: sqlite3.Connection, limit: int = 20, mode: str = "mixed",
     return [row_to_card(r) for r in rows]
 
 
+def exam_candidates(conn: sqlite3.Connection, module: str = "organic", limit: int = 120,
+                    mode: str = "mixed", formula: bool = False) -> list[dict]:
+    clauses = ["module=?", "deck='anki'", "status='active'", "payload LIKE '%\"kind\": \"exam_%\"%'"]
+    params: list[object] = [module]
+    if formula:
+        clauses.append(
+            """(payload LIKE '%Reaktions%' OR payload LIKE '%Struktur%' OR payload LIKE '%Formel%'
+                OR payload LIKE '%Gleichung%' OR payload LIKE '%Polymerisation%' OR payload LIKE '%Synthese%'
+                OR payload LIKE '%Claus%' OR payload LIKE '%Haber%' OR payload LIKE '%Ostwald%'
+                OR payload LIKE '%Solvay%' OR payload LIKE '%Elektrolyse%')"""
+        )
+    where = " AND ".join(clauses)
+    if mode == "weak":
+        order = "lapses DESC, difficulty DESC, reps ASC, due ASC, RANDOM()"
+    else:
+        order = "kap ASC, RANDOM()"
+    rows = conn.execute(
+        f"""SELECT * FROM cards WHERE {where}
+            ORDER BY {order} LIMIT ?""",
+        (*params, limit),
+    ).fetchall()
+    if formula and not rows:
+        rows = conn.execute(
+            """SELECT * FROM cards
+               WHERE module=? AND deck='anki' AND status='active'
+               ORDER BY RANDOM() LIMIT ?""",
+            (module, limit),
+        ).fetchall()
+    return [row_to_card(r) for r in rows]
+
+
 def tag_stats(conn: sqlite3.Connection, module: str = "organic") -> list[dict]:
     rows = conn.execute(
         """SELECT * FROM cards

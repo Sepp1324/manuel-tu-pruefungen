@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -26,6 +27,52 @@ if not SPA_DIR.exists() and (Path(__file__).parent.parent / "dist").exists():
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "manuel").strip()
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
+ARCHIVE_EXAMS = {
+    "organic": [
+        {
+            "id": "organic-example-2024",
+            "title": "Beispielpruefung Organische Chemie",
+            "source": "Beispielpruefungen",
+            "questions": [
+                {"topic": "Fossile Rohstoffe", "points": 4, "prompts": ["Fossile und nachwachsende Rohstoffe erklaeren", "Entstehung von Erdoel beschreiben", "Konventionelle Erdoelfoerderung erklaeren", "Kohlevergasung mit Druck/Temperatur und Verfahrensart erlaeutern"]},
+                {"topic": "Synthesegas und Methanol", "points": 4, "prompts": ["Synthesegas definieren und Herstellung aus Kohle erklaeren", "Prozessfuehrungen und Syngas-Zusammensetzung vergleichen", "Methanol-Synthese mit Druck/Temperatur erklaeren", "Methanol-to-Olefins und Olefin-Nutzung einordnen"]},
+                {"topic": "Seife und Emulsionen", "points": 4, "prompts": ["Allgemeine Strukturformel von Seifen angeben", "Rohstoffe und Seifenherstellung erklaeren", "Kernseife und Schmierseife unterscheiden", "Emulsion und Stabilisierung mit Struktur/Wirkweise erklaeren"]},
+                {"topic": "Staerke", "points": 4, "prompts": ["Vorkommen und chemischen Aufbau nennen", "Modifizierte Staerke erklaeren", "Beispiel mit Reaktionsgleichung beschreiben", "Eigenschaft, Anwendung und Substitutionsgrad erklaeren"]},
+                {"topic": "Ketten- und Stufenwachstum", "points": 4, "prompts": ["Kinetischen Verlauf vergleichen", "Polymerisationsgrad und Reaktionsfortschritt erklaeren", "Mechanistische Typen nennen", "Reaktive Gruppen in Monomeren zuordnen"]},
+                {"topic": "Radikalische Polymerisation", "points": 4, "prompts": ["Mechanistischen Ablauf beschreiben", "Polyreaktionstyp zuordnen", "Initiation und Kettenwachstum erklaeren", "Beispielpolymer mit Struktur nennen"]},
+            ],
+        },
+        {
+            "id": "organic-2025-focus",
+            "title": "Pruefungsbogen-Fokus 2025",
+            "source": "Beispielpruefungen",
+            "questions": [
+                {"topic": "Erdgas", "points": 4, "prompts": ["Zusammensetzung von Erdgas", "Suesses und saures Gas unterscheiden", "Lagerstaetten erklaeren", "Fracking mit Funktionsweise beschreiben"]},
+                {"topic": "Fluid Catalytic Cracking", "points": 4, "prompts": ["Ausgangsstoff nennen", "Produkte erklaeren", "Reaktionen und Bedingungen beschreiben", "Katalysatorregeneration erklaeren"]},
+                {"topic": "Staerke und Glycosidische Bindung", "points": 4, "prompts": ["Wiederholeinheit zeichnen/benennen", "Funktion und Strukturmotive erklaeren", "Aldosen/Ketosen und D/L erklaeren", "Bindungsarten benennen und zeichnen"]},
+                {"topic": "Holz und Zellstoff", "points": 4, "prompts": ["Hierarchischen Aufbau bis molekular erklaeren", "Hauptbestandteile und Nutzung nennen", "Energetische Verwendung erklaeren", "Chemischen Holzaufschluss beschreiben"]},
+                {"topic": "Thermoplaste und Duroplaste", "points": 4, "prompts": ["Polymerarchitektur vergleichen", "Thermische und mechanische Eigenschaften erklaeren", "Elastomere einordnen", "Recyclingstrategien nennen"]},
+                {"topic": "Radikalische Polymerisation und Effekte", "points": 4, "prompts": ["Vier Teilschritte nennen", "Initiation und Kettenwachstum im Detail", "Glas-/Trommsdorff-Effekt erklaeren", "Geeignete technische Verfahren begruenden"]},
+            ],
+        },
+    ],
+    "inorganic": [
+        {
+            "id": "inorganic-simulation",
+            "title": "Anorganik-Simulationsbogen",
+            "source": "Aus Skript-Schwerpunkten generiert",
+            "questions": [
+                {"topic": "Rohstoffaufbereitung", "points": 4, "prompts": ["Zerkleinern und Klassieren erklaeren", "Sieb-/Sichterverfahren vergleichen", "Trennprinzipien nennen", "Bedeutung fuer technische Prozesse begruenden"]},
+                {"topic": "Metallurgie", "points": 4, "prompts": ["Pyro- und Hydrometallurgie vergleichen", "Roesten und Reduktion erklaeren", "Ellingham/Boudouard einordnen", "Raffination und Zementation beschreiben"]},
+                {"topic": "Eisen und Stahl", "points": 4, "prompts": ["Hochofenprozess erklaeren", "Reduktionsmittel und Schlacke einordnen", "Stahlerzeugungsverfahren vergleichen", "Direktreduktion nennen"]},
+                {"topic": "Kupfer und Aluminium", "points": 4, "prompts": ["Kupfergewinnung erklaeren", "Bayer- und Hall-Heroult-Verfahren beschreiben", "Elektrolysebedingungen nennen", "Recycling/Emissionen einordnen"]},
+                {"topic": "Grosschemie N/Cl/S", "points": 4, "prompts": ["Haber-Bosch und Ostwald erklaeren", "Chloralkali/Solvay einordnen", "Schwefelsaeure/Kontaktverfahren erklaeren", "Prozessparameter begruenden"]},
+                {"topic": "Bindemittel, Glas und Keramik", "points": 4, "prompts": ["Kalk/Gips/Zement-Abbinden erklaeren", "Klinkerphasen nennen", "Glasherstellung beschreiben", "Keramikprozess und Sinterung erklaeren"]},
+            ],
+        }
+    ],
+}
 
 PUBLIC_EXACT = {"/healthz", "/login", "/api/auth/login"}
 PUBLIC_PREFIXES = ("/assets/", "/static/")
@@ -163,6 +210,17 @@ class ManualCardIn(BaseModel):
     source: str = "Manuell"
 
 
+class OpenExamResultIn(BaseModel):
+    card_id: str
+    sub_scores: list[str] = Field(default_factory=list)
+
+
+class OpenExamSubmitIn(BaseModel):
+    module: str = "organic"
+    mode: str = "full"
+    results: list[OpenExamResultIn] = Field(default_factory=list)
+
+
 def _daily_goal(stats: dict, chapters: list[dict]) -> dict:
     days = max(_days_left(), 1)
     open_cards = (stats["new"] or 0) + (stats["due"] or 0)
@@ -259,6 +317,183 @@ def _study_plan(stats: dict, chapters: list[dict]) -> dict:
     }
 
 
+def _strip_html(value: str) -> str:
+    value = re.sub(r"<br\s*/?>", "\n", value or "", flags=re.I)
+    value = re.sub(r"</li>", "\n", value, flags=re.I)
+    value = re.sub(r"<[^>]+>", " ", value)
+    value = value.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def _question_title(card: dict) -> str:
+    raw = str(card.get("q", ""))
+    if "\n\n" in raw and raw.startswith("Kontext:"):
+        raw = raw.split("\n\n", 1)[1]
+    text = _strip_html(raw)
+    text = re.sub(r"^(Erlaeutern Sie|Erklaeren Sie|Beschreiben Sie|Vergleichen Sie|Nennen und erklaeren Sie)\s+", "", text)
+    text = re.split(r"\.\s+(?:Gehen|Nennen|Erklaeren)", text, maxsplit=1)[0]
+    return text[:120].strip(" .") or card.get("subname") or "Pruefungsfrage"
+
+
+def _answer_points(answer: str) -> list[str]:
+    points = []
+    for item in re.findall(r"<li>(.*?)</li>", answer or "", flags=re.S | re.I):
+        point = _strip_html(item)
+        if 12 <= len(point) <= 220:
+            points.append(point)
+    if points:
+        return points[:7]
+    plain = _strip_html(answer)
+    chunks = re.split(r"(?<=[.!?])\s+|;\s+|\s+•\s+", plain)
+    return [c.strip() for c in chunks if 18 <= len(c.strip()) <= 220][:6]
+
+
+def _scaffold_for(card: dict, points: list[str]) -> list[str]:
+    text = " ".join([card.get("q", ""), card.get("a", ""), card.get("kind", "")]).lower()
+    scaffold = ["Definition/Prinzip sauber angeben"]
+    if any(x in text for x in ["prozess", "verfahren", "synthese", "herstellung", "polymerisation", "elektrolyse"]):
+        scaffold.extend(["Ausgangsstoffe und Produkte nennen", "Prozessschritte in richtiger Reihenfolge erklaeren"])
+    if any(x in text for x in ["druck", "temperatur", "bedingung", "katalysator"]):
+        scaffold.append("Druck, Temperatur, Katalysator oder andere Bedingungen begruenden")
+    if any(x in text for x in ["struktur", "formel", "gleichung", "reaktion", "monomer", "wiederholeinheit"]):
+        scaffold.append("Reaktionsgleichung oder Strukturformel skizzieren")
+    if any(x in text for x in ["anwendung", "problem", "vorteil", "nachteil", "recycling", "umwelt"]):
+        scaffold.append("Anwendungen, Probleme oder typische Begruendung nennen")
+    for point in points[:2]:
+        scaffold.append(f"Konkreter Antwortpunkt: {point[:90]}")
+    seen: set[str] = set()
+    out = []
+    for item in scaffold:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out[:6]
+
+
+def _exam_block(module: str, kap: int | None) -> str:
+    kap = kap or 0
+    if module == "organic":
+        if kap <= 4:
+            return "Fossile Rohstoffe und Raffinerie"
+        if kap <= 8:
+            return "Nachwachsende Rohstoffe"
+        return "Polymerchemie"
+    if kap <= 2:
+        return "Grundlagen und Rohstoffe"
+    if kap <= 6:
+        return "Metallurgie"
+    if kap <= 9:
+        return "Anorganische Grosschemie"
+    return "Werkstoffe und Bindemittel"
+
+
+def _pick_balanced(cards: list[dict], module: str, count: int) -> list[dict]:
+    buckets: dict[str, list[dict]] = {}
+    for card in cards:
+        buckets.setdefault(_exam_block(module, card.get("kap")), []).append(card)
+    picked: list[dict] = []
+    while len(picked) < count and any(buckets.values()):
+        for block in sorted(buckets):
+            if buckets[block] and len(picked) < count:
+                picked.append(buckets[block].pop(0))
+    return picked[:count]
+
+
+def _exam_question(card: dict, idx: int, module: str, formula: bool = False) -> dict:
+    points = _answer_points(card.get("a", ""))
+    title = _question_title(card)
+    sub_count = max(3, min(5, len(points) or 4))
+    base_points = round(4 / sub_count, 2)
+    subquestions = []
+    for i in range(sub_count):
+        point_value = round(4 - base_points * (sub_count - 1), 2) if i == sub_count - 1 else base_points
+        if i < len(points):
+            prompt = points[i]
+            prompt = f"Erklaeren: {prompt[:125]}"
+        else:
+            fallback = ["Definition/Prinzip", "Prozess oder Aufbau", "Bedingungen/Formeln", "Beispiel/Anwendung", "Begruendung"][i]
+            prompt = fallback
+        subquestions.append({"id": f"{idx}-{i}", "prompt": prompt, "points": point_value})
+    if formula:
+        question = f"Geben oder skizzieren Sie die pruefungsrelevanten Reaktions- oder Strukturformeln zu {title}."
+    else:
+        question = card.get("q", "")
+        if question.startswith("Kontext:") and "\n\n" in question:
+            question = question.split("\n\n", 1)[1]
+    return {
+        "idx": idx,
+        "card_id": card["id"],
+        "module": module,
+        "kap": card.get("kap"),
+        "block": _exam_block(module, card.get("kap")),
+        "source": card.get("source"),
+        "title": title,
+        "question": question,
+        "subquestions": subquestions,
+        "points": 4,
+        "answer": card.get("a", ""),
+        "scaffold": _scaffold_for(card, points),
+        "tags": card.get("tags", []),
+    }
+
+
+def _exam_score_projection(stats: dict, chapters: list[dict], module: str) -> dict:
+    blocks: dict[str, list[dict]] = {}
+    for ch in chapters:
+        blocks.setdefault(_exam_block(module, ch.get("kap")), []).append(ch)
+    out = []
+    for block, items in blocks.items():
+        total = sum(i.get("total", 0) for i in items) or 1
+        seen = sum(i.get("seen", 0) for i in items)
+        progress = seen / total
+        weighted_hit = []
+        for item in items:
+            if item.get("hit_rate") is not None:
+                weighted_hit.append(item["hit_rate"] / 100)
+        hit = sum(weighted_hit) / len(weighted_hit) if weighted_hit else .55
+        again = sum(i.get("again", 0) for i in items)
+        penalty = min(.18, again / max(total, 1))
+        score = round(max(8, min(96, (progress * .55 + hit * .35 + .10 - penalty) * 100)))
+        out.append({
+            "block": block,
+            "score": score,
+            "label": f"{max(score - 8, 0)}-{min(score + 8, 99)}%",
+            "chapters": [i.get("kap") for i in items],
+            "detail": f"{seen}/{total} Karten gesehen, Trefferquote {round(hit * 100)}%",
+        })
+    overall = round(sum(b["score"] for b in out) / len(out)) if out else 0
+    return {
+        "overall": overall,
+        "label": f"{max(overall - 8, 0)}-{min(overall + 8, 99)}%",
+        "blocks": sorted(out, key=lambda b: b["block"]),
+        "next_step": "Starte eine Schwächen-Mini-Pruefung und bewerte jeden Unterpunkt ehrlich.",
+    }
+
+
+def _matching_cards(conn, module: str, topic: str, limit: int = 4) -> list[dict]:
+    terms = [t for t in re.findall(r"[A-Za-zÄÖÜäöüß0-9/-]{4,}", topic)[:5]]
+    if not terms:
+        return []
+    clauses = ["module=?", "deck='anki'", "status='active'"]
+    params: list[object] = [module]
+    clauses.append("(" + " OR ".join("payload LIKE ?" for _ in terms) + ")")
+    params.extend([f"%{term}%" for term in terms])
+    rows = conn.execute(
+        f"""SELECT * FROM cards WHERE {' AND '.join(clauses)}
+            ORDER BY reps ASC, lapses DESC, kap ASC LIMIT ?""",
+        (*params, limit),
+    ).fetchall()
+    return [
+        {
+            "id": card["id"],
+            "kap": card.get("kap"),
+            "title": _question_title(card),
+            "tags": card.get("tags", []),
+        }
+        for card in [db.row_to_card(r) for r in rows]
+    ]
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
@@ -325,6 +560,7 @@ def stats(module: str = "organic"):
     quality = db.quality_summary(conn, module)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
+    exam_score = _exam_score_projection(st, chapters, module)
     conn.close()
     return {
         "title": modules[module].get("full_title", modules[module].get("title", module)),
@@ -340,6 +576,7 @@ def stats(module: str = "organic"):
         "weaknesses": weaknesses,
         "tags": tags,
         "quality": quality,
+        "exam_score": exam_score,
         "xp": xp,
         "streak": streak,
     }
@@ -362,6 +599,7 @@ def dashboard(module: str = "organic"):
         "weaknesses": db.weakness_heatmap(conn, now, module),
         "tags": db.tag_stats(conn, module),
         "quality": db.quality_summary(conn, module),
+        "exam_score": _exam_score_projection(st, chapters, module),
         "xp": db.xp_summary(conn),
         "streak": db.streak(conn),
     }
@@ -385,6 +623,110 @@ def recall_exam(n: int = 20, mode: str = "mixed", module: str = "organic"):
     cards = db.random_cards(conn, max(5, min(n, 60)), mode if mode in ("mixed", "weak") else "mixed", module)
     conn.close()
     return {"deck": "exam", "mode": mode, "module": module, "cards": cards}
+
+
+@app.get("/api/exam/open")
+def open_exam(module: str = "organic", mode: str = "full"):
+    module = _valid_module(module)
+    mode = mode if mode in {"full", "weak", "mini"} else "full"
+    count = 4 if mode == "mini" else 6
+    minutes = 45 if mode == "mini" else 120
+    conn = db.get_conn()
+    cards = db.exam_candidates(conn, module, 160, "weak" if mode in {"weak", "mini"} else "mixed")
+    selected = _pick_balanced(cards, module, count)
+    conn.close()
+    return {
+        "id": f"{module}-{mode}-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
+        "module": module,
+        "mode": mode,
+        "title": "Schwaechen-Mini-Pruefung" if mode == "mini" else "Offene Pruefungssimulation",
+        "minutes": minutes,
+        "total_points": len(selected) * 4,
+        "questions": [_exam_question(card, i + 1, module) for i, card in enumerate(selected)],
+    }
+
+
+@app.get("/api/exam/formulas")
+def formula_exam(module: str = "organic", n: int = 10):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    cards = db.exam_candidates(conn, module, max(20, min(n * 5, 120)), "weak", formula=True)
+    selected = _pick_balanced(cards, module, max(4, min(n, 16)))
+    conn.close()
+    return {
+        "id": f"{module}-formula-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
+        "module": module,
+        "mode": "formula",
+        "title": "Reaktions- und Strukturformel-Trainer",
+        "minutes": 35,
+        "total_points": len(selected) * 4,
+        "questions": [_exam_question(card, i + 1, module, formula=True) for i, card in enumerate(selected)],
+    }
+
+
+@app.get("/api/exam/prognosis")
+def exam_prognosis(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    now = _now_iso()
+    st = db.deck_stats(conn, now, module)
+    chapters = db.chapter_stats(conn, now, module)
+    out = _exam_score_projection(st, chapters, module)
+    conn.close()
+    return out
+
+
+@app.get("/api/exam/archive")
+def exam_archive(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    exams = []
+    for exam in ARCHIVE_EXAMS.get(module, []):
+        questions = []
+        for q in exam["questions"]:
+            questions.append({**q, "matches": _matching_cards(conn, module, q["topic"])})
+        exams.append({**exam, "questions": questions})
+    conn.close()
+    return {"module": module, "exams": exams}
+
+
+@app.post("/api/exam/open/submit")
+def submit_open_exam(inp: OpenExamSubmitIn):
+    module = _valid_module(inp.module)
+    conn = db.get_conn()
+    now = datetime.now(timezone.utc)
+    total_points = 0.0
+    earned = 0.0
+    reviewed = 0
+    for result in inp.results:
+        card = db.get_card(conn, result.card_id)
+        if not card or card.get("module") != module:
+            continue
+        weights = {"full": 1.0, "partial": 0.5, "miss": 0.0}
+        values = [weights.get(score, 0.0) for score in result.sub_scores]
+        if not values:
+            values = [0.0]
+        ratio = sum(values) / len(values)
+        earned += ratio * 4
+        total_points += 4
+        rating = 4 if ratio >= .85 else 3 if ratio >= .6 else 2 if ratio >= .35 else 1
+        elapsed = 0.0
+        if card.get("last_review"):
+            elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
+        updated = sched.review(card, rating, now, max_interval_days=_max_fsrs_interval_days(now))
+        db.apply_review(conn, result.card_id, updated, rating, elapsed, deck="open_exam")
+        reviewed += 1
+    pct_score = round((earned / total_points) * 100) if total_points else 0
+    xp = db.add_xp_event(conn, max(10, round(earned * 4)), "open_exam", f"Offene Pruefung: {pct_score}%", inp.mode, _now_iso())
+    conn.close()
+    return {
+        "ok": True,
+        "reviewed": reviewed,
+        "earned": round(earned, 1),
+        "total": round(total_points, 1),
+        "pct": pct_score,
+        "xp": xp,
+    }
 
 
 @app.get("/api/cards")

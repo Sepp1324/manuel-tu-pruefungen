@@ -14,6 +14,9 @@ getrennt:
 - Modulumschalter fuer Organische und Anorganische Chemie
 - 341 pruefungsnahe Anki-Style Karten fuer Organische Chemie
 - 419 pruefungsnahe Anki-Style Karten fuer Anorganische Chemie
+- offener Pruefungsarbeitsplatz mit 2h-Simulation, Antwortgeruesten,
+  Schwaechen-Mini-Pruefung, Reaktions-/Strukturtrainer, Score-Prognose und
+  Alte-Pruefungen-Ansicht
 
 ## Lokal starten
 

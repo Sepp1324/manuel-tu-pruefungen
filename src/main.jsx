@@ -34,6 +34,11 @@ const REVIEW_REASONS = [
   ["karte_schlecht", "Karte schlecht"],
 ];
 const ALL_REASONS = [...TRIAGE_REASONS, ...REVIEW_REASONS];
+const EXAM_EVALS = [
+  ["full", "voll"],
+  ["partial", "teilweise"],
+  ["miss", "nicht gewusst"],
+];
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -62,6 +67,14 @@ function formatDate(s) {
 
 function reasonLabel(reason) {
   return ALL_REASONS.find(([key]) => key === reason)?.[1] || reason || "Ohne Grund";
+}
+
+function formatSeconds(s) {
+  const safe = Math.max(0, Math.floor(s || 0));
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
+  const sec = safe % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
 }
 
 function AuthBar() {
@@ -551,32 +564,273 @@ function Dashboard({ startSession, module }) {
   );
 }
 
-function ExamPage({ startExam }) {
+function ExamScorePanel({ prognosis }) {
+  if (!prognosis) return null;
+  return (
+    <section className="panel exam-score-panel">
+      <div>
+        <h2>Pruefungs-Score-Prognose</h2>
+        <p>{prognosis.next_step}</p>
+      </div>
+      <div className="forecast-score compact"><b>{prognosis.label}</b><span>gesamt</span></div>
+      <div className="exam-blocks">
+        {(prognosis.blocks || []).map((b) => (
+          <div key={b.block}>
+            <span>{b.block}</span>
+            <b>{b.label}</b>
+            <i><em style={{ width: `${b.score}%` }} /></i>
+            <small>{b.detail}</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function scoreForQuestion(scores = {}, question) {
+  const values = { full: 1, partial: .5, miss: 0 };
+  return (question.subquestions || []).reduce((sum, sub) => sum + (values[scores[sub.id]] ?? 0) * (sub.points || 0), 0);
+}
+
+function OpenExamRunner({ exam, module, onClose }) {
+  const [idx, setIdx] = useState(0);
+  const [revealed, setRevealed] = useState({});
+  const [scores, setScores] = useState({});
+  const [secondsLeft, setSecondsLeft] = useState((exam.minutes || 0) * 60);
+  const [result, setResult] = useState(null);
+  const question = exam.questions[idx];
+  const earned = (exam.questions || []).reduce((sum, q) => sum + scoreForQuestion(scores[q.card_id] || {}, q), 0);
+
+  useEffect(() => {
+    setSecondsLeft((exam.minutes || 0) * 60);
+    setScores({});
+    setRevealed({});
+    setResult(null);
+    setIdx(0);
+  }, [exam.id]);
+
+  useEffect(() => {
+    if (result) return undefined;
+    const timer = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [result]);
+
+  function mark(subId, value) {
+    setScores((old) => ({
+      ...old,
+      [question.card_id]: { ...(old[question.card_id] || {}), [subId]: value },
+    }));
+  }
+
+  async function finish() {
+    const payload = {
+      module,
+      mode: exam.mode,
+      results: (exam.questions || []).map((q) => ({
+        card_id: q.card_id,
+        sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || "miss"),
+      })),
+    };
+    const res = await api("/api/exam/open/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setResult(res);
+  }
+
+  if (result) {
+    return (
+      <section className="done exam-result">
+        <Check size={32} />
+        <h2>Pruefung ausgewertet</h2>
+        <p>{result.earned} von {result.total} Punkten, {result.pct}% geschaetzt.</p>
+        <div className="result-grid">
+          {(exam.questions || []).map((q) => (
+            <span key={q.card_id}><b>Frage {q.idx}</b>{scoreForQuestion(scores[q.card_id] || {}, q).toFixed(1)}/4</span>
+          ))}
+        </div>
+        <button className="primary" onClick={onClose}>Zurueck</button>
+      </section>
+    );
+  }
+
+  if (!question) return null;
+  const currentScores = scores[question.card_id] || {};
+  return (
+    <section className="open-exam">
+      <div className="exam-toolbar">
+        <button onClick={onClose}><ArrowLeft size={16} /> Zurueck</button>
+        <div className="timer">{formatSeconds(secondsLeft)}</div>
+        <div className="progress"><span style={{ width: `${pct(idx + 1, exam.questions.length || 1)}%` }} /></div>
+        <b>{earned.toFixed(1)}/{exam.total_points}</b>
+      </div>
+      <div className="exam-nav">
+        {(exam.questions || []).map((q, i) => (
+          <button key={q.card_id} className={i === idx ? "active" : ""} onClick={() => setIdx(i)}>
+            {q.idx}
+          </button>
+        ))}
+      </div>
+      <article className="panel open-question">
+        <div className="study-meta">
+          <span className="deck-pill">{question.block}</span>
+          <span>VO{question.kap}</span>
+          <span>{question.source}</span>
+          <span>{question.points} Punkte</span>
+        </div>
+        <h2 dangerouslySetInnerHTML={{ __html: question.question }} />
+        <div className="subquestion-list">
+          {(question.subquestions || []).map((sub) => (
+            <div key={sub.id} className="subquestion">
+              <p>{sub.prompt}</p>
+              <span>{sub.points} P</span>
+              <div>
+                {EXAM_EVALS.map(([key, label]) => (
+                  <button key={key} className={currentScores[sub.id] === key ? "active" : ""} onClick={() => mark(sub.id, key)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="button-row-inline">
+          <button onClick={() => setRevealed((old) => ({ ...old, [question.card_id]: !old[question.card_id] }))}>
+            {revealed[question.card_id] ? "Loesung ausblenden" : "Geruest & Loesung zeigen"}
+          </button>
+          <button disabled={idx === 0} onClick={() => setIdx(idx - 1)}>Zurueck</button>
+          <button disabled={idx + 1 >= exam.questions.length} onClick={() => setIdx(idx + 1)}>Weiter</button>
+          <button className="primary" onClick={finish}>Auswerten</button>
+        </div>
+        {revealed[question.card_id] && (
+          <div className="exam-solution">
+            <h3>Antwort-Geruest</h3>
+            <div className="scaffold-list">
+              {(question.scaffold || []).map((item) => <span key={item}>{item}</span>)}
+            </div>
+            <AnswerContent html={question.answer} />
+          </div>
+        )}
+      </article>
+    </section>
+  );
+}
+
+function ExamArchive({ archive }) {
+  const exams = archive?.exams || [];
+  const [selectedId, setSelectedId] = useState("");
+  const selected = exams.find((e) => e.id === selectedId) || exams[0];
+  useEffect(() => {
+    if (!selectedId && exams[0]) setSelectedId(exams[0].id);
+  }, [archive?.module]);
+  if (!selected) return <p className="muted">Noch keine Archivansicht fuer dieses Modul.</p>;
+  return (
+    <section className="archive-layout">
+      <div className="archive-list">
+        {exams.map((exam) => (
+          <button key={exam.id} className={selected.id === exam.id ? "active" : ""} onClick={() => setSelectedId(exam.id)}>
+            <b>{exam.title}</b>
+            <span>{exam.source}</span>
+          </button>
+        ))}
+      </div>
+      <div className="archive-paper">
+        <h3>{selected.title}</h3>
+        {(selected.questions || []).map((q, i) => (
+          <article key={`${selected.id}-${q.topic}`}>
+            <div>
+              <b>{i + 1}. {q.topic}</b>
+              <span>{q.points} Punkte</span>
+            </div>
+            <ul>{(q.prompts || []).map((p) => <li key={p}>{p}</li>)}</ul>
+            <div className="match-strip">
+              {(q.matches || []).map((m) => (
+                <span key={m.id}>VO{m.kap}: {m.title}</span>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ExamPage({ startExam, module }) {
   const [count, setCount] = useState(20);
   const [mode, setMode] = useState("mixed");
+  const [exam, setExam] = useState(null);
+  const [prognosis, setPrognosis] = useState(null);
+  const [archive, setArchive] = useState(null);
+
+  useEffect(() => {
+    api(`/api/exam/prognosis?module=${encodeURIComponent(module)}`).then(setPrognosis).catch(() => {});
+    api(`/api/exam/archive?module=${encodeURIComponent(module)}`).then(setArchive).catch(() => {});
+  }, [module]);
+
+  async function startOpen(nextMode) {
+    const res = await api(`/api/exam/open?module=${encodeURIComponent(module)}&mode=${encodeURIComponent(nextMode)}`);
+    setExam(res);
+  }
+
+  async function startFormula() {
+    const res = await api(`/api/exam/formulas?module=${encodeURIComponent(module)}&n=10`);
+    setExam(res);
+  }
+
+  if (exam) return <OpenExamRunner exam={exam} module={module} onClose={() => setExam(null)} />;
+
   return (
-    <section className="panel exam-panel">
-      <div className="section-head">
-        <div>
-          <h2>Pruefungsmodus</h2>
-          <p>Zufaellige Recall-Karten mit Timer-Gefuehl und Auswertung nach VO. Keine Antwortoptionen.</p>
+    <section className="exam-workbench">
+      <div className="panel exam-hero-panel">
+        <div className="section-head">
+          <div>
+            <h2>Pruefungsarbeitsplatz</h2>
+            <p>Offene TU-Fragen, Antwortgerueste, Mini-Pruefungen und Formeltraining.</p>
+          </div>
+          <Target size={26} />
         </div>
-        <Target size={26} />
+        <div className="exam-actions-grid">
+          <button className="primary" onClick={() => startOpen("full")}>2h-Pruefung starten</button>
+          <button onClick={() => startOpen("mini")}>Schwaechen-Mini-Pruefung</button>
+          <button onClick={startFormula}>Reaktions-/Strukturtrainer</button>
+        </div>
       </div>
-      <div className="form-grid">
-        <label>Anzahl
-          <select value={count} onChange={(e) => setCount(Number(e.target.value))}>
-            {[10, 20, 30, 40, 60].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </label>
-        <label>Modus
-          <select value={mode} onChange={(e) => setMode(e.target.value)}>
-            <option value="mixed">Gemischt</option>
-            <option value="weak">Schwachstellen</option>
-          </select>
-        </label>
-        <button className="primary" onClick={() => startExam(count, mode)}>Starten</button>
-      </div>
+
+      <ExamScorePanel prognosis={prognosis} />
+
+      <section className="panel exam-panel">
+        <div className="section-head">
+          <div>
+            <h2>Karten-Drill</h2>
+            <p>Schneller Recall-Modus als Warm-up vor der offenen Simulation.</p>
+          </div>
+        </div>
+        <div className="form-grid">
+          <label>Anzahl
+            <select value={count} onChange={(e) => setCount(Number(e.target.value))}>
+              {[10, 20, 30, 40, 60].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+          <label>Modus
+            <select value={mode} onChange={(e) => setMode(e.target.value)}>
+              <option value="mixed">Gemischt</option>
+              <option value="weak">Schwachstellen</option>
+            </select>
+          </label>
+          <button onClick={() => startExam(count, mode)}>Karten-Drill starten</button>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-head">
+          <div>
+            <h2>Alte Pruefungen</h2>
+            <p>Beispielboegen als Themenraster mit passenden Lernkarten daneben.</p>
+          </div>
+        </div>
+        <ExamArchive archive={archive} />
+      </section>
     </section>
   );
 }
@@ -943,7 +1197,7 @@ function App() {
     if (!data) return <div className="loading">Laedt...</div>;
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
-    if (route === "exam") return <ExamPage startExam={startExam} />;
+    if (route === "exam") return <ExamPage startExam={startExam} module={module} />;
     if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} />;
     if (route === "triage") return <TriagePage module={module} onDone={load} />;
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
