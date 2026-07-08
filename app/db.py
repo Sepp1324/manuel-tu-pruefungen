@@ -197,8 +197,25 @@ def seed(conn: sqlite3.Connection) -> int:
     payload = json.loads(SEED_PATH.read_text(encoding="utf-8"))
     added = 0
     for card in payload["cards"]:
-        exists = conn.execute("SELECT 1 FROM cards WHERE id=?", (card["id"],)).fetchone()
+        exists = conn.execute("SELECT updated_at, status, review_note FROM cards WHERE id=?", (card["id"],)).fetchone()
         if exists:
+            if exists["updated_at"] is None:
+                synced = dict(card)
+                synced["status"] = exists["status"] or card.get("status", "active")
+                conn.execute(
+                    """UPDATE cards SET module=?, kap=?, sub=?, subname=?, source=?, ord=?, payload=?
+                       WHERE id=?""",
+                    (
+                        card.get("module", "organic"),
+                        card.get("kap"),
+                        card.get("sub"),
+                        card.get("subname"),
+                        card.get("source"),
+                        card.get("order", 0),
+                        json.dumps(synced, ensure_ascii=False),
+                        card["id"],
+                    ),
+                )
             continue
         conn.execute(
             """INSERT INTO cards(id, module, deck, kap, sub, subname, source, ord, status, payload)

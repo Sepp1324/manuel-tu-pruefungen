@@ -55,6 +55,13 @@ Das schreibt:
 - `app/seed_data.json` - Karten und Kapitel-Metadaten
 - `app/source_text_index.json` - kurzer Extraktionsindex zur Kontrolle
 
+Nach einer Neugenerierung sollten die Karten mit Kontextzeilen angereichert
+werden:
+
+```bash
+PYTHONPATH=app python3 tools/contextualize_seed_cards.py
+```
+
 ## Deployment
 
 Die k3s-Manifeste liegen in `k8s/` und sind auf eine separate Instanz

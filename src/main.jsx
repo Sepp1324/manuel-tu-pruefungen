@@ -230,6 +230,20 @@ function AnswerContent({ html = "" }) {
   );
 }
 
+function QuestionContent({ html = "" }) {
+  const marker = "\n\n";
+  if (html.startsWith("Kontext:") && html.includes(marker)) {
+    const [context, ...rest] = html.split(marker);
+    return (
+      <>
+        <div className="question-context" dangerouslySetInnerHTML={{ __html: context }} />
+        <h2 dangerouslySetInnerHTML={{ __html: rest.join(marker) }} />
+      </>
+    );
+  }
+  return <h2 dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 function ModuleSwitch({ modules = {}, active, onChange }) {
   const entries = Object.entries(modules);
   if (entries.length <= 1) return null;
@@ -414,7 +428,7 @@ function Study({ session, setSession, finish }) {
           <span>Quelle: {card.source}</span>
           <span>faellig: {formatDate(card.due)}</span>
         </div>
-        <h2 dangerouslySetInnerHTML={{ __html: card.q }} />
+        <QuestionContent html={card.q} />
         {revealed ? (
           <>
             <AnswerContent html={card.a} />
