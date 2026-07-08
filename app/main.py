@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import json
 import re
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -219,6 +219,19 @@ class OpenExamSubmitIn(BaseModel):
     module: str = "organic"
     mode: str = "full"
     results: list[OpenExamResultIn] = Field(default_factory=list)
+
+
+class ArchiveCorrectionResultIn(BaseModel):
+    topic: str
+    score: str = Field(pattern="^(full|partial|miss)$")
+    card_ids: list[str] = Field(default_factory=list)
+    note: str = ""
+
+
+class ArchiveCorrectionSubmitIn(BaseModel):
+    module: str = "organic"
+    exam_id: str
+    results: list[ArchiveCorrectionResultIn] = Field(default_factory=list)
 
 
 def _daily_goal(stats: dict, chapters: list[dict]) -> dict:
@@ -494,6 +507,137 @@ def _matching_cards(conn, module: str, topic: str, limit: int = 4) -> list[dict]
     ]
 
 
+def _matching_full_cards(conn, module: str, topic: str, limit: int = 10) -> list[dict]:
+    terms = [t for t in re.findall(r"[A-Za-zÄÖÜäöüß0-9/-]{4,}", topic)[:6]]
+    if not terms:
+        return []
+    clauses = ["module=?", "deck='anki'", "status='active'"]
+    params: list[object] = [module]
+    clauses.append("(" + " OR ".join("payload LIKE ?" for _ in terms) + ")")
+    params.extend([f"%{term}%" for term in terms])
+    rows = conn.execute(
+        f"""SELECT * FROM cards WHERE {' AND '.join(clauses)}
+            ORDER BY lapses DESC, reps ASC, kap ASC LIMIT ?""",
+        (*params, limit),
+    ).fetchall()
+    return [db.row_to_card(r) for r in rows]
+
+
+def _card_mastery_score(card: dict, now_iso: str) -> int:
+    reps = card.get("reps") or 0
+    lapses = card.get("lapses") or 0
+    difficulty = card.get("difficulty") or 0
+    stability = card.get("stability") or 0
+    score = 12 if not card.get("last_review") else 45
+    score += min(28, reps * 6)
+    score += min(18, stability * 1.2)
+    score -= min(24, lapses * 8)
+    score -= min(16, max(difficulty - 6, 0) * 4)
+    if card.get("due") and card.get("due") <= now_iso:
+        score -= 8
+    return round(max(0, min(100, score)))
+
+
+def _topic_mastery(conn, module: str, topic: str, prompts: list[str] | None = None) -> dict:
+    now_iso = _now_iso()
+    cards = _matching_full_cards(conn, module, topic, 12)
+    if not cards and prompts:
+        for prompt in prompts[:2]:
+            cards.extend(_matching_full_cards(conn, module, prompt, 4))
+    unique: dict[str, dict] = {}
+    for card in cards:
+        unique[card["id"]] = card
+    cards = list(unique.values())[:12]
+    scores = [_card_mastery_score(card, now_iso) for card in cards]
+    score = round(sum(scores) / len(scores)) if scores else 0
+    if score >= 72:
+        status = "gruen"
+    elif score >= 45:
+        status = "gelb"
+    else:
+        status = "rot"
+    return {
+        "topic": topic,
+        "score": score,
+        "status": status,
+        "cards": [
+            {
+                "id": card["id"],
+                "kap": card.get("kap"),
+                "title": _question_title(card),
+                "score": _card_mastery_score(card, now_iso),
+                "reps": card.get("reps") or 0,
+                "lapses": card.get("lapses") or 0,
+            }
+            for card in cards[:5]
+        ],
+        "detail": f"{len(cards)} passende Karten, Status {status}",
+    }
+
+
+def _all_mastery(conn, module: str) -> list[dict]:
+    topics: dict[str, list[str]] = {}
+    for exam in ARCHIVE_EXAMS.get(module, []):
+        for q in exam.get("questions", []):
+            topics.setdefault(q["topic"], []).extend(q.get("prompts", []))
+    out = [_topic_mastery(conn, module, topic, prompts) for topic, prompts in topics.items()]
+    return sorted(out, key=lambda item: (item["score"], item["topic"]))
+
+
+def _formula_checklist(conn, module: str) -> dict:
+    now_iso = _now_iso()
+    cards = db.exam_candidates(conn, module, 80, "mixed", formula=True)
+    draw = []
+    explain = []
+    for card in cards:
+        text = " ".join([card.get("q", ""), card.get("a", ""), card.get("kind", "")]).lower()
+        item = {
+            "id": card["id"],
+            "kap": card.get("kap"),
+            "title": _question_title(card),
+            "score": _card_mastery_score(card, now_iso),
+            "tags": card.get("tags", []),
+        }
+        if any(x in text for x in ["struktur", "formel", "gleichung", "wiederholeinheit", "monomer"]):
+            draw.append(item)
+        else:
+            explain.append(item)
+    return {
+        "draw": sorted(draw, key=lambda x: (x["score"], x["kap"] or 0, x["title"]))[:18],
+        "explain": sorted(explain, key=lambda x: (x["score"], x["kap"] or 0, x["title"]))[:18],
+    }
+
+
+def _final_plan(conn, module: str) -> dict:
+    start = EXAM_DATE - timedelta(days=6)
+    weaknesses = db.weakness_heatmap(conn, _now_iso(), module)[:4]
+    focus = [f"VO{w['kap']} {w['name']}" for w in weaknesses]
+    templates = [
+        ("Bestandsaufnahme", ["Score-Prognose ansehen", "Schwaechen-Mini-Pruefung starten", "rote Mastery-Themen markieren"]),
+        ("Prozesse", ["2h-Pruefung: 3 Prozessfragen", "Antwortgerueste laut wiederholen", "Fehlerkarten ins Qualitaetszentrum"]),
+        ("Formeln", ["Reaktions-/Strukturtrainer", "Muss ich zeichnen koennen-Liste", "alle Luecken handschriftlich skizzieren"]),
+        ("Alte Pruefung", ["Archivbogen korrigieren", "Unterpunkte ehrlich bewerten", "miss/partial direkt nachlernen"]),
+        ("Schwaechen", ["Kann ich erklaeren-Modus", "nur rote/gelbe Mastery-Themen", "keine neuen Karten"]),
+        ("Generalprobe", ["volle 2h-Simulation", "Punkteprognose vergleichen", "letzte Formelcheckliste"]),
+        ("Pruefungstag", ["nur leichte Gerueste", "keine neuen Themen", "kurzer Formel-Warm-up"]),
+    ]
+    days = []
+    for i, (title, tasks) in enumerate(templates):
+        d = start + timedelta(days=i)
+        days.append({
+            "date": d.isoformat(),
+            "title": title,
+            "tasks": tasks,
+            "focus": focus[:2] if i in {1, 4} else focus[2:] if i == 3 else focus[:1],
+        })
+    return {
+        "exam_date": EXAM_DATE.isoformat(),
+        "starts_on": start.isoformat(),
+        "days": days,
+        "rule": "In den letzten 7 Tagen keine neuen Karten: nur alte Pruefungen, Schwachstellen und Formeln.",
+    }
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
@@ -557,6 +701,7 @@ def stats(module: str = "organic"):
     chapters = db.chapter_stats(conn, now, module)
     weaknesses = db.weakness_heatmap(conn, now, module)
     tags = db.tag_stats(conn, module)
+    auto_quality = db.auto_quality_sweep(conn, module, now)
     quality = db.quality_summary(conn, module)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
@@ -576,6 +721,7 @@ def stats(module: str = "organic"):
         "weaknesses": weaknesses,
         "tags": tags,
         "quality": quality,
+        "auto_quality": {"moved": auto_quality},
         "exam_score": exam_score,
         "xp": xp,
         "streak": streak,
@@ -589,6 +735,7 @@ def dashboard(module: str = "organic"):
     now = _now_iso()
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
+    auto_quality = db.auto_quality_sweep(conn, module, now)
     out = {
         "module": module,
         "stats": st,
@@ -599,6 +746,7 @@ def dashboard(module: str = "organic"):
         "weaknesses": db.weakness_heatmap(conn, now, module),
         "tags": db.tag_stats(conn, module),
         "quality": db.quality_summary(conn, module),
+        "auto_quality": {"moved": auto_quality},
         "exam_score": _exam_score_projection(st, chapters, module),
         "xp": db.xp_summary(conn),
         "streak": db.streak(conn),
@@ -628,18 +776,18 @@ def recall_exam(n: int = 20, mode: str = "mixed", module: str = "organic"):
 @app.get("/api/exam/open")
 def open_exam(module: str = "organic", mode: str = "full"):
     module = _valid_module(module)
-    mode = mode if mode in {"full", "weak", "mini"} else "full"
-    count = 4 if mode == "mini" else 6
-    minutes = 45 if mode == "mini" else 120
+    mode = mode if mode in {"full", "weak", "mini", "explain"} else "full"
+    count = 8 if mode == "explain" else 4 if mode == "mini" else 6
+    minutes = 16 if mode == "explain" else 45 if mode == "mini" else 120
     conn = db.get_conn()
-    cards = db.exam_candidates(conn, module, 160, "weak" if mode in {"weak", "mini"} else "mixed")
+    cards = db.exam_candidates(conn, module, 160, "weak" if mode in {"weak", "mini", "explain"} else "mixed")
     selected = _pick_balanced(cards, module, count)
     conn.close()
     return {
         "id": f"{module}-{mode}-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
         "module": module,
         "mode": mode,
-        "title": "Schwaechen-Mini-Pruefung" if mode == "mini" else "Offene Pruefungssimulation",
+        "title": "Kann ich erklaeren?" if mode == "explain" else "Schwaechen-Mini-Pruefung" if mode == "mini" else "Offene Pruefungssimulation",
         "minutes": minutes,
         "total_points": len(selected) * 4,
         "questions": [_exam_question(card, i + 1, module) for i, card in enumerate(selected)],
@@ -690,6 +838,73 @@ def exam_archive(module: str = "organic"):
     return {"module": module, "exams": exams}
 
 
+@app.get("/api/exam/mastery")
+def exam_mastery(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _all_mastery(conn, module)
+    conn.close()
+    return {"module": module, "topics": out}
+
+
+@app.get("/api/exam/formula-checklist")
+def formula_checklist(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _formula_checklist(conn, module)
+    conn.close()
+    return {"module": module, **out}
+
+
+@app.get("/api/exam/final-plan")
+def final_plan(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _final_plan(conn, module)
+    conn.close()
+    return {"module": module, **out}
+
+
+@app.post("/api/exam/archive/submit")
+def submit_archive_correction(inp: ArchiveCorrectionSubmitIn):
+    module = _valid_module(inp.module)
+    conn = db.get_conn()
+    now = _now_iso()
+    weights = {"full": 1.0, "partial": 0.5, "miss": 0.0}
+    earned = 0.0
+    total = 0.0
+    touched = 0
+    for result in inp.results:
+        ratio = weights.get(result.score, 0.0)
+        earned += ratio * 4
+        total += 4
+        if result.score in {"partial", "miss"}:
+            for card_id in result.card_ids[:6]:
+                card = db.get_card(conn, card_id)
+                if not card or card.get("module") != module:
+                    continue
+                reason = "archiv_partial" if result.score == "partial" else "archiv_miss"
+                note = result.note or f"Archiv-Korrektur {result.topic}: {result.score}"
+                db.add_quality_event(conn, card_id, module, "archive_correction", reason, note, now)
+                if result.score == "miss":
+                    db.mark_card_needs_review(conn, card_id, note, now)
+                touched += 1
+    pct_score = round(earned / total * 100) if total else 0
+    xp = db.add_xp_event(conn, max(8, round(earned * 3)), "archive_exam", f"Archiv-Korrektur: {pct_score}%", inp.exam_id, now)
+    conn.close()
+    return {"ok": True, "earned": round(earned, 1), "total": round(total, 1), "pct": pct_score, "touched": touched, "xp": xp}
+
+
+@app.post("/api/quality/autoprune")
+def quality_autoprune(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    moved = db.auto_quality_sweep(conn, module, _now_iso())
+    summary = db.quality_summary(conn, module)
+    conn.close()
+    return {"ok": True, "moved": moved, "quality": summary}
+
+
 @app.post("/api/exam/open/submit")
 def submit_open_exam(inp: OpenExamSubmitIn):
     module = _valid_module(inp.module)
@@ -715,7 +930,10 @@ def submit_open_exam(inp: OpenExamSubmitIn):
             elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
         updated = sched.review(card, rating, now, max_interval_days=_max_fsrs_interval_days(now))
         db.apply_review(conn, result.card_id, updated, rating, elapsed, deck="open_exam")
+        if rating == 1:
+            db.add_quality_event(conn, result.card_id, module, "open_exam", "pruefung_miss", "In offener Pruefung nicht beantwortet", updated["last_review"])
         reviewed += 1
+    moved = db.auto_quality_sweep(conn, module, _now_iso())
     pct_score = round((earned / total_points) * 100) if total_points else 0
     xp = db.add_xp_event(conn, max(10, round(earned * 4)), "open_exam", f"Offene Pruefung: {pct_score}%", inp.mode, _now_iso())
     conn.close()
@@ -725,6 +943,7 @@ def submit_open_exam(inp: OpenExamSubmitIn):
         "earned": round(earned, 1),
         "total": round(total_points, 1),
         "pct": pct_score,
+        "auto_quality_moved": moved,
         "xp": xp,
     }
 
@@ -812,6 +1031,8 @@ def review(inp: ReviewIn):
         db.add_quality_event(conn, inp.card_id, card.get("module", "organic"), "review_feedback", inp.feedback_reason, note, updated["last_review"])
         if inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
             db.mark_card_needs_review(conn, inp.card_id, note, updated["last_review"])
+    if inp.rating == 1:
+        db.auto_quality_sweep(conn, card.get("module", "organic"), updated["last_review"])
     xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
     xp = db.add_xp_event(conn, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
     conn.close()

@@ -587,6 +587,93 @@ function ExamScorePanel({ prognosis }) {
   );
 }
 
+function MasteryPanel({ mastery }) {
+  const topics = mastery?.topics || [];
+  if (!topics.length) return null;
+  return (
+    <section className="panel mastery-panel">
+      <div className="section-head">
+        <div>
+          <h2>Themen-Mastery</h2>
+          <p>Ampel je pruefungsnahem Thema, berechnet aus passenden Karten, Fehlern und Wiederholungen.</p>
+        </div>
+      </div>
+      <div className="mastery-grid">
+        {topics.map((topic) => (
+          <article key={topic.topic} className={`mastery-card ${topic.status}`}>
+            <div>
+              <b>{topic.topic}</b>
+              <span>{topic.score}%</span>
+            </div>
+            <p>{topic.detail}</p>
+            <div className="mini-card-list">
+              {(topic.cards || []).slice(0, 3).map((card) => (
+                <span key={card.id}>VO{card.kap}: {card.title}</span>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FormulaChecklistPanel({ checklist, onStart }) {
+  if (!checklist) return null;
+  const groups = [
+    ["draw", "Muss ich zeichnen koennen", checklist.draw || []],
+    ["explain", "Muss ich erklaeren koennen", checklist.explain || []],
+  ];
+  return (
+    <section className="panel formula-checklist">
+      <div className="section-head">
+        <div>
+          <h2>Formel- und Reaktionschecklisten</h2>
+          <p>Getrennt nach Zeichnen/Skizzieren und Erklaeren.</p>
+        </div>
+        <button onClick={onStart}>Trainer starten</button>
+      </div>
+      <div className="checklist-grid">
+        {groups.map(([key, title, items]) => (
+          <div key={key}>
+            <h3>{title}</h3>
+            {(items || []).slice(0, 10).map((item) => (
+              <span key={item.id} className={item.score >= 70 ? "ok" : item.score >= 45 ? "mid" : "low"}>
+                <b>VO{item.kap}</b>{item.title}<em>{item.score}%</em>
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FinalPlanPanel({ plan }) {
+  if (!plan) return null;
+  return (
+    <section className="panel final-plan">
+      <div className="section-head">
+        <div>
+          <h2>7-Tage-Endspurtplan</h2>
+          <p>{plan.rule}</p>
+        </div>
+        <span className="deck-pill">bis {plan.exam_date}</span>
+      </div>
+      <div className="final-days">
+        {(plan.days || []).map((day) => (
+          <article key={day.date}>
+            <b>{day.date}</b>
+            <h3>{day.title}</h3>
+            <ul>{day.tasks.map((task) => <li key={task}>{task}</li>)}</ul>
+            {!!day.focus?.length && <p>{day.focus.join(" - ")}</p>}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function scoreForQuestion(scores = {}, question) {
   const values = { full: 1, partial: .5, miss: 0 };
   return (question.subquestions || []).reduce((sum, sub) => sum + (values[scores[sub.id]] ?? 0) * (sub.points || 0), 0);
@@ -717,13 +804,137 @@ function OpenExamRunner({ exam, module, onClose }) {
   );
 }
 
-function ExamArchive({ archive }) {
+function ArchiveCorrectionRunner({ exam, module, onClose }) {
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [scores, setScores] = useState({});
+  const [revealed, setRevealed] = useState({});
+  const [result, setResult] = useState(null);
+  const questions = exam.questions || [];
+  const question = questions[idx];
+  const keyFor = (q, i) => `${i}:${q.topic}`;
+  const currentKey = question ? keyFor(question, idx) : "";
+  const done = Object.keys(scores).length;
+
+  useEffect(() => {
+    setIdx(0);
+    setAnswers({});
+    setScores({});
+    setRevealed({});
+    setResult(null);
+  }, [exam.id]);
+
+  async function finish() {
+    const payload = {
+      module,
+      exam_id: exam.id,
+      results: questions.map((q, i) => {
+        const key = keyFor(q, i);
+        return {
+          topic: q.topic,
+          score: scores[key] || "miss",
+          card_ids: (q.matches || []).map((m) => m.id),
+          note: answers[key] || "",
+        };
+      }),
+    };
+    const res = await api("/api/exam/archive/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setResult(res);
+  }
+
+  if (result) {
+    return (
+      <section className="done exam-result">
+        <Check size={32} />
+        <h2>Archivbogen korrigiert</h2>
+        <p>{result.earned} von {result.total} Punkten, {result.pct}% geschaetzt. {result.touched} Karten wurden ins Qualitaetssystem gespiegelt.</p>
+        <button className="primary" onClick={onClose}>Zurueck zum Pruefungsplatz</button>
+      </section>
+    );
+  }
+
+  if (!question) return null;
+  const currentScore = scores[currentKey] || "";
+  return (
+    <section className="correction-runner">
+      <div className="exam-toolbar">
+        <button onClick={onClose}><ArrowLeft size={16} /> Zurueck</button>
+        <div className="timer">{done}/{questions.length}</div>
+        <div className="progress"><span style={{ width: `${pct(done, questions.length || 1)}%` }} /></div>
+        <b>{exam.title}</b>
+      </div>
+      <div className="exam-nav">
+        {questions.map((q, i) => (
+          <button key={keyFor(q, i)} className={i === idx ? "active" : ""} onClick={() => setIdx(i)}>
+            {i + 1}
+          </button>
+        ))}
+      </div>
+      <article className="panel archive-correction-card">
+        <div className="study-meta">
+          <span className="deck-pill">{exam.source}</span>
+          <span>{question.points} Punkte</span>
+        </div>
+        <h2>{question.topic}</h2>
+        <label>Freie Antwort / Stichworte
+          <textarea
+            rows={7}
+            value={answers[currentKey] || ""}
+            onChange={(e) => setAnswers((old) => ({ ...old, [currentKey]: e.target.value }))}
+            placeholder="Antwort wie in der Pruefung notieren, dann selbst nach Raster bewerten."
+          />
+        </label>
+        <div className="correction-score">
+          {EXAM_EVALS.map(([key, label]) => (
+            <button
+              key={key}
+              className={currentScore === key ? "active" : ""}
+              onClick={() => setScores((old) => ({ ...old, [currentKey]: key }))}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="button-row-inline">
+          <button onClick={() => setRevealed((old) => ({ ...old, [currentKey]: !old[currentKey] }))}>
+            {revealed[currentKey] ? "Raster ausblenden" : "Bewertungsraster zeigen"}
+          </button>
+          <button disabled={idx === 0} onClick={() => setIdx(idx - 1)}>Zurueck</button>
+          <button disabled={idx + 1 >= questions.length} onClick={() => setIdx(idx + 1)}>Weiter</button>
+          <button className="primary" onClick={finish}>Archivbogen abschliessen</button>
+        </div>
+        {revealed[currentKey] && (
+          <div className="correction-raster">
+            <div>
+              <h3>Erwartete Punkte</h3>
+              <ul>{(question.prompts || []).map((p) => <li key={p}>{p}</li>)}</ul>
+            </div>
+            <div>
+              <h3>Passende Karten</h3>
+              <div className="match-strip">
+                {(question.matches || []).map((m) => (
+                  <span key={m.id}>VO{m.kap}: {m.title}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </article>
+    </section>
+  );
+}
+
+function ExamArchive({ archive, onStartCorrection }) {
   const exams = archive?.exams || [];
   const [selectedId, setSelectedId] = useState("");
   const selected = exams.find((e) => e.id === selectedId) || exams[0];
   useEffect(() => {
     if (!selectedId && exams[0]) setSelectedId(exams[0].id);
-  }, [archive?.module]);
+  }, [archive?.module, exams.length, selectedId]);
   if (!selected) return <p className="muted">Noch keine Archivansicht fuer dieses Modul.</p>;
   return (
     <section className="archive-layout">
@@ -736,7 +947,10 @@ function ExamArchive({ archive }) {
         ))}
       </div>
       <div className="archive-paper">
-        <h3>{selected.title}</h3>
+        <div className="archive-paper-head">
+          <h3>{selected.title}</h3>
+          <button className="primary" onClick={() => onStartCorrection?.(selected)}>Korrektur starten</button>
+        </div>
         {(selected.questions || []).map((q, i) => (
           <article key={`${selected.id}-${q.topic}`}>
             <div>
@@ -760,24 +974,34 @@ function ExamPage({ startExam, module }) {
   const [count, setCount] = useState(20);
   const [mode, setMode] = useState("mixed");
   const [exam, setExam] = useState(null);
+  const [correction, setCorrection] = useState(null);
   const [prognosis, setPrognosis] = useState(null);
   const [archive, setArchive] = useState(null);
+  const [mastery, setMastery] = useState(null);
+  const [checklist, setChecklist] = useState(null);
+  const [finalPlan, setFinalPlan] = useState(null);
 
   useEffect(() => {
     api(`/api/exam/prognosis?module=${encodeURIComponent(module)}`).then(setPrognosis).catch(() => {});
     api(`/api/exam/archive?module=${encodeURIComponent(module)}`).then(setArchive).catch(() => {});
+    api(`/api/exam/mastery?module=${encodeURIComponent(module)}`).then(setMastery).catch(() => {});
+    api(`/api/exam/formula-checklist?module=${encodeURIComponent(module)}`).then(setChecklist).catch(() => {});
+    api(`/api/exam/final-plan?module=${encodeURIComponent(module)}`).then(setFinalPlan).catch(() => {});
   }, [module]);
 
   async function startOpen(nextMode) {
     const res = await api(`/api/exam/open?module=${encodeURIComponent(module)}&mode=${encodeURIComponent(nextMode)}`);
+    setCorrection(null);
     setExam(res);
   }
 
   async function startFormula() {
     const res = await api(`/api/exam/formulas?module=${encodeURIComponent(module)}&n=10`);
+    setCorrection(null);
     setExam(res);
   }
 
+  if (correction) return <ArchiveCorrectionRunner exam={correction} module={module} onClose={() => setCorrection(null)} />;
   if (exam) return <OpenExamRunner exam={exam} module={module} onClose={() => setExam(null)} />;
 
   return (
@@ -793,11 +1017,15 @@ function ExamPage({ startExam, module }) {
         <div className="exam-actions-grid">
           <button className="primary" onClick={() => startOpen("full")}>2h-Pruefung starten</button>
           <button onClick={() => startOpen("mini")}>Schwaechen-Mini-Pruefung</button>
+          <button onClick={() => startOpen("explain")}>Kann ich erklaeren?</button>
           <button onClick={startFormula}>Reaktions-/Strukturtrainer</button>
         </div>
       </div>
 
       <ExamScorePanel prognosis={prognosis} />
+      <MasteryPanel mastery={mastery} />
+      <FormulaChecklistPanel checklist={checklist} onStart={startFormula} />
+      <FinalPlanPanel plan={finalPlan} />
 
       <section className="panel exam-panel">
         <div className="section-head">
@@ -829,7 +1057,7 @@ function ExamPage({ startExam, module }) {
             <p>Beispielboegen als Themenraster mit passenden Lernkarten daneben.</p>
           </div>
         </div>
-        <ExamArchive archive={archive} />
+        <ExamArchive archive={archive} onStartCorrection={setCorrection} />
       </section>
     </section>
   );
@@ -1102,6 +1330,7 @@ function TriagePage({ module, onDone }) {
 
 function QualityCenter({ data, setRoute }) {
   const quality = data.quality || {};
+  const autoQuality = data.auto_quality || {};
   const reasons = quality.reasons || [];
   const recent = quality.recent || [];
   const max = Math.max(1, ...reasons.map((r) => r.count || 0));
@@ -1120,6 +1349,7 @@ function QualityCenter({ data, setRoute }) {
           <span><b>{quality.unchecked || 0}</b> ungeprueft</span>
           <span><b>{quality.needs_review || 0}</b> im Review</span>
           <span><b>{quality.suspended || 0}</b> deaktiviert</span>
+          <span><b>{autoQuality.moved || 0}</b> auto verschoben</span>
         </div>
         <div className="button-row-inline">
           <button className="primary" onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage starten</button>

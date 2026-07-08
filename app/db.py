@@ -468,6 +468,39 @@ def mark_card_needs_review(conn: sqlite3.Connection, card_id: str, note: str, up
     conn.commit()
 
 
+def auto_quality_sweep(conn: sqlite3.Connection, module: str, updated_at: str) -> int:
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status='active'
+             AND (lapses>=3 OR id IN (
+                 SELECT card_id FROM quality_events
+                 WHERE module=? AND reason IN ('frage_unklar', 'karte_schlecht')
+                 GROUP BY card_id HAVING COUNT(*)>=2
+             ))
+           LIMIT 40""",
+        (module, module),
+    ).fetchall()
+    changed = 0
+    for row in rows:
+        card = row_to_card(row)
+        payload = dict(card)
+        payload["status"] = "needs_review"
+        note = "Auto-Quality: wiederholt falsch oder als unklar markiert"
+        conn.execute(
+            """UPDATE cards SET status='needs_review', review_note=?, updated_at=?, payload=?
+               WHERE id=?""",
+            (note, updated_at, json.dumps(payload, ensure_ascii=False), card["id"]),
+        )
+        conn.execute(
+            """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
+               VALUES(?,?,?,?,?,?)""",
+            (card["id"], module, "auto_quality", "wiederholt_schwach", note, updated_at),
+        )
+        changed += 1
+    conn.commit()
+    return changed
+
+
 def quality_summary(conn: sqlite3.Connection, module: str = "organic") -> dict:
     counts = conn.execute(
         """SELECT event_type, reason, COUNT(*) c, MAX(created_at) latest
