@@ -195,6 +195,7 @@ def purge_expired_sessions(conn: sqlite3.Connection, now_iso: str) -> int:
 
 def seed(conn: sqlite3.Connection) -> int:
     payload = json.loads(SEED_PATH.read_text(encoding="utf-8"))
+    seed_ids = {card["id"] for card in payload["cards"]}
     added = 0
     for card in payload["cards"]:
         exists = conn.execute("SELECT updated_at, status, review_note FROM cards WHERE id=?", (card["id"],)).fetchone()
@@ -234,6 +235,18 @@ def seed(conn: sqlite3.Connection) -> int:
             ),
         )
         added += 1
+    if seed_ids:
+        placeholders = ",".join("?" for _ in seed_ids)
+        conn.execute(
+            f"""UPDATE cards
+                SET status='suspended',
+                    review_note='Automatisch deaktiviert: Quellen-, Personen- oder Firmenrauschen',
+                    updated_at=COALESCE(updated_at, datetime('now'))
+                WHERE updated_at IS NULL
+                  AND (id LIKE 'org:%' OR id LIKE 'inorg:%')
+                  AND id NOT IN ({placeholders})""",
+            tuple(seed_ids),
+        )
     conn.execute(
         """INSERT INTO meta(key, value) VALUES('seed_title', ?)
            ON CONFLICT(key) DO UPDATE SET value=excluded.value""",

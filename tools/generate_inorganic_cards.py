@@ -125,6 +125,21 @@ GENERIC_TERMS = {
     "nachteile", "rohstoffe", "einleitung", "tools", "anwendung", "materialien",
 }
 
+SOURCE_NOISE_RE = re.compile(
+    r"(?i)\b(systematic review|meta-regression|doi:|trademark|trademarks|"
+    r"company overview|company information|internal: confidential|global headquarters|"
+    r"regional headquarters|patent applications|workforce|microsoft copilot|"
+    r"copyright|email:|web:)\b"
+)
+COMPANY_RE = re.compile(
+    r"\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+(AG|GmbH|Inc|Ltd|LLC|International)\b"
+)
+AUTHOR_RE = re.compile(
+    r"\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-Z]\.?\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\b"
+    r"|\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+,\s+"
+    r"[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\b"
+)
+
 DOMAIN_BONUS = [
     "stahl", "eisen", "hochofen", "metall", "oxid", "reduktion", "kupfer",
     "aluminium", "stickstoff", "ammoniak", "salpeter", "chlor", "natron",
@@ -147,6 +162,18 @@ def valid_term(term: str) -> bool:
     if noisy(t):
         return False
     return True
+
+
+def irrelevant_source_fact(text: str) -> bool:
+    if SOURCE_NOISE_RE.search(text):
+        return True
+    if COMPANY_RE.search(text):
+        return True
+    if AUTHOR_RE.search(text) and re.search(r"(?i)\b(review|meta-regression|study|journal|doi)\b", text):
+        return True
+    if re.search(r"(?i)\b(location|headquarters|corporate hub|patent|source:|notes?:)\b", text):
+        return True
+    return False
 
 
 def pick_term(sentence: str) -> str | None:
@@ -202,6 +229,8 @@ def make_cards(sources: list[SourceText]) -> list[dict]:
 
     for source in sources:
         for s in sentences(source.text):
+            if irrelevant_source_fact(s):
+                continue
             term = pick_term(s)
             if term and 8 <= len(term) <= 65:
                 cloze = re.sub(re.escape(term), "_____", s, count=1)
@@ -233,6 +262,8 @@ def make_cards(sources: list[SourceText]) -> list[dict]:
     if len(cards) < 600:
         for source in sources:
             for unit in sentences(source.text):
+                if irrelevant_source_fact(unit):
+                    continue
                 add(
                     source,
                     f"Welche Kernaussage gehoert zu {escape(source.title)}?",

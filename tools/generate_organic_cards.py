@@ -172,6 +172,21 @@ GENERIC_TERMS = {
     "eigenschaften", "produkte", "prozess", "verfahren", "quelle",
 }
 
+SOURCE_NOISE_RE = re.compile(
+    r"(?i)\b(systematic review|meta-regression|doi:|trademark|trademarks|"
+    r"company overview|company information|internal: confidential|global headquarters|"
+    r"regional headquarters|patent applications|workforce|microsoft copilot|"
+    r"marktresearchfuture|guardian|kurier\.at|derstandard|welt\.de)\b"
+)
+COMPANY_RE = re.compile(
+    r"\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+(AG|GmbH|Inc|Ltd|LLC|International)\b"
+)
+AUTHOR_RE = re.compile(
+    r"\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-Z]\.?\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\b"
+    r"|\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+,\s+"
+    r"[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\b"
+)
+
 
 def valid_term(term: str) -> bool:
     t = term.strip(" ,.;:-")
@@ -187,6 +202,18 @@ def valid_term(term: str) -> bool:
     if noisy(t):
         return False
     return True
+
+
+def irrelevant_source_fact(text: str) -> bool:
+    if SOURCE_NOISE_RE.search(text):
+        return True
+    if COMPANY_RE.search(text):
+        return True
+    if AUTHOR_RE.search(text) and re.search(r"(?i)\b(review|meta-regression|study|journal|doi)\b", text):
+        return True
+    if re.search(r"(?i)\b(location|headquarters|corporate hub|patent|source:|notes?:)\b", text):
+        return True
+    return False
 
 
 def pick_term(sentence: str) -> str | None:
@@ -238,6 +265,8 @@ def make_cards(sources: list[SourceText]) -> list[dict]:
 
     for source in sources:
         for s in sentences(source.text):
+            if irrelevant_source_fact(s):
+                continue
             term = pick_term(s)
             if term:
                 cloze = re.sub(re.escape(term), "_____", s, count=1)
@@ -272,6 +301,8 @@ def make_cards(sources: list[SourceText]) -> list[dict]:
             if not clean_units:
                 continue
             for idx, unit in enumerate(clean_units[:4], start=1):
+                if irrelevant_source_fact(unit):
+                    continue
                 add(
                     source,
                     f"Welche Kernaussage steht in {escape(source.title)} zu diesem Punkt?",

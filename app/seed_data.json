@@ -395,23 +395,6 @@
       ]
     },
     {
-      "id": "org:789697d24324",
-      "deck": "anki",
-      "kap": 10,
-      "sub": "VO10",
-      "subname": "VO10 Kunststoffrecycling",
-      "source": "VO10 Gastvortrag - Recycling von Kunststoffen",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen\n\nErgaenze den zentralen Begriff: Borouge International Vision for a Circular Economy of _____",
-      "a": "<b>Kontext:</b> Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen<br><br>Plastics - Borouge International Vision for a Circular Economy of Plastics<br><br><span class='source'>Quelle: VO10 Gastvortrag - Recycling von Kunststoffen (VO10 Kunststoffrecycling)</span>",
-      "weight": 2,
-      "order": 21,
-      "module": "organic",
-      "tags": [
-        "Polymere"
-      ]
-    },
-    {
       "id": "org:e682cd0549ea",
       "deck": "anki",
       "kap": 11,
@@ -527,25 +510,6 @@
       "order": 28,
       "module": "organic",
       "tags": [
-        "Fossile Rohstoffe",
-        "Kohlenhydrate"
-      ]
-    },
-    {
-      "id": "org:7162678f7d9f",
-      "deck": "anki",
-      "kap": 7,
-      "sub": "VO7",
-      "subname": "VO7 Cellulose",
-      "source": "VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik\n\nErgaenze den zentralen Begriff: Location: LAG, Austria, 2 lines Location: LDC, Brazil ,1 line Location: LBP, _____, 1 line",
-      "a": "<b>Kontext:</b> Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik<br><br>Czech Republic - Location: LAG, Austria, 2 lines Location: LDC, Brazil ,1 line Location: LBP, Czech Republic, 1 line<br><br><span class='source'>Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik (VO7 Cellulose)</span>",
-      "weight": 2,
-      "order": 29,
-      "module": "organic",
-      "tags": [
-        "Cellulose",
         "Fossile Rohstoffe",
         "Kohlenhydrate"
       ]
@@ -1177,23 +1141,6 @@
       ]
     },
     {
-      "id": "org:2c32cac2d1e8",
-      "deck": "anki",
-      "kap": 10,
-      "sub": "VO10",
-      "subname": "VO10 Kunststoffrecycling",
-      "source": "VO10 Gastvortrag - Recycling von Kunststoffen",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen\n\nErgaenze den zentralen Begriff: Notes: (1) _____.",
-      "a": "<b>Kontext:</b> Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen<br><br>Including granted and filed patent applications - Notes: (1) Including granted and filed patent applications.<br><br><span class='source'>Quelle: VO10 Gastvortrag - Recycling von Kunststoffen (VO10 Kunststoffrecycling)</span>",
-      "weight": 2,
-      "order": 65,
-      "module": "organic",
-      "tags": [
-        "Polymere"
-      ]
-    },
-    {
       "id": "org:946d93794f81",
       "deck": "anki",
       "kap": 11,
@@ -1506,25 +1453,6 @@
         "Fossile Rohstoffe",
         "Kohlenhydrate",
         "Nachwachsende Rohstoffe"
-      ]
-    },
-    {
-      "id": "org:e70ddaa0a76e",
-      "deck": "anki",
-      "kap": 7,
-      "sub": "VO7",
-      "subname": "VO7 Cellulose",
-      "source": "VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik\n\nErgaenze den zentralen Begriff: TENCEL , LENZING , ECOVERO , and _____",
-      "a": "<b>Kontext:</b> Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik<br><br>REFIBRA are trademarks of Lenzing AG - TENCEL , LENZING , ECOVERO , and REFIBRA are trademarks of Lenzing AG<br><br><span class='source'>Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik (VO7 Cellulose)</span>",
-      "weight": 2,
-      "order": 84,
-      "module": "organic",
-      "tags": [
-        "Cellulose",
-        "Fossile Rohstoffe",
-        "Kohlenhydrate"
       ]
     },
     {
@@ -1921,23 +1849,6 @@
       "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation / Polymere. Quelle: VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion)<br><br>Polymere mit n - Telechele = Polymere mit n = 50+ und reaktiven Endgruppen, z.B.<br><br><span class='source'>Quelle: VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion) (VO9 Polymerchemie und Polymerisation)</span>",
       "weight": 2,
       "order": 106,
-      "module": "organic",
-      "tags": [
-        "Polymere"
-      ]
-    },
-    {
-      "id": "org:8e68cf324aae",
-      "deck": "anki",
-      "kap": 10,
-      "sub": "VO10",
-      "subname": "VO10 Kunststoffrecycling",
-      "source": "VO10 Gastvortrag - Recycling von Kunststoffen",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen\n\nErgaenze den zentralen Begriff: _____ leaders into one",
-      "a": "<b>Kontext:</b> Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen<br><br>Borouge International brings together three regional - Borouge International brings together three regional leaders into one<br><br><span class='source'>Quelle: VO10 Gastvortrag - Recycling von Kunststoffen (VO10 Kunststoffrecycling)</span>",
-      "weight": 2,
-      "order": 107,
       "module": "organic",
       "tags": [
         "Polymere"
@@ -2441,23 +2352,6 @@
         "Farbstoffe",
         "Fossile Rohstoffe",
         "Kohlenhydrate"
-      ]
-    },
-    {
-      "id": "org:7e030d8853a3",
-      "deck": "anki",
-      "kap": 9,
-      "sub": "VO9",
-      "subname": "VO9 Polymerchemie und Polymerisation",
-      "source": "VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion)",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO9 Polymerchemie und Polymerisation / Polymere. Quelle: VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion)\n\nErgaenze den zentralen Begriff: _____, Shanna H Swan, Temporal trends in sperm count: a systematic review and meta-regression",
-      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation / Polymere. Quelle: VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion)<br><br>Rachel Pinotti - Rachel Pinotti, Shanna H Swan, Temporal trends in sperm count: a systematic review and meta-regression<br><br><span class='source'>Quelle: VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion) (VO9 Polymerchemie und Polymerisation)</span>",
-      "weight": 2,
-      "order": 136,
-      "module": "organic",
-      "tags": [
-        "Polymere"
       ]
     },
     {
@@ -4536,25 +4430,6 @@
       ]
     },
     {
-      "id": "org:7c287e97be6a",
-      "deck": "anki",
-      "kap": 7,
-      "sub": "VO7",
-      "subname": "VO7 Cellulose",
-      "source": "VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik\n\nErgaenze den zentralen Begriff: ● 1939 _____ properties of N-oxides-&gt; basic patent",
-      "a": "<b>Kontext:</b> Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik<br><br>Graenacher and Sallmann discovered cellulose dissolving - ● 1939 Graenacher and Sallmann discovered cellulose dissolving properties of N-oxides-&gt; basic patent<br><br><span class='source'>Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik (VO7 Cellulose)</span>",
-      "weight": 2,
-      "order": 254,
-      "module": "organic",
-      "tags": [
-        "Cellulose",
-        "Fossile Rohstoffe",
-        "Kohlenhydrate"
-      ]
-    },
-    {
       "id": "org:35acb0e0758b",
       "deck": "anki",
       "kap": 8,
@@ -4854,25 +4729,6 @@
       "module": "organic",
       "tags": [
         "Raffinerie"
-      ]
-    },
-    {
-      "id": "org:0fc74e7b4786",
-      "deck": "anki",
-      "kap": 7,
-      "sub": "VO7",
-      "subname": "VO7 Cellulose",
-      "source": "VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik\n\nErgaenze den zentralen Begriff: ● 1997 production site in _____",
-      "a": "<b>Kontext:</b> Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik<br><br>Heiligenkreuz/Austria by Lenzing AG - ● 1997 production site in Heiligenkreuz/Austria by Lenzing AG<br><br><span class='source'>Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik (VO7 Cellulose)</span>",
-      "weight": 2,
-      "order": 272,
-      "module": "organic",
-      "tags": [
-        "Cellulose",
-        "Fossile Rohstoffe",
-        "Kohlenhydrate"
       ]
     },
     {
@@ -5530,40 +5386,6 @@
       ]
     },
     {
-      "id": "org:3bf3cda6d7e6",
-      "deck": "anki",
-      "kap": 9,
-      "sub": "VO9",
-      "subname": "VO9 Polymerchemie und Polymerisation",
-      "source": "VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion)",
-      "kind": "cloze",
-      "q": "Kontext: Organische Chemie / VO9 Polymerchemie und Polymerisation / Polymere. Quelle: VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion)\n\nErgaenze den zentralen Begriff: • Leo Hendrik Baekeland (Universität Gent, _____)",
-      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation / Polymere. Quelle: VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion)<br><br>Hitze-Druck-Patent 1909 - • Leo Hendrik Baekeland (Universität Gent, Hitze-Druck-Patent 1909)<br><br><span class='source'>Quelle: VO9_Intro Teil III Polymerchemi___tion (Kettenwachstumsreaktion) (VO9 Polymerchemie und Polymerisation)</span>",
-      "weight": 2,
-      "order": 310,
-      "module": "organic",
-      "tags": [
-        "Polymere"
-      ]
-    },
-    {
-      "id": "org:1ef57f9ed7dc",
-      "deck": "anki",
-      "kap": 10,
-      "sub": "VO10",
-      "subname": "VO10 Kunststoffrecycling",
-      "source": "VO10 Gastvortrag - Recycling von Kunststoffen",
-      "kind": "source_fact",
-      "q": "Kontext: Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen\n\nWelche Kernaussage steht in VO10 Gastvortrag - Recycling von Kunststoffen zu diesem Punkt?",
-      "a": "<b>Kontext:</b> Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen<br><br>One global organization formed from three regional leaders<br><br><span class='source'>Quelle: VO10 Gastvortrag - Recycling von Kunststoffen (VO10 Kunststoffrecycling)</span>",
-      "weight": 1,
-      "order": 311,
-      "module": "organic",
-      "tags": [
-        "Polymere"
-      ]
-    },
-    {
       "id": "org:656525a9da13",
       "deck": "anki",
       "kap": 11,
@@ -5703,23 +5525,6 @@
       "tags": [
         "Cellulose",
         "Kohlenhydrate",
-        "Polymere"
-      ]
-    },
-    {
-      "id": "org:5ab0b95aaf63",
-      "deck": "anki",
-      "kap": 10,
-      "sub": "VO10",
-      "subname": "VO10 Kunststoffrecycling",
-      "source": "VO10 Gastvortrag - Recycling von Kunststoffen",
-      "kind": "source_fact",
-      "q": "Kontext: Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen\n\nWelche Kernaussage steht in VO10 Gastvortrag - Recycling von Kunststoffen zu diesem Punkt?",
-      "a": "<b>Kontext:</b> Organische Chemie / VO10 Kunststoffrecycling / Polymere. Quelle: VO10 Gastvortrag - Recycling von Kunststoffen<br><br>Borouge International brings together three regional leaders into one<br><br><span class='source'>Quelle: VO10 Gastvortrag - Recycling von Kunststoffen (VO10 Kunststoffrecycling)</span>",
-      "weight": 1,
-      "order": 320,
-      "module": "organic",
-      "tags": [
         "Polymere"
       ]
     },
@@ -6998,25 +6803,6 @@
       "module": "organic",
       "tags": [
         "Raffinerie"
-      ]
-    },
-    {
-      "id": "org:bf1a3bad6d69",
-      "deck": "anki",
-      "kap": 7,
-      "sub": "VO7",
-      "subname": "VO7 Cellulose",
-      "source": "VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik",
-      "kind": "source_fact",
-      "q": "Kontext: Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik\n\nWelche Kernaussage steht in VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik zu diesem Punkt?",
-      "a": "<b>Kontext:</b> Organische Chemie / VO7 Cellulose / Cellulose / Fossile Rohstoffe / Kohlenhydrate. Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik<br><br>TENCEL , LENZING , ECOVERO , and REFIBRA are trademarks of Lenzing AG<br><br><span class='source'>Quelle: VO 7 Kohlenhydrate - Cellulose ___ Dr. martina opientik (VO7 Cellulose)</span>",
-      "weight": 1,
-      "order": 393,
-      "module": "organic",
-      "tags": [
-        "Cellulose",
-        "Fossile Rohstoffe",
-        "Kohlenhydrate"
       ]
     },
     {
@@ -11323,24 +11109,6 @@
       "order": 22,
       "tags": [
         "Glas/Keramik"
-      ]
-    },
-    {
-      "id": "inorg:e337baf7dced",
-      "module": "inorganic",
-      "deck": "anki",
-      "kap": 1,
-      "sub": "VO1",
-      "subname": "Einheit 01 Einfuehrung",
-      "source": "Einheit 01 Einfuehrung",
-      "kind": "cloze",
-      "q": "Kontext: Anorganische Chemie / Einheit 01 Einfuehrung / Grundlagen / Schwefel. Quelle: Einheit 01 Einfuehrung\n\nErgaenze den zentralen Begriff: 1960 _____ „Doppelkontaktverfahren“ (H2SO4)",
-      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 01 Einfuehrung / Grundlagen / Schwefel. Quelle: Einheit 01 Einfuehrung<br><br>Bayer AG Patent zum - 1960 Bayer AG Patent zum „Doppelkontaktverfahren“ (H2SO4)<br><br><span class='source'>Quelle: Einheit 01 Einfuehrung</span>",
-      "weight": 2,
-      "order": 23,
-      "tags": [
-        "Grundlagen",
-        "Schwefel"
       ]
     },
     {

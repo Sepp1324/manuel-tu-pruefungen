@@ -56,9 +56,10 @@ Das schreibt:
 - `app/source_text_index.json` - kurzer Extraktionsindex zur Kontrolle
 
 Nach einer Neugenerierung sollten die Karten mit Kontextzeilen angereichert
-werden:
+und Quellen-/Personen-/Firmenrauschen entfernt werden:
 
 ```bash
+PYTHONPATH=tools:app python3 tools/prune_irrelevant_cards.py
 PYTHONPATH=app python3 tools/contextualize_seed_cards.py
 ```
 
