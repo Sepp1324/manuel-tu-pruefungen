@@ -1034,19 +1034,35 @@ def _summarized_card_payload(card: dict) -> dict:
     return payload
 
 
-def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quality: dict) -> dict:
+def _mission_band(score: int) -> tuple[str, str, str]:
+    if score >= 82:
+        return ("ready", "pruefungsbereit", "Absichern und Tempo halten")
+    if score >= 68:
+        return ("steady", "stabilisieren", "Schwache Knoten gezielt schliessen")
+    if score >= 50:
+        return ("build", "aufbauen", "Taeglich Reviews plus eine offene Pruefungsfrage")
+    return ("rescue", "aufholen", "Heute nur die groessten Blocker angreifen")
+
+
+def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quality: dict,
+                     exam_score: dict | None = None) -> dict:
     due = stats.get("due") or 0
     new = stats.get("new") or 0
+    exam_score = exam_score or _exam_score_projection(stats, chapters, module, quality)
     exam_date = _exam_date(module)
     days = max(_days_left(module), 1)
     focus = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c.get("kap") or 99))[:3]
     formula = _formula_checklist(conn, module)
+    knowledge = _knowledge_map(conn, module)
+    knowledge_route = knowledge.get("route", [])
     workshop_open = min((quality.get("needs_review") or 0) + (quality.get("photo_recommended") or 0), 40)
     daily_new = 0 if days <= 7 else min(25, max(0, -(-new // max(days - 7, 1)))) if new else 0
     daily_reviews = min(100, max(20, due + daily_new))
     repair_cards = min(12, max(0, quality.get("needs_review") or 0))
     photo_cards = min(10, max(0, quality.get("photo_recommended") or 0))
     mini_exam = 1 if days <= 21 or due < 30 else 0
+    score = int(exam_score.get("overall") or 0)
+    band, band_label, band_action = _mission_band(score)
     tasks = [
         {"key": "due", "label": "Faellige Karten", "amount": daily_reviews, "route": "home", "detail": "Erst faellige Karten abarbeiten."},
         {"key": "weak", "label": "Schwaechen-VO", "amount": len(focus), "route": "dashboard", "detail": "Die staerksten Luecken gezielt wiederholen."},
@@ -1057,10 +1073,156 @@ def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quali
     ]
     if daily_new:
         tasks.insert(1, {"key": "new", "label": "Neue Karten", "amount": daily_new, "route": "home", "detail": "Nur dosiert neue Karten aufnehmen."})
+
+    missions = []
+
+    def add_mission(key: str, title: str, detail: str, amount: int, unit: str,
+                    minutes: int, route: str, cta: str, priority: str = "mittel",
+                    kap: int | None = None, deck: str | None = None,
+                    done_when: str = "") -> None:
+        if amount <= 0:
+            return
+        missions.append({
+            "key": key,
+            "title": title,
+            "detail": detail,
+            "amount": amount,
+            "unit": unit,
+            "minutes": minutes,
+            "route": route,
+            "cta": cta,
+            "priority": priority,
+            "kap": kap,
+            "deck": deck,
+            "done_when": done_when,
+        })
+
+    add_mission(
+        "review_block",
+        "Review-Block",
+        "Faellige Karten zuerst, damit die Vergessenskurve heute nicht weiter auflaeuft.",
+        daily_reviews,
+        "Karten",
+        25 if daily_reviews <= 40 else 40,
+        "home",
+        "Session starten",
+        "hoch" if due else "mittel",
+        deck="anki",
+        done_when=f"{min(daily_reviews, max(due, 20))} Karten bewertet",
+    )
+    if focus:
+        weak = focus[0]
+        add_mission(
+            "weak_chapter",
+            f"Blocker-VO: VO{weak['kap']}",
+            f"{weak['name']} ist aktuell der wichtigste Hebel fuer die Pruefungsreife.",
+            max(8, min(18, weak.get("due", 0) + 6)),
+            "Karten",
+            18,
+            "home",
+            "VO lernen",
+            "hoch",
+            kap=weak.get("kap"),
+            deck="anki",
+            done_when="mindestens eine Karte mit Gut/Leicht abgeschlossen",
+        )
+    if knowledge_route:
+        step = knowledge_route[0]
+        add_mission(
+            "knowledge_node",
+            f"Landkarten-Knoten: {step['topic']}",
+            step.get("action") or "Querverbindungen pruefen",
+            1,
+            "Knoten",
+            12,
+            "knowledge",
+            "Landkarte oeffnen",
+            "hoch" if step.get("status") == "critical" else "mittel",
+            kap=step.get("kap"),
+            done_when=step.get("detail", "Knoten einmal aktiv erklaert"),
+        )
+    add_mission(
+        "exam_question",
+        "Offene Pruefungsfrage",
+        "Eine kurze Antwort im Beispielpruefungs-Stil schreiben und danach ehrlich bewerten.",
+        1 if mini_exam else 2,
+        "Frage",
+        16,
+        "exam",
+        "Pruefungsmodus",
+        "hoch" if score < 70 else "mittel",
+        done_when="Antwort mit Definition, Prozess, Bedingungen und Beispiel gecheckt",
+    )
+    if repair_cards:
+        add_mission(
+            "repair_cards",
+            "Qualitaets-Sprint",
+            "Holprige Karten stoeren die Reifeprognose staerker als neue Karten helfen.",
+            repair_cards,
+            "Karten",
+            14,
+            "workshop",
+            "Werkstatt",
+            "mittel",
+            done_when="schlechte Karten verbessert oder deaktiviert",
+        )
+    elif photo_cards:
+        add_mission(
+            "photo_queue",
+            "Foto-/Skizzen-Sprint",
+            "Strukturen, Formeln oder Schemata sichtbar machen statt im Text zu verstecken.",
+            photo_cards,
+            "Karten",
+            14,
+            "photos",
+            "Fotopool",
+            "mittel",
+            done_when="mindestens ein Bild oder eine Skizze ergaenzt",
+        )
+    elif formula.get("draw"):
+        add_mission(
+            "formula_sprint",
+            "Formel-Sprint",
+            "Eine Formel, Struktur oder Reaktionsgleichung aktiv aus dem Kopf zeichnen.",
+            min(6, len(formula.get("draw", []))),
+            "Skizzen",
+            10,
+            "exam",
+            "Formeltrainer",
+            "mittel",
+            done_when="Skizze aus dem Kopf geschafft",
+        )
+
+    missions = missions[:5]
+    total_minutes = sum(m["minutes"] for m in missions)
+    blockers = exam_score.get("blockers", [])[:5]
+    if blockers:
+        message = f"Heute: {blockers[0]['label']} zuerst, dann eine offene Pruefungsfrage."
+    else:
+        message = "Heute: Reife halten, eine kurze Pruefungsfrage und gezielte Wiederholung."
     return {
         "date": date.today().isoformat(),
         "exam_date": exam_date.isoformat(),
         "days_left": _days_left(module),
+        "title": f"Tagesmission: {band_label}",
+        "band": band,
+        "readiness": {
+            "score": score,
+            "label": exam_score.get("label"),
+            "band": band,
+            "band_label": band_label,
+            "action": band_action,
+            "gap_to_ready": max(0, 80 - score),
+        },
+        "mission": {
+            "minutes": total_minutes,
+            "count": len(missions),
+            "summary": f"{total_minutes} Minuten, {len(missions)} klare Schritte",
+            "primary": missions[0]["title"] if missions else "Freie Wiederholung",
+        },
+        "missions": missions,
+        "blockers": blockers,
+        "knowledge_route": knowledge_route[:3],
         "workload": {
             "daily_cards": daily_reviews,
             "daily_new": daily_new,
@@ -1077,7 +1239,7 @@ def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quali
             "photo_recommended": quality.get("photo_recommended", 0),
             "workshop_open": workshop_open,
         },
-        "message": "Heute: faellige Karten, eine echte Schwachstelle, dann Werkstatt oder Mini-Pruefung.",
+        "message": message,
     }
 
 
@@ -1185,7 +1347,18 @@ def _exam_question(card: dict, idx: int, module: str, formula: bool = False) -> 
     }
 
 
-def _exam_score_projection(stats: dict, chapters: list[dict], module: str) -> dict:
+def _component(label: str, score: float, weight: int, detail: str) -> dict:
+    return {
+        "label": label,
+        "score": round(max(0, min(100, score))),
+        "weight": weight,
+        "detail": detail,
+    }
+
+
+def _exam_score_projection(stats: dict, chapters: list[dict], module: str,
+                           quality: dict | None = None) -> dict:
+    quality = quality or {}
     blocks: dict[str, list[dict]] = {}
     for ch in chapters:
         blocks.setdefault(_exam_block(module, ch.get("kap")), []).append(ch)
@@ -1208,13 +1381,100 @@ def _exam_score_projection(stats: dict, chapters: list[dict], module: str) -> di
             "label": f"{max(score - 8, 0)}-{min(score + 8, 99)}%",
             "chapters": [i.get("kap") for i in items],
             "detail": f"{seen}/{total} Karten gesehen, Trefferquote {round(hit * 100)}%",
+            "status": "ready" if score >= 80 else "steady" if score >= 65 else "risk",
         })
-    overall = round(sum(b["score"] for b in out) / len(out)) if out else 0
+    total_cards = max(stats.get("total") or 0, 1)
+    seen = stats.get("seen") or 0
+    due = stats.get("due") or 0
+    new = stats.get("new") or 0
+    hit_rate = stats.get("hit_rate")
+    avg_stability = sum(ch.get("avg_stability") or 0 for ch in chapters) / max(len(chapters), 1)
+    weakest = sorted(chapters, key=lambda ch: (-ch.get("weak_score", 0), ch.get("kap") or 99))[:3]
+    weak_pressure = sum(ch.get("weak_score") or 0 for ch in weakest) / max(len(weakest), 1) if weakest else 0
+    coverage_score = seen / total_cards * 100
+    retention_score = hit_rate if hit_rate is not None else 45
+    due_score = 100 - min(80, due / total_cards * 140)
+    new_score = 100 - min(80, new / total_cards * 100)
+    stability_score = min(100, avg_stability / 28 * 100)
+    weakness_score = 100 - min(80, weak_pressure)
+    quality_penalty = min(35, (quality.get("needs_review") or 0) * 2 + (quality.get("photo_recommended") or 0) * .8)
+    block_balance = min((b["score"] for b in out), default=0)
+    components = [
+        _component("Abdeckung", coverage_score, 28, f"{seen}/{stats.get('total') or 0} Karten gesehen"),
+        _component("Trefferquote", retention_score, 22, f"{hit_rate if hit_rate is not None else 45}% aus bisherigen Reviews"),
+        _component("Wiederholungsdruck", due_score, 18, f"{due} faellige Karten"),
+        _component("Neue Karten", new_score, 12, f"{new} Karten noch ungesehen"),
+        _component("Stabilitaet", stability_score, 10, f"Durchschnitt {round(avg_stability, 1)} Tage"),
+        _component("Schwaechen", weakness_score, 10, f"Top-Blocker-Score {round(weak_pressure)}"),
+    ]
+    weighted = sum(c["score"] * c["weight"] for c in components) / max(sum(c["weight"] for c in components), 1)
+    block_penalty = max(0, 70 - block_balance) * .18 if out else 0
+    overall = round(max(5, min(98, weighted - quality_penalty - block_penalty)))
+    band, band_label, band_action = _mission_band(overall)
+    blockers = []
+    if due:
+        blockers.append({
+            "key": "due",
+            "label": "Faellige Karten",
+            "impact": min(100, round(due / total_cards * 140)),
+            "detail": f"{due} Karten laufen gegen die Stabilitaet.",
+            "route": "home",
+        })
+    if new:
+        blockers.append({
+            "key": "new",
+            "label": "Ungesehener Stoff",
+            "impact": min(100, round(new / total_cards * 100)),
+            "detail": f"{new} Karten sind noch nicht aktiv abrufbar.",
+            "route": "home",
+        })
+    for ch in weakest:
+        if ch.get("weak_score", 0) <= 0:
+            continue
+        blockers.append({
+            "key": f"kap-{ch.get('kap')}",
+            "label": f"VO{ch.get('kap')} {ch.get('name')}",
+            "impact": min(100, round(ch.get("weak_score", 0))),
+            "detail": f"{ch.get('progress')}% gesehen, {ch.get('due')} faellig, Quote {ch.get('hit_rate') if ch.get('hit_rate') is not None else '-'}%",
+            "route": "home",
+            "kap": ch.get("kap"),
+        })
+    for b in out:
+        if b["score"] < 65:
+            blockers.append({
+                "key": f"block-{b['block']}",
+                "label": b["block"],
+                "impact": 65 - b["score"],
+                "detail": b["detail"],
+                "route": "exam",
+            })
+    if quality.get("needs_review"):
+        blockers.append({
+            "key": "quality",
+            "label": "Kartenqualitaet",
+            "impact": min(100, (quality.get("needs_review") or 0) * 5),
+            "detail": f"{quality.get('needs_review')} Karten brauchen Review.",
+            "route": "workshop",
+        })
+    blockers.sort(key=lambda item: (-item.get("impact", 0), item["label"]))
+    if blockers:
+        next_step = f"{blockers[0]['label']} zuerst angehen, danach eine offene Pruefungsfrage."
+    else:
+        next_step = "Eine kurze Simulation starten und die Reifeprognose gegen echte Antworten pruefen."
     return {
         "overall": overall,
         "label": f"{max(overall - 8, 0)}-{min(overall + 8, 99)}%",
+        "band": band,
+        "band_label": band_label,
+        "status": band_label,
+        "action": band_action,
+        "gap_to_ready": max(0, 80 - overall),
+        "exam_date": _exam_date(module).isoformat(),
+        "days_left": _days_left(module),
+        "components": components,
+        "blockers": blockers[:8],
         "blocks": sorted(out, key=lambda b: b["block"]),
-        "next_step": "Starte eine Schwächen-Mini-Pruefung und bewerte jeden Unterpunkt ehrlich.",
+        "next_step": next_step,
     }
 
 
@@ -1725,10 +1985,10 @@ def stats(module: str = "organic"):
     tags = db.tag_stats(conn, module)
     auto_quality = _auto_quality_sweep_cached(conn, module, now)
     quality = db.quality_summary(conn, module)
-    today = _today_work_plan(conn, module, st, chapters, quality)
+    exam_score = _exam_score_projection(st, chapters, module, quality)
+    today = _today_work_plan(conn, module, st, chapters, quality, exam_score)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
-    exam_score = _exam_score_projection(st, chapters, module)
     exam_date = _exam_date(module)
     conn.close()
     return {
@@ -1761,6 +2021,7 @@ def dashboard(module: str = "organic"):
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
     auto_quality = _auto_quality_sweep_cached(conn, module, now)
+    quality = db.quality_summary(conn, module)
     out = {
         "module": module,
         "stats": st,
@@ -1770,9 +2031,9 @@ def dashboard(module: str = "organic"):
         "study_plan": _study_plan(st, chapters, module),
         "weaknesses": db.weakness_heatmap(conn, now, module, chapters),
         "tags": db.tag_stats(conn, module),
-        "quality": db.quality_summary(conn, module),
+        "quality": quality,
         "auto_quality": {"moved": auto_quality},
-        "exam_score": _exam_score_projection(st, chapters, module),
+        "exam_score": _exam_score_projection(st, chapters, module, quality),
         "xp": db.xp_summary(conn),
         "streak": db.streak(conn),
     }
@@ -1895,7 +2156,8 @@ def exam_prognosis(module: str = "organic"):
     now = _now_iso()
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
-    out = _exam_score_projection(st, chapters, module)
+    quality = db.quality_summary(conn, module)
+    out = _exam_score_projection(st, chapters, module, quality)
     conn.close()
     return out
 
@@ -1962,7 +2224,8 @@ def today_plan(module: str = "organic"):
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
     quality = db.quality_summary(conn, module)
-    out = _today_work_plan(conn, module, st, chapters, quality)
+    exam_score = _exam_score_projection(st, chapters, module, quality)
+    out = _today_work_plan(conn, module, st, chapters, quality, exam_score)
     conn.close()
     return {"module": module, **out}
 
