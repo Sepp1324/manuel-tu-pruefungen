@@ -599,30 +599,96 @@ function StudyPlan({ plan, startSession }) {
   );
 }
 
+function ReadinessCoach({ score, setRoute, startExam, startSession }) {
+  if (!score) return null;
+  const components = score.components || [];
+  const blockers = score.blockers || [];
+  return (
+    <section className={`panel readiness-panel ${score.band || ""}`}>
+      <div className="section-head">
+        <div>
+          <h2>Pruefungsreife</h2>
+          <p>{score.next_step}</p>
+        </div>
+        <div className="readiness-score">
+          <b>{score.overall || 0}%</b>
+          <span>{score.band_label || score.status || "Status"}</span>
+        </div>
+      </div>
+      <div className="readiness-main">
+        <div className="readiness-components">
+          {components.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <b>{item.score}%</b>
+              <i><em style={{ width: `${item.score}%` }} /></i>
+              <small>{item.detail}</small>
+            </div>
+          ))}
+        </div>
+        <div className="readiness-blockers">
+          <b>Blocker bis 80%</b>
+          {blockers.slice(0, 5).map((item) => (
+            <button key={item.key} onClick={() => item.kap ? startSession?.("anki", item.kap) : setRoute?.(item.route || "dashboard")}>
+              <span>{item.label}</span>
+              <em>{item.detail}</em>
+            </button>
+          ))}
+          {!blockers.length && <p>Keine harte Luecke sichtbar. Jetzt mit einer Simulation absichern.</p>}
+          <div className="button-row-inline">
+            <button className="primary" onClick={() => startExam?.(12, "weak")}>Mini-Pruefung</button>
+            <button onClick={() => setRoute?.("knowledge")}>Landkarte</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TodayPlan({ plan, setRoute, startSession }) {
   if (!plan) return null;
   const workload = plan.workload || {};
+  const missions = plan.missions || [];
   function runTask(task) {
-    if (task.key === "due" || task.key === "new") startSession?.("anki");
-    else if (task.key === "photo") startSession?.("photos");
-    else setRoute?.(task.route || "home");
+    if (task.deck === "anki" || task.key === "due" || task.key === "new" || task.key === "weak_chapter") {
+      startSession?.("anki", task.kap || null);
+    } else {
+      setRoute?.(task.route || "home");
+    }
   }
   return (
-    <section className="panel today-plan">
+    <section className={`panel today-plan ${plan.band || ""}`}>
       <div className="section-head">
         <div>
-          <h2>Heute solltest du machen</h2>
+          <h2>{plan.title || "Heute solltest du machen"}</h2>
           <p>{plan.message}</p>
         </div>
-        <span className="deck-pill">{plan.days_left} Tage</span>
+        <span className="deck-pill">{plan.mission?.summary || `${plan.days_left} Tage`}</span>
       </div>
       <div className="plan-metrics">
+        <span><b>{plan.readiness?.score || 0}%</b> Reife</span>
         <span><b>{workload.daily_cards || 0}</b> Karten heute</span>
         <span><b>{workload.backlog_per_day || 0}</b> pro Tag offen</span>
         <span><b>{workload.repair_cards || 0}</b> Werkstattkarten</span>
         <span><b>{workload.photo_cards || 0}</b> Foto-Queue</span>
       </div>
-      <div className="today-task-grid">
+      {!!missions.length && (
+        <div className="mission-grid">
+          {missions.map((task, idx) => (
+            <article key={task.key} className={`mission-card ${task.priority || ""}`}>
+              <div className="mission-index">{idx + 1}</div>
+              <div>
+                <span>{task.priority || "mittel"} · {task.minutes} min</span>
+                <h3>{task.title}</h3>
+                <p>{task.detail}</p>
+                <em>Ziel: {task.done_when}</em>
+              </div>
+              <button onClick={() => runTask(task)}>{task.cta || "Start"}</button>
+            </article>
+          ))}
+        </div>
+      )}
+      <div className={`today-task-grid ${missions.length ? "compact" : ""}`}>
         {(plan.tasks || []).filter((task) => task.amount !== 0).map((task) => (
           <button
             key={task.key}
@@ -740,7 +806,7 @@ function ModuleSwitch({ modules = {}, active, onChange }) {
   );
 }
 
-function Home({ data, startSession, setRoute, refresh, module, setModule }) {
+function Home({ data, startSession, startExam, setRoute, refresh, module, setModule }) {
   const st = data.anki || {};
   const goal = data.daily_goal || {};
   const forecast = data.forecast || {};
@@ -764,6 +830,7 @@ function Home({ data, startSession, setRoute, refresh, module, setModule }) {
       </section>
 
       <XpCard xp={data.xp} streak={data.streak} />
+      <ReadinessCoach score={data.exam_score} setRoute={setRoute} startExam={startExam} startSession={startSession} />
       <StudyPlan plan={data.study_plan} startSession={startSession} />
       <TodayPlan plan={data.today_plan} setRoute={setRoute} startSession={startSession} />
 
@@ -1388,12 +1455,12 @@ function KnowledgeMapPage({ module, startSession, setRoute }) {
 function ExamScorePanel({ prognosis }) {
   if (!prognosis) return null;
   return (
-    <section className="panel exam-score-panel">
+    <section className={`panel exam-score-panel ${prognosis.band || ""}`}>
       <div>
-        <h2>Pruefungs-Score-Prognose</h2>
+        <h2>Pruefungsreife</h2>
         <p>{prognosis.next_step}</p>
       </div>
-      <div className="forecast-score compact"><b>{prognosis.label}</b><span>gesamt</span></div>
+      <div className="forecast-score compact"><b>{prognosis.overall || 0}%</b><span>{prognosis.band_label || "gesamt"}</span></div>
       <div className="exam-blocks">
         {(prognosis.blocks || []).map((b) => (
           <div key={b.block}>
@@ -1404,6 +1471,14 @@ function ExamScorePanel({ prognosis }) {
           </div>
         ))}
       </div>
+      {!!prognosis.blockers?.length && (
+        <div className="exam-blockers">
+          <b>Naechste Blocker</b>
+          {prognosis.blockers.slice(0, 4).map((item) => (
+            <span key={item.key}>{item.label}<em>{item.detail}</em></span>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -3262,7 +3337,7 @@ function App() {
     if (route === "photos") return <PhotoPoolPage onDone={load} startSession={startSession} />;
     if (route === "add") return <ManualCardPage onDone={load} module={module} />;
     if (route === "import") return <CardImportPage onDone={load} module={module} />;
-    return <Home data={data} startSession={startSession} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
+    return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
   }, [data, session, route, module]);
 
   if (isLogin) return <Login />;
