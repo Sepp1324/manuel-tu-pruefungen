@@ -160,6 +160,21 @@ button:disabled { cursor: default; opacity: .48; }
   flex-wrap: wrap;
   gap: 8px;
 }
+.formula-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.formula-toolbar button {
+  background: #eef8ff;
+  border-color: #c7e5f4;
+  color: var(--blue-dark);
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 30px;
+  padding: 5px 8px;
+}
 .panel, .deck, .study-card, .done, .day-card, .xp-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -565,6 +580,28 @@ button:disabled { cursor: default; opacity: .48; }
   padding: 9px;
 }
 .result-grid b { color: var(--tu-blue); font-size: 14px; }
+.session-debrief {
+  max-width: 760px;
+}
+.session-weak-list, .session-next-focus {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  text-align: left;
+  width: 100%;
+}
+.session-weak-list b, .session-next-focus b {
+  color: var(--tu-blue);
+  font-size: 13px;
+}
+.session-weak-list span, .session-next-focus span {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+}
 .exam-panel { display: grid; gap: 18px; }
 .exam-workbench {
   display: grid;
@@ -947,6 +984,32 @@ button:disabled { cursor: default; opacity: .48; }
   font-style: normal;
   font-weight: 900;
   text-align: right;
+}
+.exam-checklist {
+  align-items: center;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+}
+.exam-checklist b {
+  color: var(--muted);
+  font-size: 12px;
+  margin-right: 2px;
+}
+.exam-checklist button {
+  border-radius: 999px;
+  font-size: 12px;
+  min-height: 30px;
+  padding: 5px 10px;
+}
+.exam-checklist button.active {
+  background: var(--tu-blue);
+  border-color: var(--tu-blue);
+  color: white;
 }
 .subquestion-list {
   display: grid;

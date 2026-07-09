@@ -72,12 +72,33 @@ const WORKSHOP_ISSUE_LABELS = {
   missing_context: "Kein Kontext",
   photo: "Foto empfohlen",
   sketch: "Skizze",
+  formula: "Formel-Fix",
   extracted: "Extraktion",
   person_company: "Person/Firma",
   lecture_info: "Vorlesungsinfo",
   duplicate: "Duplikat",
   nonsense: "Nonsense",
 };
+const FORMULA_TOOLBAR_ITEMS = [
+  ["H2SO4", "H<sub>2</sub>SO<sub>4</sub>"],
+  ["H2O", "H<sub>2</sub>O"],
+  ["SO2", "SO<sub>2</sub>"],
+  ["SO3", "SO<sub>3</sub>"],
+  ["Na2SO4", "Na<sub>2</sub>SO<sub>4</sub>"],
+  ["CaCO3", "CaCO<sub>3</sub>"],
+  ["NH3", "NH<sub>3</sub>"],
+  ["2-", "<sup>2-</sup>"],
+  ["+", "<sup>+</sup>"],
+  ["->", " &rarr; "],
+  ["<=>", " &harr; "],
+];
+const EXAM_CHECKLIST = [
+  ["definition", "Definition"],
+  ["process", "Prozess/Aufbau"],
+  ["conditions", "Bedingungen"],
+  ["formula", "Formel/Reaktion"],
+  ["example", "Beispiel/Zweck"],
+];
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -96,6 +117,11 @@ async function api(path, opts) {
 
 function appendHtml(value = "", html = "") {
   return [value.trimEnd(), html].filter(Boolean).join("\n\n");
+}
+
+function appendInline(value = "", html = "") {
+  const trimmed = value.trimEnd();
+  return `${trimmed}${trimmed ? " " : ""}${html}`;
 }
 
 function insertHtmlAt(value = "", html = "", start = value.length, end = start) {
@@ -168,6 +194,18 @@ function PhotoTextarea({ value = "", onValue, rows = 6, ...props }) {
       />
       {(busy || msg) && <small className="paste-status">{busy ? "Fuege Foto ein..." : msg}</small>}
     </>
+  );
+}
+
+function FormulaToolbar({ value = "", onValue }) {
+  return (
+    <div className="formula-toolbar" aria-label="Formelbausteine">
+      {FORMULA_TOOLBAR_ITEMS.map(([label, html]) => (
+        <button key={label} type="button" onClick={() => onValue?.(appendInline(value, html))}>
+          <span dangerouslySetInnerHTML={{ __html: html.trim() || label }} />
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -636,6 +674,7 @@ function Study({ session, setSession, finish }) {
   }, [card?.id]);
 
   async function rate(rating) {
+    const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
     await api("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -643,13 +682,12 @@ function Study({ session, setSession, finish }) {
         card_id: card.id,
         rating,
         source: isExam ? "exam" : "review",
-        feedback_reason: rating === 1 ? feedbackReason : "",
+        feedback_reason: reviewReason,
       }),
     });
-    const nextResult = { card_id: card.id, rating, kap: card.kap, subname: card.subname };
+    const nextResult = { card_id: card.id, rating, kap: card.kap, subname: card.subname, feedback_reason: reviewReason };
     if (session.idx + 1 >= cards.length) {
-      if (isExam) setSession((old) => ({ ...old, done: true, results: [...(old.results || []), nextResult] }));
-      else finish();
+      setSession((old) => ({ ...old, done: true, results: [...(old.results || []), nextResult] }));
     } else {
       setSession((old) => ({ ...old, idx: old.idx + 1, results: [...(old.results || []), nextResult] }));
     }
@@ -693,9 +731,62 @@ function Study({ session, setSession, finish }) {
     }
   }
 
+  async function summarizeEdit() {
+    if (!card) return;
+    setSavingEdit(true);
+    setEditMsg("");
+    try {
+      const res = await api(`/api/cards/${encodeURIComponent(card.id)}/summarize`, { method: "POST" });
+      const updated = res.card;
+      setSession((old) => ({
+        ...old,
+        cards: (old.cards || []).map((item) => item.id === updated.id ? { ...item, ...updated } : item),
+      }));
+      setDraft({ q: updated.q || "", a: updated.a || "", review_note: updated.review_note || "" });
+      setEditing(true);
+      setEditMsg("Karte gekuerzt. Bitte kurz pruefen und speichern oder weiterlernen.");
+      api(`/api/preview/${encodeURIComponent(updated.id)}`).then(setPreview).catch(() => {});
+    } catch (err) {
+      setEditMsg(err.message || "Kuerzen fehlgeschlagen");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function markForWorkshop(reason = feedbackReason || "karte_schlecht") {
+    if (!card) return;
+    setSavingEdit(true);
+    setEditMsg("");
+    try {
+      const note = `Lernsession: ${reasonLabel(reason)}`;
+      const res = await api(`/api/cards/${encodeURIComponent(card.id)}/triage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "needs_review",
+          q: card.q,
+          a: card.a,
+          reason,
+          review_note: note,
+        }),
+      });
+      setSession((old) => ({
+        ...old,
+        cards: (old.cards || []).map((item) => item.id === res.card.id ? { ...item, ...res.card } : item),
+      }));
+      setEditMsg("Karte liegt in der Werkstatt.");
+    } catch (err) {
+      setEditMsg(err.message || "Markieren fehlgeschlagen");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
   if (session.done) {
     const results = session.results || [];
     const strong = results.filter((r) => r.rating >= 3).length;
+    const cardMap = Object.fromEntries(cards.map((item) => [item.id, item]));
+    const weak = results.filter((r) => r.rating <= 2).map((r) => ({ ...r, card: cardMap[r.card_id] })).slice(0, 6);
     const byKap = results.reduce((acc, r) => {
       const key = `VO${r.kap}`;
       acc[key] = acc[key] || { total: 0, ok: 0 };
@@ -703,16 +794,37 @@ function Study({ session, setSession, finish }) {
       if (r.rating >= 3) acc[key].ok += 1;
       return acc;
     }, {});
+    const tomorrow = Object.entries(byKap)
+      .filter(([, v]) => v.ok < v.total)
+      .sort((a, b) => (a[1].ok / a[1].total) - (b[1].ok / b[1].total))
+      .slice(0, 3);
     return (
-      <section className="done exam-result">
+      <section className="done exam-result session-debrief">
         <Check size={32} />
-        <h2>Pruefungsmodus abgeschlossen</h2>
-        <p>{strong} von {results.length} Karten sicher erinnert.</p>
+        <h2>{isExam ? "Pruefungsmodus abgeschlossen" : "Tagesabschluss"}</h2>
+        <p>{strong} von {results.length} Karten sicher erinnert. {weak.length ? `${weak.length} Karte(n) gehen in den Fokus.` : "Keine harte Schwachstelle in dieser Runde."}</p>
         <div className="result-grid">
           {Object.entries(byKap).map(([kap, v]) => (
             <span key={kap}><b>{kap}</b>{v.ok}/{v.total}</span>
           ))}
         </div>
+        {!!weak.length && (
+          <div className="session-weak-list">
+            <b>Schwache Karten</b>
+            {weak.map((item) => (
+              <span key={item.card_id}>
+                VO{item.kap}: {item.card?.subname || item.card?.source || "Karte"} · {RATING_LABELS[item.rating]}
+                {item.feedback_reason ? ` · ${reasonLabel(item.feedback_reason)}` : ""}
+              </span>
+            ))}
+          </div>
+        )}
+        {!!tomorrow.length && (
+          <div className="session-next-focus">
+            <b>Morgen zuerst</b>
+            <span>{tomorrow.map(([kap]) => kap).join(" · ")}</span>
+          </div>
+        )}
         <button className="primary" onClick={finish}>Zurueck</button>
       </section>
     );
@@ -747,10 +859,12 @@ function Study({ session, setSession, finish }) {
           <label>Frage
             <PhotoTextarea value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} rows={5} />
           </label>
+          <FormulaToolbar value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} />
           <PhotoButton label="Foto in Frage" onInsert={(html) => setDraft((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
           <label>Antwort
             <PhotoTextarea value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} rows={9} />
           </label>
+          <FormulaToolbar value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} />
           <PhotoButton label="Foto in Antwort" onInsert={(html) => setDraft((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
           <label>Notiz
             <input value={draft.review_note || ""} onChange={(e) => setDraft({ ...draft, review_note: e.target.value })} />
@@ -758,6 +872,7 @@ function Study({ session, setSession, finish }) {
           <CardRenderPreview question={draft.q || ""} answer={draft.a || ""} />
           <div className="button-row-inline">
             <button className="primary" disabled={savingEdit} onClick={() => saveEdit("active")}><Check size={16} /> Speichern</button>
+            <button disabled={savingEdit} onClick={summarizeEdit}>Zusammenfassen</button>
             <button disabled={savingEdit} onClick={() => { setEditing(false); setEditMsg(""); }}><X size={16} /> Abbrechen</button>
             <button disabled={savingEdit} onClick={() => saveEdit("needs_review")}>Review markieren</button>
           </div>
@@ -788,6 +903,9 @@ function Study({ session, setSession, finish }) {
                   {label}
                 </button>
               ))}
+              <button type="button" disabled={savingEdit} onClick={() => markForWorkshop()}>
+                In Werkstatt
+              </button>
             </div>
             <div className="ratings">
               {[1, 2, 3, 4].map((r) => (
@@ -1117,6 +1235,7 @@ function OpenExamRunner({ exam, module, onClose }) {
   const [revealed, setRevealed] = useState({});
   const [answers, setAnswers] = useState({});
   const [scores, setScores] = useState({});
+  const [checklist, setChecklist] = useState({});
   const [confidence, setConfidence] = useState({});
   const [errorTypes, setErrorTypes] = useState({});
   const [startedAt, setStartedAt] = useState(Date.now());
@@ -1129,6 +1248,7 @@ function OpenExamRunner({ exam, module, onClose }) {
     setSecondsLeft((exam.minutes || 0) * 60);
     setAnswers({});
     setScores({});
+    setChecklist({});
     setConfidence({});
     setErrorTypes({});
     setRevealed({});
@@ -1150,7 +1270,16 @@ function OpenExamRunner({ exam, module, onClose }) {
     }));
   }
 
+  function toggleChecklist(key) {
+    setChecklist((old) => {
+      const current = old[question.card_id] || [];
+      const next = current.includes(key) ? current.filter((item) => item !== key) : [...current, key];
+      return { ...old, [question.card_id]: next };
+    });
+  }
+
   async function finish() {
+    const checklistLabel = (key) => EXAM_CHECKLIST.find(([item]) => item === key)?.[1] || key;
     const payload = {
       module,
       mode: exam.mode,
@@ -1161,7 +1290,10 @@ function OpenExamRunner({ exam, module, onClose }) {
         sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || "miss"),
         confidence: confidence[q.card_id] || "",
         error_types: errorTypes[q.card_id] || [],
-        answer_note: answers[q.card_id] || "",
+        answer_note: [
+          answers[q.card_id] || "",
+          (checklist[q.card_id] || []).length ? `Checkliste: ${(checklist[q.card_id] || []).map(checklistLabel).join(", ")}` : "",
+        ].filter(Boolean).join("\n\n"),
       })),
     };
     const res = await api("/api/exam/open/submit", {
@@ -1193,6 +1325,7 @@ function OpenExamRunner({ exam, module, onClose }) {
   const currentScores = scores[question.card_id] || {};
   const currentErrors = errorTypes[question.card_id] || [];
   const currentAnswer = answers[question.card_id] || "";
+  const currentChecklist = checklist[question.card_id] || [];
   const isFormulaMode = exam.mode === "formula";
   const rubric = question.rubric?.length ? question.rubric : question.subquestions || [];
   const totalRubricPoints = rubric.reduce((sum, item) => sum + (item.points || 0), 0);
@@ -1229,6 +1362,7 @@ function OpenExamRunner({ exam, module, onClose }) {
             placeholder={isFormulaMode ? "Formel, Reaktionsgleichung oder kurze Erklaerung notieren. Foto/Skizze kann direkt eingefuegt werden." : "Antwort wie in der Pruefung formulieren, danach mit Geruest und Musterantwort vergleichen."}
           />
         </label>
+        <FormulaToolbar value={currentAnswer} onValue={(next) => setAnswers((old) => ({ ...old, [question.card_id]: next }))} />
         <PhotoButton
           label={isFormulaMode ? "Skizze/Foto einfuegen" : "Foto zur Antwort"}
           onInsert={(html) => setAnswers((old) => ({ ...old, [question.card_id]: appendHtml(old[question.card_id] || "", html) }))}
@@ -1250,6 +1384,14 @@ function OpenExamRunner({ exam, module, onClose }) {
               <p>{item.prompt}</p>
               <em>{item.points} P</em>
             </article>
+          ))}
+        </div>
+        <div className="exam-checklist">
+          <b>Mustervergleich</b>
+          {EXAM_CHECKLIST.map(([key, label]) => (
+            <button key={key} type="button" className={currentChecklist.includes(key) ? "active" : ""} onClick={() => toggleChecklist(key)}>
+              {label}
+            </button>
           ))}
         </div>
         <div className="subquestion-list">
@@ -1422,6 +1564,7 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
             placeholder="Antwort wie in der Pruefung notieren, dann selbst nach Raster bewerten."
           />
         </label>
+        <FormulaToolbar value={answers[currentKey] || ""} onValue={(next) => setAnswers((old) => ({ ...old, [currentKey]: next }))} />
         <div className="correction-score">
           {EXAM_EVALS.map(([key, label]) => (
             <button
@@ -1669,10 +1812,12 @@ function ManualCardPage({ onDone, module }) {
         <label>Frage
           <PhotoTextarea value={form.q} onValue={(next) => setForm({ ...form, q: next })} rows={4} />
         </label>
+        <FormulaToolbar value={form.q} onValue={(next) => setForm({ ...form, q: next })} />
         <PhotoButton label="Foto in Frage" onInsert={(html) => setForm((old) => ({ ...old, q: appendHtml(old.q, html) }))} />
         <label>Antwort
           <PhotoTextarea value={form.a} onValue={(next) => setForm({ ...form, a: next })} rows={6} />
         </label>
+        <FormulaToolbar value={form.a} onValue={(next) => setForm({ ...form, a: next })} />
         <PhotoButton label="Foto in Antwort" onInsert={(html) => setForm((old) => ({ ...old, a: appendHtml(old.a, html) }))} />
         <CardRenderPreview question={form.q} answer={form.a} />
         <button className="primary"><Plus size={16} /> Speichern</button>
@@ -1777,10 +1922,12 @@ function CardReviewPage({ onDone, module }) {
             <label>Frage
               <PhotoTextarea value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} rows={5} />
             </label>
+            <FormulaToolbar value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} />
             <PhotoButton label="Foto in Frage" onInsert={(html) => setSelected((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
             <label>Antwort
               <PhotoTextarea value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} rows={9} />
             </label>
+            <FormulaToolbar value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} />
             <PhotoButton label="Foto in Antwort" onInsert={(html) => setSelected((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
             <label>Notiz
               <input value={selected.review_note || ""} onChange={(e) => setSelected({ ...selected, review_note: e.target.value })} />
@@ -1875,6 +2022,52 @@ function WorkshopPage({ module, onDone }) {
     }
   }
 
+  async function summarize() {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      const res = await api(`/api/cards/${encodeURIComponent(selected.id)}/summarize`, { method: "POST" });
+      setSelected(res.card);
+      setMsg("Karte gekuerzt. Bitte kurz gegenpruefen.");
+      await load();
+      onDone?.();
+    } catch (err) {
+      setMsg(err.message || "Kuerzen fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function repairFormulas() {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      const res = await api(`/api/cards/${encodeURIComponent(selected.id)}/repair-formulas`, { method: "POST" });
+      setSelected(res.card);
+      setMsg("Formeln repariert.");
+      await load();
+      onDone?.();
+    } catch (err) {
+      setMsg(err.message || "Formel-Reparatur fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function repairAllFormulas() {
+    setBusy(true);
+    try {
+      const res = await api(`/api/workshop/repair-formulas?module=${encodeURIComponent(module)}&limit=200`, { method: "POST" });
+      setMsg(`${res.fixed || 0} Karten mit Formel-Fix gespeichert.`);
+      await load(true);
+      onDone?.();
+    } catch (err) {
+      setMsg(err.message || "Batch-Reparatur fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="workshop-layout">
       <div className="panel workshop-side">
@@ -1898,6 +2091,11 @@ function WorkshopPage({ module, onDone }) {
           ))}
         </div>
         {activeCategory?.description && <p className="muted workshop-hint">{activeCategory.description}</p>}
+        {category === "formula" && (
+          <button className="primary" disabled={busy} onClick={repairAllFormulas}>
+            Alle Formel-Fixes speichern
+          </button>
+        )}
         <div className="workshop-list">
           {activeCards.length ? activeCards.map((card) => (
             <button key={`${category}-${card.id}`} className={selected?.id === card.id ? "active" : ""} onClick={() => selectSummary(card)}>
@@ -1940,12 +2138,14 @@ function WorkshopPage({ module, onDone }) {
               ))}
             </div>
             <label>Frage
-              <textarea value={selected.q || ""} onChange={(e) => setSelected({ ...selected, q: e.target.value })} rows={5} />
+              <PhotoTextarea value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} rows={5} />
             </label>
+            <FormulaToolbar value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} />
             <PhotoButton label="Foto in Frage" onInsert={(html) => setSelected((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
             <label>Antwort
-              <textarea value={selected.a || ""} onChange={(e) => setSelected({ ...selected, a: e.target.value })} rows={10} />
+              <PhotoTextarea value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} rows={10} />
             </label>
+            <FormulaToolbar value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} />
             <PhotoButton label="Foto in Antwort" onInsert={(html) => setSelected((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
             <label>Notiz
               <input value={selected.review_note || ""} onChange={(e) => setSelected({ ...selected, review_note: e.target.value })} />
@@ -1953,6 +2153,8 @@ function WorkshopPage({ module, onDone }) {
             <CardRenderPreview question={selected.q || ""} answer={selected.a || ""} />
             <div className="button-row-inline">
               <button className="primary" disabled={busy} onClick={improve}><Edit3 size={16} /> Auto verbessern</button>
+              <button disabled={busy} onClick={summarize}>Zusammenfassen</button>
+              <button disabled={busy} onClick={repairFormulas}>Formeln reparieren</button>
               <button disabled={busy} onClick={() => save("active")}>Aktiv speichern</button>
               <button disabled={busy} onClick={() => save("needs_review")}>Review</button>
               <button disabled={busy} onClick={() => save("suspended")}>Deaktivieren</button>
@@ -2051,10 +2253,12 @@ function TriagePage({ module, onDone }) {
             <label>Frage
               <PhotoTextarea value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} rows={5} />
             </label>
+            <FormulaToolbar value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} />
             <PhotoButton label="Foto in Frage" onInsert={(html) => setDraft((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
             <label>Antwort
               <PhotoTextarea value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} rows={9} />
             </label>
+            <FormulaToolbar value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} />
             <PhotoButton label="Foto in Antwort" onInsert={(html) => setDraft((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
             <CardRenderPreview question={draft.q || ""} answer={draft.a || ""} />
             <div className="reason-options">
