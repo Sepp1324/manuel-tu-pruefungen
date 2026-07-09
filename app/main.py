@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import csv
+import io
 import json
 import re
 import time
@@ -324,6 +326,16 @@ class ManualCardIn(BaseModel):
     source: str = "Manuell"
 
 
+class CardImportIn(BaseModel):
+    module: str = "organic"
+    default_kap: int = Field(default=1, ge=1, le=11)
+    source: str = "Import"
+    format: str = Field(default="csv", pattern="^(csv|tsv|json)$")
+    text: str = ""
+    cards: list[dict] = Field(default_factory=list)
+    dedupe: bool = True
+
+
 class OpenExamResultIn(BaseModel):
     card_id: str
     sub_scores: list[str] = Field(default_factory=list)
@@ -478,6 +490,115 @@ def _strip_html(value: str) -> str:
     value = re.sub(r"<[^>]+>", " ", value)
     value = value.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
     return re.sub(r"\s+", " ", value).strip()
+
+
+IMPORT_Q_KEYS = ("q", "frage", "question", "front", "vorderseite", "prompt")
+IMPORT_A_KEYS = ("a", "antwort", "answer", "back", "rueckseite", "rückseite", "loesung", "lösung")
+IMPORT_KAP_KEYS = ("kap", "vo", "chapter", "einheit", "lecture")
+IMPORT_SOURCE_KEYS = ("source", "quelle", "skript", "origin")
+
+
+def _import_signature(q: str, a: str) -> str:
+    text = _strip_html(f"{q} {a}").lower()
+    text = text.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss")
+    return re.sub(r"[^a-z0-9]+", " ", text).strip()[:360]
+
+
+def _import_value(row: dict, keys: tuple[str, ...]) -> str:
+    normalized = {str(k).strip().lower().lstrip("\ufeff"): v for k, v in row.items()}
+    for key in keys:
+        if key in normalized and normalized[key] is not None:
+            return str(normalized[key]).strip()
+    return ""
+
+
+def _import_kap(value: str, default: int) -> int:
+    match = re.search(r"\d+", str(value or ""))
+    if not match:
+        return default
+    return max(1, min(11, int(match.group(0))))
+
+
+def _normalize_import_row(row: dict, default_kap: int, default_source: str, idx: int) -> tuple[dict | None, str | None]:
+    q = _import_value(row, IMPORT_Q_KEYS)
+    a = _import_value(row, IMPORT_A_KEYS)
+    if len(q) < 3 or len(a) < 3:
+        return None, f"Zeile {idx}: Frage oder Antwort fehlt"
+    return {
+        "kap": _import_kap(_import_value(row, IMPORT_KAP_KEYS), default_kap),
+        "q": q,
+        "a": a,
+        "source": _import_value(row, IMPORT_SOURCE_KEYS) or default_source or "Import",
+    }, None
+
+
+def _parse_import_input(inp: CardImportIn) -> tuple[list[dict], list[str]]:
+    raw_rows: list[dict] = []
+    errors: list[str] = []
+    if inp.cards:
+        raw_rows = [row for row in inp.cards if isinstance(row, dict)]
+    elif inp.text.strip():
+        text = inp.text.strip()
+        if inp.format == "json":
+            try:
+                payload = json.loads(text)
+            except json.JSONDecodeError as exc:
+                return [], [f"JSON ungueltig: {exc.msg}"]
+            if isinstance(payload, dict):
+                payload = payload.get("cards") or payload.get("items") or []
+            if not isinstance(payload, list):
+                return [], ["JSON muss eine Liste oder {\"cards\": [...]} sein"]
+            raw_rows = [row for row in payload if isinstance(row, dict)]
+        else:
+            sample = text[:2048]
+            if inp.format == "tsv":
+                delimiter = "\t"
+            else:
+                try:
+                    delimiter = csv.Sniffer().sniff(sample, delimiters=",;\t").delimiter
+                except csv.Error:
+                    delimiter = ","
+            reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+            raw_rows = [dict(row) for row in reader]
+    else:
+        return [], ["Keine Importdaten gefunden"]
+
+    cards: list[dict] = []
+    for idx, row in enumerate(raw_rows[:1000], start=1):
+        card, error = _normalize_import_row(row, inp.default_kap, inp.source, idx)
+        if error:
+            errors.append(error)
+            continue
+        cards.append(card)
+    if len(raw_rows) > 1000:
+        errors.append("Maximal 1000 Karten pro Import; Rest wurde ignoriert")
+    return cards, errors[:100]
+
+
+def _dedupe_import_cards(conn, module: str, cards: list[dict]) -> tuple[list[dict], int]:
+    rows = conn.execute(
+        "SELECT payload FROM cards WHERE module=? AND deck='anki'",
+        (module,),
+    ).fetchall()
+    seen = set()
+    for row in rows:
+        try:
+            payload = json.loads(row["payload"] or "{}")
+        except json.JSONDecodeError:
+            continue
+        sig = _import_signature(str(payload.get("q", "")), str(payload.get("a", "")))
+        if sig:
+            seen.add(sig)
+    out = []
+    skipped = 0
+    for card in cards:
+        sig = _import_signature(card["q"], card["a"])
+        if sig in seen:
+            skipped += 1
+            continue
+        seen.add(sig)
+        out.append(card)
+    return out, skipped
 
 
 def _question_title(card: dict) -> str:
@@ -1965,6 +2086,49 @@ def triage_card(card_id: str, inp: CardTriageIn):
     if not card:
         raise HTTPException(404, "Karte nicht gefunden")
     return {"ok": True, "card": card}
+
+
+@app.post("/api/cards/import/preview")
+def preview_card_import(inp: CardImportIn):
+    module = _valid_module(inp.module)
+    cards, errors = _parse_import_input(inp)
+    skipped_duplicates = 0
+    if inp.dedupe and cards:
+        conn = db.get_conn()
+        cards, skipped_duplicates = _dedupe_import_cards(conn, module, cards)
+        conn.close()
+    return {
+        "ok": True,
+        "module": module,
+        "valid": len(cards),
+        "errors": errors,
+        "skipped_duplicates": skipped_duplicates,
+        "cards": cards[:30],
+    }
+
+
+@app.post("/api/cards/import")
+def import_cards(inp: CardImportIn):
+    module = _valid_module(inp.module)
+    cards, errors = _parse_import_input(inp)
+    conn = db.get_conn()
+    skipped_duplicates = 0
+    if inp.dedupe and cards:
+        cards, skipped_duplicates = _dedupe_import_cards(conn, module, cards)
+    if not cards:
+        conn.close()
+        raise HTTPException(400, "Keine gueltigen neuen Karten im Import")
+    ids = db.add_imported_cards(conn, cards, _now_iso(), module)
+    xp = db.add_xp_event(conn, min(500, max(20, len(ids) * 8)), "card_import", f"{len(ids)} Karten importiert", module, _now_iso())
+    conn.close()
+    return {
+        "ok": True,
+        "imported": len(ids),
+        "skipped_duplicates": skipped_duplicates,
+        "errors": errors,
+        "ids": ids[:20],
+        "xp": xp,
+    }
 
 
 @app.post("/api/cards/manual")
