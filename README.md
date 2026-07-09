@@ -1,7 +1,7 @@
 # TU Chemie SR-Trainer
 
-Eigenstaendige Spaced-Repetition-Website fuer Manuels Pruefung
-am **21.09.2026**.
+Eigenstaendige Spaced-Repetition-Website fuer Manuels Chemie-Pruefungen:
+Organische Chemie am **21.09.2026**, Anorganische Chemie am **29.09.2026**.
 
 Die App basiert technisch auf der Psychologie-SR-Website, ist aber davon
 getrennt:
