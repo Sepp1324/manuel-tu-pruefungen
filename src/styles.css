@@ -426,6 +426,7 @@ button:disabled { cursor: default; opacity: .48; }
 .study-top {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -508,6 +509,19 @@ button:disabled { cursor: default; opacity: .48; }
 }
 .study-card h2 .card-photo {
   margin-top: 14px;
+}
+.study-edit-card {
+  display: grid;
+  gap: 12px;
+}
+.study-edit-card label {
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  gap: 5px;
+}
+.study-edit-card .card-render-preview {
+  margin-top: 2px;
 }
 .reveal { min-width: 180px; }
 .ratings {
