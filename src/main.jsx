@@ -291,6 +291,56 @@ function formatBytes(n = 0) {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
+const ANSWER_STOPWORDS = new Set([
+  "der", "die", "das", "und", "oder", "mit", "von", "zur", "zum", "eine", "einer", "eines", "ist", "sind",
+  "werden", "wird", "fuer", "fur", "bei", "als", "auf", "aus", "dem", "den", "des", "durch", "nicht",
+  "definition", "prozess", "struktur", "bedingungen", "beispiel", "quelle", "kontext", "antwort",
+]);
+
+function stripHtmlText(value = "") {
+  return value
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function importantTerms(value = "", limit = 16) {
+  const counts = {};
+  stripHtmlText(value)
+    .toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .match(/[a-z0-9]{4,}/g)?.forEach((token) => {
+      if (ANSWER_STOPWORDS.has(token)) return;
+      counts[token] = (counts[token] || 0) + 1;
+    });
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length)
+    .slice(0, limit)
+    .map(([term]) => term);
+}
+
+function answerComparison(answer = "", question = {}) {
+  const source = [
+    question.answer || "",
+    ...(question.scaffold || []),
+    ...(question.rubric || []).map((item) => `${item.category || ""} ${item.prompt || ""}`),
+  ].join(" ");
+  const terms = importantTerms(source, 18);
+  const answerText = stripHtmlText(answer).toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
+  const hits = terms.filter((term) => answerText.includes(term));
+  const missing = terms.filter((term) => !answerText.includes(term));
+  return {
+    terms,
+    hits,
+    missing,
+    score: terms.length ? Math.round((hits.length / terms.length) * 100) : 0,
+  };
+}
+
 function reasonLabel(reason) {
   return ALL_REASONS.find(([key]) => key === reason)?.[1] || reason || "Ohne Grund";
 }
@@ -412,8 +462,10 @@ function StudyPlan({ plan, startSession }) {
         <p>{plan.message}</p>
       </div>
       <div className="plan-metrics">
+        <span><b>{plan.daily_cards || 0}</b> Karten/Tag</span>
         <span><b>{plan.new_cards_today}</b> neue Karten</span>
         <span><b>{plan.reviews_today}</b> Wiederholungen</span>
+        <span><b>{plan.mini_exams_per_week || 0}</b> Mini-Pruefungen/Woche</span>
         <span><b>{plan.open_cards}</b> offen</span>
       </div>
       <div className="focus-strip">
@@ -429,6 +481,12 @@ function StudyPlan({ plan, startSession }) {
 
 function TodayPlan({ plan, setRoute, startSession }) {
   if (!plan) return null;
+  const workload = plan.workload || {};
+  function runTask(task) {
+    if (task.key === "due" || task.key === "new") startSession?.("anki");
+    else if (task.key === "photo") startSession?.("photos");
+    else setRoute?.(task.route || "home");
+  }
   return (
     <section className="panel today-plan">
       <div className="section-head">
@@ -438,11 +496,17 @@ function TodayPlan({ plan, setRoute, startSession }) {
         </div>
         <span className="deck-pill">{plan.days_left} Tage</span>
       </div>
+      <div className="plan-metrics">
+        <span><b>{workload.daily_cards || 0}</b> Karten heute</span>
+        <span><b>{workload.backlog_per_day || 0}</b> pro Tag offen</span>
+        <span><b>{workload.repair_cards || 0}</b> Werkstattkarten</span>
+        <span><b>{workload.photo_cards || 0}</b> Foto-Queue</span>
+      </div>
       <div className="today-task-grid">
-        {(plan.tasks || []).map((task) => (
+        {(plan.tasks || []).filter((task) => task.amount !== 0).map((task) => (
           <button
             key={task.key}
-            onClick={() => task.key === "due" ? startSession?.("anki") : setRoute?.(task.route || "home")}
+            onClick={() => runTask(task)}
           >
             <b>{task.amount}</b>
             <span>{task.label}</span>
@@ -1076,6 +1140,33 @@ function FormulaChecklistPanel({ checklist, onStart }) {
   );
 }
 
+function MediaTrainingPanel({ checklist, onFormula, onPhotos }) {
+  const drawCount = checklist?.draw?.length || 0;
+  const explainCount = checklist?.explain?.length || 0;
+  return (
+    <section className="panel media-training-panel">
+      <div className="section-head">
+        <div>
+          <h2>Foto- und Formelmodus</h2>
+          <p>Strukturen, Reaktionsgleichungen und Schemata aktiv zeichnen, fotografieren und als Karte speichern.</p>
+        </div>
+      </div>
+      <div className="media-actions">
+        <button className="primary" onClick={onFormula}>
+          <b>{drawCount}</b>
+          <span>Skizzen-/Formelmodus</span>
+          <em>Zeichnen, fotografieren, selbst bewerten</em>
+        </button>
+        <button onClick={onPhotos}>
+          <b>{explainCount}</b>
+          <span>Foto-Queue</span>
+          <em>Karten mit Fotoempfehlung gezielt abarbeiten</em>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function FinalPlanPanel({ plan }) {
   if (!plan) return null;
   return (
@@ -1329,6 +1420,7 @@ function OpenExamRunner({ exam, module, onClose }) {
   const currentErrors = errorTypes[question.card_id] || [];
   const currentAnswer = answers[question.card_id] || "";
   const currentChecklist = checklist[question.card_id] || [];
+  const currentComparison = answerComparison(currentAnswer, question);
   const isFormulaMode = exam.mode === "formula";
   const rubric = question.rubric?.length ? question.rubric : question.subquestions || [];
   const totalRubricPoints = rubric.reduce((sum, item) => sum + (item.points || 0), 0);
@@ -1374,6 +1466,18 @@ function OpenExamRunner({ exam, module, onClose }) {
           <div className="exam-answer-preview">
             <b>Meine Antwort gerendert</b>
             <div dangerouslySetInnerHTML={{ __html: currentAnswer }} />
+          </div>
+        )}
+        {!!currentAnswer.trim() && !!currentComparison.terms.length && (
+          <div className="answer-coverage">
+            <div>
+              <b>Mustervergleich</b>
+              <span>{currentComparison.score}% Abdeckung · {currentComparison.hits.length}/{currentComparison.terms.length} Begriffe</span>
+            </div>
+            <div className="coverage-chip-row">
+              {currentComparison.hits.slice(0, 10).map((term) => <span key={term} className="hit">{term}</span>)}
+              {currentComparison.missing.slice(0, 10).map((term) => <span key={term} className="miss">{term}</span>)}
+            </div>
           </div>
         )}
         <div className="point-schema">
@@ -1750,6 +1854,7 @@ function ExamPage({ startExam, startSession, module }) {
       <ExamScorePanel prognosis={prognosis} />
       <AttemptHistoryPanel history={history} />
       <RepairQueuePanel history={history} onStart={() => startSession?.("repair")} />
+      <MediaTrainingPanel checklist={checklist} onFormula={startFormula} onPhotos={() => startSession?.("photos")} />
       <MasteryPanel mastery={mastery} />
       <FormulaChecklistPanel checklist={checklist} onStart={startFormula} />
       <WeeklyPlanPanel plan={weeklyPlan} />
@@ -2306,7 +2411,146 @@ function TriagePage({ module, onDone }) {
   );
 }
 
-function QualityCenter({ data, setRoute }) {
+function PerformancePanel() {
+  const [perf, setPerf] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  async function load() {
+    setMsg("");
+    try {
+      setPerf(await api("/api/performance"));
+    } catch (err) {
+      setMsg(err.message || "Performance-Daten nicht verfuegbar");
+    }
+  }
+
+  useEffect(() => { load().catch(() => {}); }, []);
+  const endpoints = perf?.endpoints || [];
+  const assets = perf?.assets || [];
+  return (
+    <div className="panel performance-panel">
+      <div className="section-head">
+        <div>
+          <h3>Performance-Monitor</h3>
+          <p>{perf ? `${perf.window} API-Samples · Assets ${formatBytes(perf.asset_bytes || 0)} · DB ${formatBytes(perf.db?.bytes || 0)}` : "Ladezeiten und Bundle-Groessen messen."}</p>
+        </div>
+        <button onClick={load}><RefreshCw size={16} /> Aktualisieren</button>
+      </div>
+      <div className="perf-grid">
+        <div>
+          <b>Langsame Endpunkte</b>
+          {endpoints.length ? endpoints.slice(0, 6).map((item) => (
+            <span key={item.path}>
+              <em>{item.path}</em>
+              <strong>{item.p95_ms} ms</strong>
+              <small>{item.count}x · avg {item.avg_ms} ms</small>
+            </span>
+          )) : <p className="muted">Noch keine API-Samples in diesem Prozess.</p>}
+        </div>
+        <div>
+          <b>Bundle</b>
+          {assets.length ? assets.slice(0, 6).map((asset) => (
+            <span key={asset.name}>
+              <em>{asset.name}</em>
+              <strong>{formatBytes(asset.bytes)}</strong>
+            </span>
+          )) : <p className="muted">Assets erscheinen nach dem Production-Build.</p>}
+        </div>
+      </div>
+      {msg && <div className="form-msg">{msg}</div>}
+    </div>
+  );
+}
+
+function QualityAuditPanel({ module, setRoute }) {
+  const [audit, setAudit] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function load() {
+    setBusy(true);
+    setMsg("");
+    try {
+      const res = await api(`/api/quality/audit?module=${encodeURIComponent(module)}&limit=12`);
+      setAudit(res);
+      setSelected(res.items?.[0] || null);
+    } catch (err) {
+      setMsg(err.message || "Audit fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function applyPreview(item = selected) {
+    if (!item?.card?.id || !item.preview) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      await api(`/api/cards/${encodeURIComponent(item.card.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          q: item.preview.q,
+          a: item.preview.a,
+          status: item.preview.status || "active",
+          review_note: item.preview.review_note || "",
+        }),
+      });
+      setMsg("Vorschlag gespeichert.");
+      await load();
+    } catch (err) {
+      setMsg(err.message || "Speichern fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="panel audit-panel">
+      <div className="section-head">
+        <div>
+          <h3>Automatischer Karten-Audit</h3>
+          <p>Findet Englisch, Nonsense, fehlenden Kontext, zu lange Antworten und Formelprobleme mit Speichervorschau.</p>
+        </div>
+        <button className="primary" disabled={busy} onClick={load}>Audit pruefen</button>
+      </div>
+      {audit && (
+        <>
+          <div className="issue-pills">
+            {(audit.issue_counts || []).slice(0, 8).map((item) => (
+              <span key={item.issue}>{item.label}: {item.count}</span>
+            ))}
+          </div>
+          <div className="audit-grid">
+            <div className="audit-list">
+              {(audit.items || []).map((item) => (
+                <button key={item.card.id} className={selected?.card?.id === item.card.id ? "active" : ""} onClick={() => setSelected(item)}>
+                  <b>VO{item.card.kap} · {(item.issues || []).map(issueLabel).join(", ")}</b>
+                  <span>{item.card.title}</span>
+                </button>
+              ))}
+            </div>
+            <div className="audit-preview">
+              {selected ? (
+                <>
+                  <CardRenderPreview question={selected.preview?.q || ""} answer={selected.preview?.a || ""} />
+                  <div className="button-row-inline">
+                    <button className="primary" disabled={busy} onClick={() => applyPreview(selected)}>Vorschlag speichern</button>
+                    <button onClick={() => setRoute("workshop")}>In Werkstatt oeffnen</button>
+                  </div>
+                </>
+              ) : <p className="muted">Keine Auditkarte ausgewaehlt.</p>}
+            </div>
+          </div>
+        </>
+      )}
+      {msg && <div className="form-msg">{msg}</div>}
+    </div>
+  );
+}
+
+function QualityCenter({ data, setRoute, module, startSession }) {
   const quality = data.quality || {};
   const autoQuality = data.auto_quality || {};
   const reasons = quality.reasons || [];
@@ -2336,10 +2580,13 @@ function QualityCenter({ data, setRoute }) {
           <button onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
           <button onClick={() => setRoute("quality")}><Search size={16} /> Karten bearbeiten</button>
           <button onClick={() => setRoute("photos")}><ImagePlus size={16} /> Fotopool</button>
+          <button onClick={() => startSession?.("photos")}><ImagePlus size={16} /> Foto-Queue</button>
         </div>
       </div>
 
       <div className="quality-center-grid">
+        <PerformancePanel />
+        <QualityAuditPanel module={module} setRoute={setRoute} />
         <div className="panel">
           <h3>Haeufige Gruende</h3>
           <div className="reason-bars">
@@ -2372,7 +2619,7 @@ function QualityCenter({ data, setRoute }) {
   );
 }
 
-function PhotoPoolPage({ onDone }) {
+function PhotoPoolPage({ onDone, startSession }) {
   const [pool, setPool] = useState({ photos: [], total: 0, used: 0, unused: 0, bytes: 0, skipped: 0 });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState("");
@@ -2435,6 +2682,7 @@ function PhotoPoolPage({ onDone }) {
         </div>
         <div className="button-row-inline">
           <button className="primary" onClick={load}><RefreshCw size={16} /> Aktualisieren</button>
+          <button onClick={() => startSession?.("photos")}><ImagePlus size={16} /> Foto-Queue starten</button>
           <button onClick={cleanup} disabled={busy === "cleanup" || !(pool.unused || 0)}>
             Ungenutzte loeschen
           </button>
@@ -2516,11 +2764,11 @@ function App() {
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
     if (route === "exam") return <ExamPage startExam={startExam} startSession={startSession} module={module} />;
-    if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} />;
+    if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} module={module} startSession={startSession} />;
     if (route === "workshop") return <WorkshopPage module={module} onDone={load} />;
     if (route === "triage") return <TriagePage module={module} onDone={load} />;
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
-    if (route === "photos") return <PhotoPoolPage onDone={load} />;
+    if (route === "photos") return <PhotoPoolPage onDone={load} startSession={startSession} />;
     if (route === "add") return <ManualCardPage onDone={load} module={module} />;
     return <Home data={data} startSession={startSession} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
   }, [data, session, route, module]);
@@ -2554,3 +2802,9 @@ function App() {
 }
 
 createRoot(document.getElementById("root")).render(<App />);
+
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}

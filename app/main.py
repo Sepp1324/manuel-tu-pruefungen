@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import json
 import re
+import time
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
@@ -35,6 +36,8 @@ AUTO_QUALITY_TTL_SECONDS = int(os.environ.get("AUTO_QUALITY_TTL_SECONDS", "300")
 PHOTO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|webp|gif)$", re.I)
 PHOTO_URL_RE = re.compile(r"/uploads/cards/([^\"'\s<>]+)", re.I)
 _AUTO_QUALITY_CACHE: dict[str, tuple[datetime, int]] = {}
+_REQUEST_METRICS: list[dict] = []
+MAX_REQUEST_METRICS = 300
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "manuel").strip()
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
@@ -156,6 +159,57 @@ def _auto_quality_sweep_cached(conn, module: str, now_iso: str) -> int:
     return moved
 
 
+def _record_request_metric(request: Request, status_code: int, elapsed_ms: float) -> None:
+    path = request.url.path
+    if not path.startswith("/api/"):
+        return
+    _REQUEST_METRICS.append({
+        "path": path,
+        "method": request.method,
+        "status": status_code,
+        "ms": round(elapsed_ms, 1),
+        "at": datetime.now(timezone.utc).isoformat(),
+    })
+    if len(_REQUEST_METRICS) > MAX_REQUEST_METRICS:
+        del _REQUEST_METRICS[:len(_REQUEST_METRICS) - MAX_REQUEST_METRICS]
+
+
+def _performance_summary() -> dict:
+    recent = list(_REQUEST_METRICS)
+    by_path: dict[str, dict] = {}
+    for item in recent:
+        bucket = by_path.setdefault(item["path"], {"path": item["path"], "count": 0, "total_ms": 0.0, "max_ms": 0.0, "errors": 0, "samples": []})
+        bucket["count"] += 1
+        bucket["total_ms"] += item["ms"]
+        bucket["max_ms"] = max(bucket["max_ms"], item["ms"])
+        bucket["errors"] += 1 if item["status"] >= 500 else 0
+        bucket["samples"].append(item["ms"])
+    endpoints = []
+    for bucket in by_path.values():
+        samples = sorted(bucket.pop("samples"))
+        p95 = samples[min(len(samples) - 1, int(len(samples) * .95))] if samples else 0
+        endpoints.append({
+            **bucket,
+            "avg_ms": round(bucket["total_ms"] / max(bucket["count"], 1), 1),
+            "p95_ms": round(p95, 1),
+        })
+    endpoints.sort(key=lambda item: (item["p95_ms"], item["avg_ms"]), reverse=True)
+    assets = []
+    asset_dir = SPA_DIR / "assets"
+    if asset_dir.exists():
+        for path in sorted(asset_dir.glob("*")):
+            if path.is_file():
+                assets.append({"name": path.name, "bytes": path.stat().st_size})
+    return {
+        "window": len(recent),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "endpoints": endpoints[:12],
+        "slowest": sorted(recent, key=lambda item: item["ms"], reverse=True)[:10],
+        "assets": assets,
+        "asset_bytes": sum(item["bytes"] for item in assets),
+    }
+
+
 def _days_left() -> int:
     return max((EXAM_DATE - date.today()).days, 0)
 
@@ -222,6 +276,16 @@ async def cache_static_middleware(request: Request, call_next):
         response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
     elif response.status_code == 200 and path.startswith("/uploads/"):
         response.headers.setdefault("Cache-Control", "private, max-age=3600")
+    return response
+
+
+@app.middleware("http")
+async def performance_middleware(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    response.headers.setdefault("Server-Timing", f"app;dur={elapsed_ms:.1f}")
+    _record_request_metric(request, response.status_code, elapsed_ms)
     return response
 
 
@@ -306,6 +370,7 @@ WORKSHOP_CATEGORIES = [
     ("duplicate", "Duplikate", "Sehr aehnliche Karten zusammenfuehren oder deaktivieren"),
     ("nonsense", "Nonsense", "Zu wenig verwertbare Antwortpunkte"),
 ]
+WORKSHOP_CATEGORY_LABELS = {key: label for key, label, _ in WORKSHOP_CATEGORIES}
 
 
 def _daily_goal(stats: dict, chapters: list[dict]) -> dict:
@@ -393,12 +458,15 @@ def _study_plan(stats: dict, chapters: list[dict]) -> dict:
         new_limit = max(8, min(25, -(-max(stats.get("new") or 0, 0) // max(days - 14, 1))))
         message = "Stoff breit aufbauen. Danach wird automatisch staerker wiederholt."
     focus = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c["kap"]))[:4]
+    daily_cards = min(120, max(20, (stats.get("due") or 0) + new_limit))
     return {
         "phase": phase,
         "title": title,
         "message": message,
         "new_cards_today": new_limit,
         "reviews_today": min(90, max(20, stats.get("due") or 0)),
+        "daily_cards": daily_cards,
+        "mini_exams_per_week": 3 if days > 21 else 5 if days > 7 else 7,
         "open_cards": open_cards,
         "focus": focus,
     }
@@ -684,6 +752,43 @@ def _workshop_data(conn, module: str, limit: int = 8) -> dict:
     }
 
 
+def _quality_audit(conn, module: str, limit: int = 12) -> dict:
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+           ORDER BY status DESC, quality_checked_at ASC, lapses DESC, reps ASC, kap ASC, ord ASC
+           LIMIT 900""",
+        (module,),
+    ).fetchall()
+    items = []
+    issue_counts: dict[str, int] = {}
+    for row in rows:
+        card = _row_to_workshop_card(row)
+        issues = _card_issues(card)
+        if not issues:
+            continue
+        for issue in issues:
+            issue_counts[issue] = issue_counts.get(issue, 0) + 1
+        preview = _improved_card_payload(card)
+        items.append({
+            "card": _workshop_card(card, issues),
+            "issues": issues,
+            "preview": {
+                "q": preview["q"],
+                "a": preview["a"],
+                "status": preview.get("status", "active"),
+                "review_note": preview.get("review_note", ""),
+            },
+        })
+        if len(items) >= limit:
+            break
+    return {
+        "module": module,
+        "items": items,
+        "issue_counts": [{"issue": key, "label": WORKSHOP_CATEGORY_LABELS.get(key, key), "count": count} for key, count in sorted(issue_counts.items(), key=lambda item: (-item[1], item[0]))],
+    }
+
+
 def _improved_card_payload(card: dict) -> dict:
     title = _question_title(card)
     title = (
@@ -772,22 +877,38 @@ def _summarized_card_payload(card: dict) -> dict:
 def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quality: dict) -> dict:
     due = stats.get("due") or 0
     new = stats.get("new") or 0
+    days = max(_days_left(), 1)
     focus = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c.get("kap") or 99))[:3]
     formula = _formula_checklist(conn, module)
     workshop_open = min((quality.get("needs_review") or 0) + (quality.get("photo_recommended") or 0), 40)
+    daily_new = 0 if days <= 7 else min(25, max(0, -(-new // max(days - 7, 1)))) if new else 0
+    daily_reviews = min(100, max(20, due + daily_new))
+    repair_cards = min(12, max(0, quality.get("needs_review") or 0))
+    photo_cards = min(10, max(0, quality.get("photo_recommended") or 0))
+    mini_exam = 1 if days <= 21 or due < 30 else 0
     tasks = [
-        {"key": "due", "label": "Faellige Karten", "amount": min(max(due, 20), 80) if due else 20, "route": "home", "detail": "Erst faellige Karten abarbeiten."},
+        {"key": "due", "label": "Faellige Karten", "amount": daily_reviews, "route": "home", "detail": "Erst faellige Karten abarbeiten."},
         {"key": "weak", "label": "Schwaechen-VO", "amount": len(focus), "route": "dashboard", "detail": "Die staerksten Luecken gezielt wiederholen."},
-        {"key": "workshop", "label": "Karten-Werkstatt", "amount": workshop_open, "route": "workshop", "detail": "Holprige Karten glaetten oder deaktivieren."},
+        {"key": "workshop", "label": "Karten-Werkstatt", "amount": repair_cards or workshop_open, "route": "workshop", "detail": "Holprige Karten glaetten oder deaktivieren."},
         {"key": "formula", "label": "Skizzen/Formeln", "amount": len(formula.get("draw", [])), "route": "exam", "detail": "Struktur- und Formelbilder aktiv abrufen."},
-        {"key": "mini_exam", "label": "Mini-Pruefung", "amount": 1, "route": "exam", "detail": "Eine kurze offene Simulation mit Punkteschema."},
+        {"key": "photo", "label": "Foto-Queue", "amount": photo_cards, "route": "photos", "detail": "Struktur, Formel oder Schema visuell ergaenzen."},
+        {"key": "mini_exam", "label": "Mini-Pruefung", "amount": mini_exam, "route": "exam", "detail": "Eine kurze offene Simulation mit Punkteschema."},
     ]
-    if new:
-        tasks.insert(1, {"key": "new", "label": "Neue Karten", "amount": min(new, 20), "route": "home", "detail": "Nur dosiert neue Karten aufnehmen."})
+    if daily_new:
+        tasks.insert(1, {"key": "new", "label": "Neue Karten", "amount": daily_new, "route": "home", "detail": "Nur dosiert neue Karten aufnehmen."})
     return {
         "date": date.today().isoformat(),
         "exam_date": EXAM_DATE.isoformat(),
         "days_left": _days_left(),
+        "workload": {
+            "daily_cards": daily_reviews,
+            "daily_new": daily_new,
+            "due": due,
+            "repair_cards": repair_cards,
+            "photo_cards": photo_cards,
+            "mini_exam": mini_exam,
+            "backlog_per_day": -(-(new + due) // days) if new + due else 0,
+        },
         "tasks": tasks,
         "focus": focus,
         "quality": {
@@ -1240,6 +1361,17 @@ def me(request: Request):
     return {"username": user["username"] if user else None}
 
 
+@app.get("/api/performance")
+def performance():
+    payload = _performance_summary()
+    db_path = Path(db.DB_PATH)
+    payload["db"] = {
+        "path": str(db_path),
+        "bytes": db_path.stat().st_size if db_path.exists() else 0,
+    }
+    return payload
+
+
 @app.get("/api/stats")
 def stats(module: str = "organic"):
     module = _valid_module(module)
@@ -1322,6 +1454,29 @@ def repair_study(limit: int = 30, module: str = "organic"):
     cards = db.exam_repair_cards(conn, module, max(5, min(limit, 60)))
     conn.close()
     return {"deck": "repair", "module": module, "cards": cards}
+
+
+@app.get("/api/study/photos")
+def photo_study(limit: int = 20, module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+             AND payload NOT LIKE '%<img%' AND payload NOT LIKE '%/uploads/cards/%'
+           ORDER BY lapses DESC, reps ASC, kap ASC, ord ASC
+           LIMIT 500""",
+        (module,),
+    ).fetchall()
+    cards = []
+    for row in rows:
+        card = db.row_to_card(row)
+        if card.get("photo_recommended") or card.get("sketch_required"):
+            cards.append(card)
+        if len(cards) >= max(5, min(limit, 40)):
+            break
+    conn.close()
+    return {"deck": "photos", "module": module, "cards": cards}
 
 
 @app.get("/api/exam/recall")
@@ -1541,6 +1696,15 @@ def quality_autoprune(module: str = "organic"):
     return {"ok": True, "moved": moved, "quality": summary}
 
 
+@app.get("/api/quality/audit")
+def quality_audit(module: str = "organic", limit: int = 12):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _quality_audit(conn, module, max(3, min(limit, 30)))
+    conn.close()
+    return out
+
+
 @app.get("/api/workshop")
 def workshop(module: str = "organic", limit: int = 8):
     module = _valid_module(module)
@@ -1656,6 +1820,26 @@ def triage(module: str = "organic", limit: int = 10, tag: str = ""):
     out = db.triage_cards(conn, module, max(1, min(limit, 30)), tag.strip())
     conn.close()
     return out
+
+
+@app.get("/api/cards/{card_id:path}/quality-preview")
+def quality_preview(card_id: str):
+    conn = db.get_conn()
+    card = db.get_card(conn, card_id)
+    conn.close()
+    if not card:
+        raise HTTPException(404, "Karte nicht gefunden")
+    preview = _improved_card_payload(card)
+    return {
+        "ok": True,
+        "issues": _card_issues(card),
+        "preview": {
+            "q": preview["q"],
+            "a": preview["a"],
+            "status": preview.get("status", "active"),
+            "review_note": preview.get("review_note", ""),
+        },
+    }
 
 
 @app.get("/api/cards/{card_id:path}")
