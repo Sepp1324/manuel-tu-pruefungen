@@ -445,6 +445,22 @@ button:disabled { cursor: default; opacity: .48; }
   gap: 12px;
   margin-bottom: 14px;
 }
+.study-timer {
+  background: #eef8ff;
+  border: 1px solid #c7e5f4;
+  border-radius: 999px;
+  color: var(--tu-blue);
+  font-size: 13px;
+  font-weight: 900;
+  min-width: 66px;
+  padding: 7px 10px;
+  text-align: center;
+}
+.study-timer.urgent {
+  background: #fff6e5;
+  border-color: #f0d59c;
+  color: #805d00;
+}
 .progress {
   background: var(--line);
   border-radius: 99px;
@@ -1884,6 +1900,34 @@ textarea {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+}
+.card-report-strip {
+  align-items: center;
+  background: #f8fbfc;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 2px;
+  padding: 9px;
+}
+.card-report-strip span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.card-report-strip button {
+  border-radius: 999px;
+  font-size: 12px;
+  min-height: 30px;
+  padding: 5px 9px;
+}
+.card-report-strip em {
+  color: var(--tu-blue);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
 }
 .quality-center {
   display: grid;

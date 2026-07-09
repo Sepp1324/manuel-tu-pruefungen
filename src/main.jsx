@@ -35,6 +35,14 @@ const REVIEW_REASONS = [
   ["frage_unklar", "Frage unklar"],
   ["karte_schlecht", "Karte schlecht"],
 ];
+const CARD_REPORT_REASONS = [
+  ["english_noise", "Englisch"],
+  ["falsche_antwort", "Falsch"],
+  ["nonsense", "Nonsense"],
+  ["kein_kontext", "Kein Kontext"],
+  ["foto_empfohlen", "Foto/Skizze fehlt"],
+  ["karte_schlecht", "Karte schlecht"],
+];
 const EXAM_ERROR_TYPES = [
   ["definition", "Definition fehlt"],
   ["process", "Prozessschritte vertauscht"],
@@ -58,6 +66,8 @@ const QUALITY_REASONS = [
   ["archiv_miss", "Archiv nicht gewusst"],
   ["auto_improved", "Automatisch verbessert"],
   ["english_noise", "Englisch"],
+  ["falsche_antwort", "Falsche Antwort"],
+  ["nonsense", "Nonsense"],
   ["seed_auto_suspension_restored", "Auto-Reaktivierung"],
 ];
 const ALL_REASONS = [...TRIAGE_REASONS, ...REVIEW_REASONS, ...EXAM_REASONS, ...QUALITY_REASONS];
@@ -827,9 +837,12 @@ function Study({ session, setSession, finish }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ q: "", a: "", review_note: "" });
   const [editMsg, setEditMsg] = useState("");
+  const [reportMsg, setReportMsg] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState((session.minutes || 0) * 60);
   const progress = pct(session.idx, Math.max(cards.length, 1));
   const isExam = session.deck === "exam";
+  const isTimedExam = isExam && Number(session.minutes || 0) > 0;
 
   useEffect(() => {
     setRevealed(false);
@@ -837,13 +850,37 @@ function Study({ session, setSession, finish }) {
     setFeedbackReason("");
     setEditing(false);
     setEditMsg("");
+    setReportMsg("");
     setSavingEdit(false);
     setDraft({ q: card?.q || "", a: card?.a || "", review_note: card?.review_note || "" });
   }, [card?.id]);
 
   useEffect(() => {
+    setSecondsLeft((session.minutes || 0) * 60);
+  }, [session.startedAt, session.minutes]);
+
+  useEffect(() => {
     if (revealed && card?.id) api(`/api/preview/${encodeURIComponent(card.id)}`).then(setPreview).catch(() => {});
   }, [revealed, card?.id]);
+
+  useEffect(() => {
+    if (!isTimedExam || session.done) return undefined;
+    const timer = setInterval(() => {
+      setSecondsLeft((left) => {
+        if (left <= 1) {
+          setSession((old) => old?.done ? old : {
+            ...old,
+            done: true,
+            timedOut: true,
+            elapsedSeconds: (old.minutes || 0) * 60,
+          });
+          return 0;
+        }
+        return left - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isTimedExam, session.done, setSession]);
 
   async function rate(rating) {
     const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
@@ -859,7 +896,8 @@ function Study({ session, setSession, finish }) {
     });
     const nextResult = { card_id: card.id, rating, kap: card.kap, subname: card.subname, feedback_reason: reviewReason };
     if (session.idx + 1 >= cards.length) {
-      setSession((old) => ({ ...old, done: true, results: [...(old.results || []), nextResult] }));
+      const elapsedSeconds = isTimedExam ? Math.max(0, (session.minutes || 0) * 60 - secondsLeft) : undefined;
+      setSession((old) => ({ ...old, done: true, elapsedSeconds, results: [...(old.results || []), nextResult] }));
     } else {
       setSession((old) => ({ ...old, idx: old.idx + 1, results: [...(old.results || []), nextResult] }));
     }
@@ -929,6 +967,7 @@ function Study({ session, setSession, finish }) {
     if (!card) return;
     setSavingEdit(true);
     setEditMsg("");
+    setReportMsg("");
     try {
       const note = `Lernsession: ${reasonLabel(reason)}`;
       const res = await api(`/api/cards/${encodeURIComponent(card.id)}/triage`, {
@@ -939,7 +978,7 @@ function Study({ session, setSession, finish }) {
           q: card.q,
           a: card.a,
           reason,
-          review_note: note,
+          review_note: [card.review_note || "", note].filter(Boolean).join("\n"),
         }),
       });
       setSession((old) => ({
@@ -947,6 +986,7 @@ function Study({ session, setSession, finish }) {
         cards: (old.cards || []).map((item) => item.id === res.card.id ? { ...item, ...res.card } : item),
       }));
       setEditMsg("Karte liegt in der Werkstatt.");
+      setReportMsg(`${reasonLabel(reason)} gemeldet`);
     } catch (err) {
       setEditMsg(err.message || "Markieren fehlgeschlagen");
     } finally {
@@ -956,6 +996,8 @@ function Study({ session, setSession, finish }) {
 
   if (session.done) {
     const results = session.results || [];
+    const attempted = results.length;
+    const remaining = Math.max(cards.length - attempted, 0);
     const strong = results.filter((r) => r.rating >= 3).length;
     const cardMap = Object.fromEntries(cards.map((item) => [item.id, item]));
     const weak = results.filter((r) => r.rating <= 2).map((r) => ({ ...r, card: cardMap[r.card_id] })).slice(0, 6);
@@ -974,12 +1016,20 @@ function Study({ session, setSession, finish }) {
       <section className="done exam-result session-debrief">
         <Check size={32} />
         <h2>{isExam ? "Pruefungsmodus abgeschlossen" : "Tagesabschluss"}</h2>
-        <p>{strong} von {results.length} Karten sicher erinnert. {weak.length ? `${weak.length} Karte(n) gehen in den Fokus.` : "Keine harte Schwachstelle in dieser Runde."}</p>
-        <div className="result-grid">
-          {Object.entries(byKap).map(([kap, v]) => (
-            <span key={kap}><b>{kap}</b>{v.ok}/{v.total}</span>
-          ))}
-        </div>
+        <p>
+          {session.timedOut ? "Zeit abgelaufen. " : ""}
+          {attempted ? `${strong} von ${attempted} Karten sicher erinnert.` : "Noch keine Karte bewertet."}
+          {" "}
+          {remaining ? `${remaining} Karte(n) offen geblieben.` : weak.length ? `${weak.length} Karte(n) gehen in den Fokus.` : "Keine harte Schwachstelle in dieser Runde."}
+        </p>
+        {isTimedExam && <p className="muted">Dauer: {formatSeconds(session.elapsedSeconds ?? ((session.minutes || 0) * 60 - secondsLeft))} von {formatSeconds((session.minutes || 0) * 60)}.</p>}
+        {!!Object.keys(byKap).length && (
+          <div className="result-grid">
+            {Object.entries(byKap).map(([kap, v]) => (
+              <span key={kap}><b>{kap}</b>{v.ok}/{v.total}</span>
+            ))}
+          </div>
+        )}
         {!!weak.length && (
           <div className="session-weak-list">
             <b>Schwache Karten</b>
@@ -1019,6 +1069,7 @@ function Study({ session, setSession, finish }) {
         <button onClick={finish}><ArrowLeft size={16} /> Zurueck</button>
         <div className="progress"><span style={{ width: `${progress}%` }} /></div>
         <span>{session.idx + 1}/{cards.length}</span>
+        {isTimedExam && <span className={`study-timer ${secondsLeft <= 60 ? "urgent" : ""}`}>{formatSeconds(secondsLeft)}</span>}
         <button onClick={startEdit}><Edit3 size={16} /> Bearbeiten</button>
       </div>
       {editing ? (
@@ -1055,6 +1106,15 @@ function Study({ session, setSession, finish }) {
         </div>
         {editMsg && <div className="form-msg">{editMsg}</div>}
         <QuestionContent html={card.q} />
+        <div className="card-report-strip">
+          <span>Karte melden</span>
+          {CARD_REPORT_REASONS.map(([key, label]) => (
+            <button key={key} type="button" disabled={savingEdit} onClick={() => markForWorkshop(key)}>
+              {label}
+            </button>
+          ))}
+          {reportMsg && <em>{reportMsg}</em>}
+        </div>
         {revealed ? (
           <>
             <AnswerContent html={card.a} />
@@ -1435,6 +1495,7 @@ function OpenExamRunner({ exam, module, onClose }) {
   const [startedAt, setStartedAt] = useState(Date.now());
   const [secondsLeft, setSecondsLeft] = useState((exam.minutes || 0) * 60);
   const [result, setResult] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const question = exam.questions[idx];
   const earned = (exam.questions || []).reduce((sum, q) => sum + scoreForQuestion(scores[q.card_id] || {}, q), 0);
 
@@ -1447,6 +1508,7 @@ function OpenExamRunner({ exam, module, onClose }) {
     setErrorTypes({});
     setRevealed({});
     setResult(null);
+    setSubmitting(false);
     setIdx(0);
     setStartedAt(Date.now());
   }, [exam.id]);
@@ -1456,6 +1518,11 @@ function OpenExamRunner({ exam, module, onClose }) {
     const timer = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(timer);
   }, [result]);
+
+  useEffect(() => {
+    if (result || submitting || secondsLeft > 0) return;
+    finish();
+  }, [secondsLeft, result, submitting]);
 
   function mark(subId, value) {
     setScores((old) => ({
@@ -1473,6 +1540,8 @@ function OpenExamRunner({ exam, module, onClose }) {
   }
 
   async function finish() {
+    if (submitting) return;
+    setSubmitting(true);
     const checklistLabel = (key) => EXAM_CHECKLIST.find(([item]) => item === key)?.[1] || key;
     const payload = {
       module,
@@ -1490,12 +1559,16 @@ function OpenExamRunner({ exam, module, onClose }) {
         ].filter(Boolean).join("\n\n"),
       })),
     };
-    const res = await api("/api/exam/open/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setResult(res);
+    try {
+      const res = await api("/api/exam/open/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setResult(res);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (result) {
@@ -1628,7 +1701,7 @@ function OpenExamRunner({ exam, module, onClose }) {
           </button>
           <button disabled={idx === 0} onClick={() => setIdx(idx - 1)}>Zurueck</button>
           <button disabled={idx + 1 >= exam.questions.length} onClick={() => setIdx(idx + 1)}>Weiter</button>
-          <button className="primary" onClick={finish}>Auswerten</button>
+          <button className="primary" disabled={submitting} onClick={finish}>{submitting ? "Wertet aus..." : "Auswerten"}</button>
         </div>
         {revealed[question.card_id] && (
           <div className="exam-solution">
@@ -2986,7 +3059,17 @@ function App() {
   async function startExam(count = 20, mode = "mixed") {
     const qs = new URLSearchParams({ n: String(count), mode, module });
     const res = await api(`/api/exam/recall?${qs}`);
-    setSession({ deck: "exam", module, cards: res.cards || [], idx: 0, mode, results: [] });
+    setSession({
+      deck: "exam",
+      module,
+      title: res.title || "Pruefungs-Karten-Drill",
+      minutes: res.minutes || Math.max(5, Math.round((res.cards || []).length * .85)),
+      cards: res.cards || [],
+      idx: 0,
+      mode,
+      results: [],
+      startedAt: Date.now(),
+    });
   }
 
   async function finishSession() {
