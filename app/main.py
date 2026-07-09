@@ -1145,6 +1145,38 @@ def _exam_question(card: dict, idx: int, module: str, formula: bool = False) -> 
     }
 
 
+def _oral_prompts_for(card: dict, question: dict) -> list[dict]:
+    title = question.get("title") or _question_title(card)
+    subquestions = question.get("subquestions") or []
+    prompts = [{
+        "id": f"{question.get('idx', 0)}-oral-start",
+        "label": "Einstieg",
+        "prompt": f"Erklaeren Sie {title} frei und strukturiert, als waeren Sie gerade in der muendlichen Pruefung.",
+        "focus": "Definition, Einordnung und roter Faden",
+    }]
+    for i, sub in enumerate(subquestions[:3], start=1):
+        prompts.append({
+            "id": f"{question.get('idx', 0)}-oral-follow-{i}",
+            "label": f"Nachfrage {i}",
+            "prompt": sub.get("prompt", "Ergaenzen Sie den fehlenden Teil."),
+            "focus": sub.get("category", "Vertiefung"),
+        })
+    prompts.append({
+        "id": f"{question.get('idx', 0)}-oral-transfer",
+        "label": "Transfer",
+        "prompt": "Nennen Sie einen typischen Fehler, eine wichtige Bedingung oder eine industrielle Anwendung dazu.",
+        "focus": "Begruendung, Grenzen und Praxisbezug",
+    })
+    if question.get("sketch_required"):
+        prompts.append({
+            "id": f"{question.get('idx', 0)}-oral-sketch",
+            "label": "Skizze",
+            "prompt": "Skizzieren oder beschreiben Sie die relevante Formel, Struktur oder den Mechanismus.",
+            "focus": "Visuelle/chemische Darstellung",
+        })
+    return prompts[:6]
+
+
 def _exam_score_projection(stats: dict, chapters: list[dict], module: str) -> dict:
     blocks: dict[str, list[dict]] = {}
     for ch in chapters:
@@ -1640,6 +1672,33 @@ def open_exam(module: str = "organic", mode: str = "full"):
     }
 
 
+@app.get("/api/exam/oral")
+def oral_exam(module: str = "organic", n: int = 5):
+    module = _valid_module(module)
+    count = max(3, min(n, 8))
+    conn = db.get_conn()
+    cards = db.exam_candidates(conn, module, 180, "weak")
+    selected = _pick_balanced(cards, module, count)
+    conn.close()
+    questions = []
+    for i, card in enumerate(selected):
+        question = _exam_question(card, i + 1, module)
+        question["question"] = f"Muendliche Pruefung: {question['title']}"
+        question["oral_prompts"] = _oral_prompts_for(card, question)
+        question["points"] = 4
+        questions.append(question)
+    minutes = max(12, min(45, len(questions) * 5))
+    return {
+        "id": f"{module}-oral-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
+        "module": module,
+        "mode": "oral",
+        "title": "Muendlicher Pruefermodus",
+        "minutes": minutes,
+        "total_points": len(questions) * 4,
+        "questions": questions,
+    }
+
+
 @app.get("/api/exam/formulas")
 def formula_exam(module: str = "organic", n: int = 10):
     module = _valid_module(module)
@@ -1901,7 +1960,7 @@ def submit_open_exam(inp: OpenExamSubmitIn):
         reviewed += 1
     moved = db.auto_quality_sweep(conn, module, _now_iso())
     pct_score = round((earned / total_points) * 100) if total_points else 0
-    title = "Kann ich erklaeren?" if inp.mode == "explain" else "Skizzen- und Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
+    title = "Muendlicher Pruefermodus" if inp.mode == "oral" else "Kann ich erklaeren?" if inp.mode == "explain" else "Skizzen- und Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
     attempt_id = db.record_exam_attempt(
         conn,
         module,
@@ -1916,7 +1975,8 @@ def submit_open_exam(inp: OpenExamSubmitIn):
         {"questions": attempt_questions, "auto_quality_moved": moved},
         now_iso,
     )
-    xp = db.add_xp_event(conn, max(10, round(earned * 4)), "open_exam", f"Offene Pruefung: {pct_score}%", inp.mode, _now_iso())
+    xp_label = "Pruefermodus" if inp.mode == "oral" else "Offene Pruefung"
+    xp = db.add_xp_event(conn, max(10, round(earned * 4)), "open_exam", f"{xp_label}: {pct_score}%", inp.mode, _now_iso())
     conn.close()
     return {
         "ok": True,

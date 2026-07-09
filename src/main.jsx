@@ -1729,6 +1729,223 @@ function OpenExamRunner({ exam, module, onClose }) {
   );
 }
 
+function OralExamRunner({ exam, module, onClose }) {
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [scores, setScores] = useState({});
+  const [promptDepth, setPromptDepth] = useState({});
+  const [revealed, setRevealed] = useState({});
+  const [confidence, setConfidence] = useState({});
+  const [errorTypes, setErrorTypes] = useState({});
+  const [startedAt, setStartedAt] = useState(Date.now());
+  const [secondsLeft, setSecondsLeft] = useState((exam.minutes || 0) * 60);
+  const [result, setResult] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const question = exam.questions[idx];
+  const currentKey = question?.card_id || "";
+  const prompts = question?.oral_prompts || [];
+  const shownPrompts = prompts.slice(0, Math.max(1, promptDepth[currentKey] || 1));
+  const currentAnswer = answers[currentKey] || "";
+  const currentScores = scores[currentKey] || {};
+  const currentErrors = errorTypes[currentKey] || [];
+  const comparison = question ? answerComparison(currentAnswer, question) : { terms: [], hits: [], missing: [], score: 0 };
+  const earned = (exam.questions || []).reduce((sum, q) => sum + scoreForQuestion(scores[q.card_id] || {}, q), 0);
+
+  useEffect(() => {
+    setAnswers({});
+    setScores({});
+    setPromptDepth({});
+    setRevealed({});
+    setConfidence({});
+    setErrorTypes({});
+    setResult(null);
+    setSubmitting(false);
+    setIdx(0);
+    setSecondsLeft((exam.minutes || 0) * 60);
+    setStartedAt(Date.now());
+  }, [exam.id]);
+
+  useEffect(() => {
+    if (result) return undefined;
+    const timer = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [result]);
+
+  useEffect(() => {
+    if (result || submitting || secondsLeft > 0) return;
+    finish();
+  }, [secondsLeft, result, submitting]);
+
+  function mark(subId, value) {
+    setScores((old) => ({
+      ...old,
+      [currentKey]: { ...(old[currentKey] || {}), [subId]: value },
+    }));
+  }
+
+  function nextPrompt() {
+    setPromptDepth((old) => ({
+      ...old,
+      [currentKey]: Math.min(prompts.length, Math.max(1, old[currentKey] || 1) + 1),
+    }));
+  }
+
+  async function finish() {
+    if (submitting) return;
+    setSubmitting(true);
+    const payload = {
+      module,
+      mode: "oral",
+      exam_id: exam.id,
+      duration_seconds: Math.round((Date.now() - startedAt) / 1000),
+      results: (exam.questions || []).map((q) => ({
+        card_id: q.card_id,
+        sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || "miss"),
+        confidence: confidence[q.card_id] || "",
+        error_types: errorTypes[q.card_id] || [],
+        answer_note: [
+          answers[q.card_id] || "",
+          `Nachfragen: ${(q.oral_prompts || []).slice(0, Math.max(1, promptDepth[q.card_id] || 1)).map((p) => p.label).join(", ")}`,
+        ].filter(Boolean).join("\n\n"),
+      })),
+    };
+    try {
+      const res = await api("/api/exam/open/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setResult(res);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (result) {
+    return (
+      <section className="done exam-result">
+        <Check size={32} />
+        <h2>Pruefermodus ausgewertet</h2>
+        <p>{result.earned} von {result.total} Punkten, {result.pct}% geschaetzt.</p>
+        <div className="result-grid">
+          {(exam.questions || []).map((q) => (
+            <span key={q.card_id}><b>Frage {q.idx}</b>{scoreForQuestion(scores[q.card_id] || {}, q).toFixed(1)}/4</span>
+          ))}
+        </div>
+        <p className="muted">Versuch gespeichert: {result.attempt_id}. Schwache Themen sind in der Nachlern-Queue.</p>
+        <button className="primary" onClick={onClose}>Zurueck</button>
+      </section>
+    );
+  }
+
+  if (!question) return null;
+  return (
+    <section className="oral-exam">
+      <div className="exam-toolbar">
+        <button onClick={onClose}><ArrowLeft size={16} /> Zurueck</button>
+        <div className="timer">{formatSeconds(secondsLeft)}</div>
+        <div className="progress"><span style={{ width: `${pct(idx + 1, exam.questions.length || 1)}%` }} /></div>
+        <b>{earned.toFixed(1)}/{exam.total_points}</b>
+      </div>
+      <div className="exam-nav">
+        {(exam.questions || []).map((q, i) => (
+          <button key={q.card_id} className={i === idx ? "active" : ""} onClick={() => setIdx(i)}>
+            {q.idx}
+          </button>
+        ))}
+      </div>
+      <article className="panel oral-card">
+        <div className="study-meta">
+          <span className="deck-pill">Pruefer</span>
+          <span>VO{question.kap}</span>
+          <span>{question.block}</span>
+          <span>{question.source}</span>
+        </div>
+        <div className="oral-stage">
+          <span>Muendliche Frage</span>
+          <h2 dangerouslySetInnerHTML={{ __html: question.question }} />
+          <div className="oral-prompts">
+            {shownPrompts.map((prompt) => (
+              <article key={prompt.id}>
+                <b>{prompt.label}</b>
+                <p>{prompt.prompt}</p>
+                <em>{prompt.focus}</em>
+              </article>
+            ))}
+          </div>
+          <button type="button" disabled={shownPrompts.length >= prompts.length} onClick={nextPrompt}>
+            Nachfrage stellen
+          </button>
+        </div>
+        <label className="exam-answer-editor">
+          Antwortnotiz
+          <PhotoTextarea
+            rows={7}
+            value={currentAnswer}
+            onValue={(next) => setAnswers((old) => ({ ...old, [currentKey]: next }))}
+            placeholder="Frei erklaeren, dann Stichworte hier notieren. Nachfragen erst aufdecken, wenn die erste Antwort sitzt."
+          />
+        </label>
+        <FormulaToolbar value={currentAnswer} onValue={(next) => setAnswers((old) => ({ ...old, [currentKey]: next }))} />
+        <PhotoButton label="Skizze/Foto zur Antwort" onInsert={(html) => setAnswers((old) => ({ ...old, [currentKey]: appendHtml(old[currentKey] || "", html) }))} />
+        {!!currentAnswer.trim() && !!comparison.terms.length && (
+          <div className="answer-coverage oral-coverage">
+            <div>
+              <b>Antwortabdeckung</b>
+              <span>{comparison.score}% · {comparison.hits.length}/{comparison.terms.length} Begriffe getroffen</span>
+            </div>
+            <div className="coverage-chip-row">
+              {comparison.hits.slice(0, 8).map((term) => <span key={term} className="hit">{term}</span>)}
+              {comparison.missing.slice(0, 8).map((term) => <span key={term} className="miss">{term}</span>)}
+            </div>
+          </div>
+        )}
+        <div className="oral-score-grid">
+          {(question.subquestions || []).map((sub) => (
+            <article key={sub.id}>
+              <div>
+                <b>{sub.category}</b>
+                <p>{sub.prompt}</p>
+              </div>
+              <span>{sub.points} P</span>
+              <em>
+                {EXAM_EVALS.map(([key, label]) => (
+                  <button key={key} className={currentScores[sub.id] === key ? "active" : ""} onClick={() => mark(sub.id, key)}>
+                    {label}
+                  </button>
+                ))}
+              </em>
+            </article>
+          ))}
+        </div>
+        <ExamMetaControls
+          confidence={confidence[currentKey] || ""}
+          onConfidence={(value) => setConfidence((old) => ({ ...old, [currentKey]: value }))}
+          errorTypes={currentErrors}
+          onErrorTypes={(values) => setErrorTypes((old) => ({ ...old, [currentKey]: values }))}
+        />
+        <div className="button-row-inline">
+          <button onClick={() => setRevealed((old) => ({ ...old, [currentKey]: !old[currentKey] }))}>
+            {revealed[currentKey] ? "Loesung ausblenden" : "Musterantwort zeigen"}
+          </button>
+          <button disabled={idx === 0} onClick={() => setIdx(idx - 1)}>Zurueck</button>
+          <button disabled={idx + 1 >= exam.questions.length} onClick={() => setIdx(idx + 1)}>Weiter</button>
+          <button className="primary" disabled={submitting} onClick={finish}>{submitting ? "Wertet aus..." : "Pruefermodus abschliessen"}</button>
+        </div>
+        {revealed[currentKey] && (
+          <div className="exam-solution">
+            <h3>Musterantwort und Geruest</h3>
+            <div className="scaffold-list">
+              {(question.scaffold || []).map((item) => <span key={item}>{item}</span>)}
+            </div>
+            <AnswerContent html={question.answer} />
+          </div>
+        )}
+      </article>
+    </section>
+  );
+}
+
 function ArchiveCorrectionRunner({ exam, module, onClose }) {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -1997,6 +2214,12 @@ function ExamPage({ startExam, startSession, module }) {
     setExam(res);
   }
 
+  async function startOral() {
+    const res = await api(`/api/exam/oral?module=${encodeURIComponent(module)}&n=5`);
+    setCorrection(null);
+    setExam(res);
+  }
+
   async function closeRunner() {
     setExam(null);
     setCorrection(null);
@@ -2004,6 +2227,7 @@ function ExamPage({ startExam, startSession, module }) {
   }
 
   if (correction) return <ArchiveCorrectionRunner exam={correction} module={module} onClose={closeRunner} />;
+  if (exam?.mode === "oral") return <OralExamRunner exam={exam} module={module} onClose={closeRunner} />;
   if (exam) return <OpenExamRunner exam={exam} module={module} onClose={closeRunner} />;
 
   return (
@@ -2017,6 +2241,7 @@ function ExamPage({ startExam, startSession, module }) {
           <Target size={26} />
         </div>
         <div className="exam-actions-grid">
+          <button className="primary" onClick={startOral}>V2 Pruefermodus</button>
           <button className="primary" onClick={() => startOpen("full")}>2h-Pruefung starten</button>
           <button onClick={() => startOpen("mini")}>Schwaechen-Mini-Pruefung</button>
           <button onClick={() => startOpen("explain")}>Kann ich erklaeren?</button>
