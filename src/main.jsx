@@ -2080,7 +2080,7 @@ function QualityCenter({ data, setRoute }) {
 }
 
 function PhotoPoolPage({ onDone }) {
-  const [pool, setPool] = useState({ photos: [], total: 0, used: 0, unused: 0, bytes: 0 });
+  const [pool, setPool] = useState({ photos: [], total: 0, used: 0, unused: 0, bytes: 0, skipped: 0 });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState("");
 
@@ -2147,6 +2147,7 @@ function PhotoPoolPage({ onDone }) {
           </button>
         </div>
         {msg && <div className="form-msg">{msg}</div>}
+        {!!pool.skipped && <div className="form-msg">{pool.skipped} Datei(en) konnten nicht gelesen werden.</div>}
       </div>
 
       <div className="photo-pool-grid">
