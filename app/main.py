@@ -1603,10 +1603,20 @@ def photo_study(limit: int = 20, module: str = "organic"):
 @app.get("/api/exam/recall")
 def recall_exam(n: int = 20, mode: str = "mixed", module: str = "organic"):
     module = _valid_module(module)
+    count = max(5, min(n, 60))
+    mode = mode if mode in ("mixed", "weak") else "mixed"
     conn = db.get_conn()
-    cards = db.random_cards(conn, max(5, min(n, 60)), mode if mode in ("mixed", "weak") else "mixed", module)
+    cards = db.random_cards(conn, count, mode, module)
     conn.close()
-    return {"deck": "exam", "mode": mode, "module": module, "cards": cards}
+    minutes = max(5, min(60, round(len(cards) * (1.1 if mode == "weak" else .85))))
+    return {
+        "deck": "exam",
+        "mode": mode,
+        "module": module,
+        "title": "Schwachstellen-Drill" if mode == "weak" else "Pruefungs-Karten-Drill",
+        "minutes": minutes,
+        "cards": cards,
+    }
 
 
 @app.get("/api/exam/open")
