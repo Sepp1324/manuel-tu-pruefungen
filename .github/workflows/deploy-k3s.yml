@@ -16,7 +16,7 @@ env:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, organicsr]
 
     steps:
       - name: Checkout
