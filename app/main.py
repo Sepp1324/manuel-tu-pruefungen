@@ -28,6 +28,8 @@ if not SPA_DIR.exists() and (Path(__file__).parent.parent / "dist").exists():
     SPA_DIR = Path(__file__).parent.parent / "dist"
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "/data/uploads"))
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(8 * 1024 * 1024)))
+PHOTO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|webp|gif)$", re.I)
+PHOTO_URL_RE = re.compile(r"/uploads/cards/([^\"'\s<>]+)", re.I)
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "manuel").strip()
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
@@ -1618,6 +1620,60 @@ def reset():
     return {"ok": True}
 
 
+@app.get("/api/uploads/photos")
+def photo_pool():
+    photo_dir = _cards_photo_dir()
+    conn = db.get_conn()
+    usage = _photo_usage(conn)
+    conn.close()
+    files = [
+        _photo_pool_item(path, usage)
+        for path in photo_dir.iterdir()
+        if path.is_file() and PHOTO_FILENAME_RE.fullmatch(path.name)
+    ]
+    files.sort(key=lambda item: item["modified_at"], reverse=True)
+    return {
+        "ok": True,
+        "photos": files,
+        "total": len(files),
+        "unused": sum(1 for item in files if item["unused"]),
+        "used": sum(1 for item in files if not item["unused"]),
+        "bytes": sum(item["size"] for item in files),
+    }
+
+
+@app.delete("/api/uploads/photos/{filename}")
+def delete_photo(filename: str):
+    safe_name = _safe_photo_filename(filename)
+    target = _cards_photo_dir() / safe_name
+    if not target.exists():
+        raise HTTPException(404, "Foto nicht gefunden")
+    conn = db.get_conn()
+    usage = _photo_usage(conn)
+    conn.close()
+    if usage.get(safe_name):
+        raise HTTPException(409, "Foto wird noch in Karten verwendet")
+    target.unlink()
+    return {"ok": True, "deleted": safe_name}
+
+
+@app.post("/api/uploads/photos/cleanup")
+def cleanup_unused_photos():
+    photo_dir = _cards_photo_dir()
+    conn = db.get_conn()
+    usage = _photo_usage(conn)
+    conn.close()
+    deleted = []
+    for path in photo_dir.iterdir():
+        if not path.is_file() or not PHOTO_FILENAME_RE.fullmatch(path.name):
+            continue
+        if usage.get(path.name):
+            continue
+        path.unlink()
+        deleted.append(path.name)
+    return {"ok": True, "deleted": deleted, "count": len(deleted)}
+
+
 @app.post("/api/uploads/photo")
 async def upload_photo(file: UploadFile = File(...)):
     data = await file.read(MAX_UPLOAD_BYTES + 1)
@@ -1626,8 +1682,7 @@ async def upload_photo(file: UploadFile = File(...)):
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(413, "Foto ist zu gross")
     content_type, ext = _image_type(file.content_type or "", data)
-    target_dir = UPLOAD_DIR / "cards"
-    target_dir.mkdir(parents=True, exist_ok=True)
+    target_dir = _cards_photo_dir()
     filename = f"{uuid.uuid4().hex}{ext}"
     target = target_dir / filename
     target.write_bytes(data)

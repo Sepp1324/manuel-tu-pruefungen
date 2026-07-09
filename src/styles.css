@@ -1303,6 +1303,12 @@ textarea {
   color: var(--muted);
   font-size: 12px;
 }
+.paste-status {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  margin-top: -2px;
+}
 .card-render-preview {
   background: var(--paper);
   border: 1px solid var(--line);
@@ -1646,6 +1652,60 @@ textarea {
 .quality-center-grid h3 {
   font-size: 15px;
   margin: 0 0 12px;
+}
+.photo-pool-page {
+  display: grid;
+  gap: 14px;
+}
+.photo-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.photo-pool-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.photo-pool-item {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+.photo-thumb {
+  aspect-ratio: 4 / 3;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  padding: 0;
+}
+.photo-thumb img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+.photo-pool-meta {
+  display: grid;
+  gap: 3px;
+}
+.photo-pool-meta b {
+  color: var(--ink);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.photo-pool-meta span, .photo-pool-meta em, .photo-usage-list span {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+.photo-usage-list {
+  display: grid;
+  gap: 4px;
+  max-height: 82px;
+  overflow: auto;
 }
 .reason-bars {
   display: grid;

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowLeft,
@@ -98,6 +98,12 @@ function appendHtml(value = "", html = "") {
   return [value.trimEnd(), html].filter(Boolean).join("\n\n");
 }
 
+function insertHtmlAt(value = "", html = "", start = value.length, end = start) {
+  const before = value.slice(0, start).trimEnd();
+  const after = value.slice(end).trimStart();
+  return [before, html, after].filter(Boolean).join("\n\n");
+}
+
 async function uploadPhoto(file) {
   const body = new FormData();
   body.append("file", file);
@@ -113,6 +119,56 @@ async function uploadPhoto(file) {
     throw new Error(message);
   }
   return res.json();
+}
+
+function PhotoTextarea({ value = "", onValue, rows = 6, ...props }) {
+  const ref = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function paste(e) {
+    const items = Array.from(e.clipboardData?.items || []);
+    const files = items
+      .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (!files.length) return;
+    e.preventDefault();
+    setBusy(true);
+    setMsg("");
+    try {
+      const textarea = ref.current;
+      const start = textarea?.selectionStart ?? value.length;
+      const end = textarea?.selectionEnd ?? start;
+      let next = value;
+      let cursor = start;
+      for (const file of files) {
+        const uploaded = await uploadPhoto(file);
+        next = insertHtmlAt(next, uploaded.html, cursor, cursor === start ? end : cursor);
+        cursor = next.length;
+      }
+      onValue?.(next);
+      setMsg(files.length === 1 ? "Foto eingefuegt" : `${files.length} Fotos eingefuegt`);
+    } catch (err) {
+      setMsg(err.message || "Einfuegen fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <textarea
+        {...props}
+        ref={ref}
+        rows={rows}
+        value={value}
+        onChange={(e) => onValue?.(e.target.value)}
+        onPaste={paste}
+      />
+      {(busy || msg) && <small className="paste-status">{busy ? "Fuege Foto ein..." : msg}</small>}
+    </>
+  );
 }
 
 function PhotoButton({ onInsert, label = "Foto" }) {
@@ -189,6 +245,12 @@ function formatDate(s) {
   if (!s) return "neu";
   const d = new Date(s);
   return `${d.toLocaleDateString("de-AT")} ${d.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function formatBytes(n = 0) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function reasonLabel(reason) {
@@ -1084,10 +1146,10 @@ function OpenExamRunner({ exam, module, onClose }) {
         <h2 dangerouslySetInnerHTML={{ __html: question.question }} />
         <label className="exam-answer-editor">
           {isFormulaMode ? "Meine Skizze / Formel / Antwort" : "Meine Antwort"}
-          <textarea
+          <PhotoTextarea
             rows={8}
             value={currentAnswer}
-            onChange={(e) => setAnswers((old) => ({ ...old, [question.card_id]: e.target.value }))}
+            onValue={(next) => setAnswers((old) => ({ ...old, [question.card_id]: next }))}
             placeholder={isFormulaMode ? "Formel, Reaktionsgleichung oder kurze Erklaerung notieren. Foto/Skizze kann direkt eingefuegt werden." : "Antwort wie in der Pruefung formulieren, danach mit Geruest und Musterantwort vergleichen."}
           />
         </label>
@@ -1277,10 +1339,10 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
         </div>
         <h2>{question.topic}</h2>
         <label>Freie Antwort / Stichworte
-          <textarea
+          <PhotoTextarea
             rows={7}
             value={answers[currentKey] || ""}
-            onChange={(e) => setAnswers((old) => ({ ...old, [currentKey]: e.target.value }))}
+            onValue={(next) => setAnswers((old) => ({ ...old, [currentKey]: next }))}
             placeholder="Antwort wie in der Pruefung notieren, dann selbst nach Raster bewerten."
           />
         </label>
@@ -1529,11 +1591,11 @@ function ManualCardPage({ onDone, module }) {
           <input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
         </label>
         <label>Frage
-          <textarea value={form.q} onChange={(e) => setForm({ ...form, q: e.target.value })} rows={4} />
+          <PhotoTextarea value={form.q} onValue={(next) => setForm({ ...form, q: next })} rows={4} />
         </label>
         <PhotoButton label="Foto in Frage" onInsert={(html) => setForm((old) => ({ ...old, q: appendHtml(old.q, html) }))} />
         <label>Antwort
-          <textarea value={form.a} onChange={(e) => setForm({ ...form, a: e.target.value })} rows={6} />
+          <PhotoTextarea value={form.a} onValue={(next) => setForm({ ...form, a: next })} rows={6} />
         </label>
         <PhotoButton label="Foto in Antwort" onInsert={(html) => setForm((old) => ({ ...old, a: appendHtml(old.a, html) }))} />
         <CardRenderPreview question={form.q} answer={form.a} />
@@ -1637,11 +1699,11 @@ function CardReviewPage({ onDone, module }) {
         {selected ? (
           <>
             <label>Frage
-              <textarea value={selected.q || ""} onChange={(e) => setSelected({ ...selected, q: e.target.value })} rows={5} />
+              <PhotoTextarea value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} rows={5} />
             </label>
             <PhotoButton label="Foto in Frage" onInsert={(html) => setSelected((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
             <label>Antwort
-              <textarea value={selected.a || ""} onChange={(e) => setSelected({ ...selected, a: e.target.value })} rows={9} />
+              <PhotoTextarea value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} rows={9} />
             </label>
             <PhotoButton label="Foto in Antwort" onInsert={(html) => setSelected((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
             <label>Notiz
@@ -1911,11 +1973,11 @@ function TriagePage({ module, onDone }) {
               {(draft.tags || []).map((t) => <span key={t}>{t}</span>)}
             </div>
             <label>Frage
-              <textarea value={draft.q || ""} onChange={(e) => setDraft({ ...draft, q: e.target.value })} rows={5} />
+              <PhotoTextarea value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} rows={5} />
             </label>
             <PhotoButton label="Foto in Frage" onInsert={(html) => setDraft((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
             <label>Antwort
-              <textarea value={draft.a || ""} onChange={(e) => setDraft({ ...draft, a: e.target.value })} rows={9} />
+              <PhotoTextarea value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} rows={9} />
             </label>
             <PhotoButton label="Foto in Antwort" onInsert={(html) => setDraft((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
             <CardRenderPreview question={draft.q || ""} answer={draft.a || ""} />
@@ -1980,6 +2042,7 @@ function QualityCenter({ data, setRoute }) {
           <button className="primary" onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage starten</button>
           <button onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
           <button onClick={() => setRoute("quality")}><Search size={16} /> Karten bearbeiten</button>
+          <button onClick={() => setRoute("photos")}><ImagePlus size={16} /> Fotopool</button>
         </div>
       </div>
 
@@ -2012,6 +2075,110 @@ function QualityCenter({ data, setRoute }) {
           </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+function PhotoPoolPage({ onDone }) {
+  const [pool, setPool] = useState({ photos: [], total: 0, used: 0, unused: 0, bytes: 0 });
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState("");
+
+  async function load() {
+    const res = await api("/api/uploads/photos");
+    setPool(res);
+  }
+
+  useEffect(() => {
+    load().catch((err) => setMsg(err.message));
+  }, []);
+
+  async function deletePhoto(filename) {
+    if (!window.confirm(`${filename} loeschen?`)) return;
+    setBusy(filename);
+    setMsg("");
+    try {
+      await api(`/api/uploads/photos/${encodeURIComponent(filename)}`, { method: "DELETE" });
+      setMsg("Foto geloescht.");
+      await load();
+      onDone?.();
+    } catch (err) {
+      setMsg(err.message || "Loeschen fehlgeschlagen");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function cleanup() {
+    setBusy("cleanup");
+    setMsg("");
+    try {
+      const res = await api("/api/uploads/photos/cleanup", { method: "POST" });
+      setMsg(`${res.count || 0} ungenutzte Fotos geloescht.`);
+      await load();
+      onDone?.();
+    } catch (err) {
+      setMsg(err.message || "Aufraeumen fehlgeschlagen");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  return (
+    <section className="photo-pool-page">
+      <div className="panel">
+        <div className="section-head">
+          <div>
+            <h2>Fotopool</h2>
+            <p>Hochgeladene Kartenbilder, Nutzung und ungenutzte Dateien.</p>
+          </div>
+          <ImagePlus size={22} />
+        </div>
+        <div className="quality-metrics photo-metrics">
+          <span><b>{pool.total || 0}</b> Fotos</span>
+          <span><b>{pool.used || 0}</b> verwendet</span>
+          <span><b>{pool.unused || 0}</b> ungenutzt</span>
+          <span><b>{formatBytes(pool.bytes || 0)}</b> Speicher</span>
+        </div>
+        <div className="button-row-inline">
+          <button className="primary" onClick={load}><RefreshCw size={16} /> Aktualisieren</button>
+          <button onClick={cleanup} disabled={busy === "cleanup" || !(pool.unused || 0)}>
+            Ungenutzte loeschen
+          </button>
+        </div>
+        {msg && <div className="form-msg">{msg}</div>}
+      </div>
+
+      <div className="photo-pool-grid">
+        {(pool.photos || []).map((photo) => (
+          <article className="photo-pool-item" key={photo.filename}>
+            <button className="photo-thumb" type="button">
+              <img src={photo.url} alt={photo.filename} />
+            </button>
+            <div className="photo-pool-meta">
+              <b>{photo.filename}</b>
+              <span>{formatBytes(photo.size)} · {formatDate(photo.modified_at)}</span>
+              <em>{photo.used_count ? `${photo.used_count}x verwendet` : "ungenutzt"}</em>
+            </div>
+            {!!photo.used_count && (
+              <div className="photo-usage-list">
+                {(photo.used_by || []).map((item) => (
+                  <span key={`${photo.filename}-${item.card_id}`}>
+                    VO{item.kap || "?"} · {item.subname || item.source || item.card_id}
+                  </span>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={() => deletePhoto(photo.filename)}
+              disabled={!photo.unused || busy === photo.filename}
+            >
+              {busy === photo.filename ? "Loescht..." : "Loeschen"}
+            </button>
+          </article>
+        ))}
+      </div>
+      {!(pool.photos || []).length && <div className="panel muted">Noch keine Fotos hochgeladen.</div>}
     </section>
   );
 }
@@ -2059,6 +2226,7 @@ function App() {
     if (route === "workshop") return <WorkshopPage module={module} onDone={load} />;
     if (route === "triage") return <TriagePage module={module} onDone={load} />;
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
+    if (route === "photos") return <PhotoPoolPage onDone={load} />;
     if (route === "add") return <ManualCardPage onDone={load} module={module} />;
     return <Home data={data} startSession={startSession} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
   }, [data, session, route, module]);
@@ -2082,6 +2250,7 @@ function App() {
         <button className={route === "workshop" ? "active" : ""} onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
         <button className={route === "triage" ? "active" : ""} onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage</button>
         <button className={route === "quality" ? "active" : ""} onClick={() => setRoute("quality")}><ClipboardList size={16} /> Kartenqualitaet</button>
+        <button className={route === "photos" ? "active" : ""} onClick={() => setRoute("photos")}><ImagePlus size={16} /> Fotopool</button>
         <button className={route === "add" ? "active" : ""} onClick={() => setRoute("add")}><Plus size={16} /> Eigene Karte</button>
       </nav>
       {content}

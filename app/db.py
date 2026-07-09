@@ -49,11 +49,25 @@ GERMAN_CARD_WORDS = {
 }
 OLD_ENGLISH_ARTIFACT_NOTE = "Automatisch deaktiviert: englische Folien- oder Quellenartefakte"
 ENGLISH_ARTIFACT_NOTE = "Auto-Review: englische Folien- oder Quellenartefakte pruefen"
+ENGLISH_HOLD_NOTE = "Auto-Review: englische Karte aus dem Lernmodus genommen"
 
 
 def auto_deactivation_note(note: str | None) -> bool:
     text = str(note or "").strip()
     return text.startswith("Automatisch deaktiviert:")
+
+
+def organic_context(card: dict) -> str:
+    parts = ["Organische Chemie"]
+    sub = str(card.get("sub") or "").strip()
+    subname = str(card.get("subname") or "").strip()
+    if sub or subname:
+        parts.append(" ".join(x for x in (sub, subname) if x).strip())
+    source = str(card.get("source") or "").strip()
+    context = " / ".join(parts)
+    if source:
+        context = f"{context}. Quelle: {source}"
+    return context
 
 
 SCHEMA = """
@@ -347,6 +361,7 @@ def seed(conn: sqlite3.Connection) -> int:
             tuple(seed_ids),
         )
     seed_updated_at = datetime.now(timezone.utc).isoformat()
+    repair_english_artifacts(conn, updated_at=seed_updated_at)
     restore_seed_auto_suspensions(conn, seed_ids, updated_at=seed_updated_at)
     restore_english_artifact_suspensions(conn, updated_at=seed_updated_at)
     flag_english_noise(conn, updated_at=seed_updated_at)
@@ -457,6 +472,46 @@ def english_noise(card: dict) -> bool:
     if english >= 5 and german <= 1 and not has_german_chars:
         return True
     return False
+
+
+def depolymerisation_repair(card: dict) -> dict | None:
+    text = plain_card_text(card).lower()
+    if not (
+        "plastics recycling paths" in text
+        and "take-home messages" in text
+        and ("depolymerization" in text or "depolymerisation" in text)
+    ):
+        return None
+    context = organic_context(card)
+    source = str(card.get("source") or "VO10 Gastvortrag - Recycling von Kunststoffen").strip()
+    repaired = dict(card)
+    repaired["q"] = (
+        f"Kontext: {context}\n\n"
+        "Erlaeutern Sie Depolymerisation. Gehen Sie auf Ausgangsstoffe, "
+        "Prozessfuehrung, wichtige Bedingungen, Produkte und Zweck ein."
+    )
+    repaired["a"] = (
+        f"<b>Kontext:</b> {context}<br><br>"
+        "<b>Pruefungsantwort zu Depolymerisation:</b>"
+        "<ul>"
+        "<li>Depolymerisation zerlegt Kunststoff-Polymere gezielt in Monomere oder wenige definierte Bausteine.</li>"
+        "<li>Ausgangsstoffe sind sortierte, moeglichst saubere Kunststoffstroeme; Stoerstoffe, Additive und Pigmente muessen je nach Verfahren abgetrennt oder beruecksichtigt werden.</li>"
+        "<li>Der Unterschied zum mechanischen Recycling ist die chemische Rueckfuehrung: Nicht der ganze Werkstoff wird wiederverwendet, sondern die Bausteinebene des Polymers.</li>"
+        "<li>Beim Loesungsrecycling werden Polymerketten oder definierte Polymerfraktionen zurueckgewonnen; bei der Depolymerisation entstehen Monomere fuer eine erneute Polymerisation.</li>"
+        "<li>Andere chemische Recyclingwege liefern oft kleinere Molekuelgemische, die vor einer neuen Polymerherstellung aufgetrennt, aufgereinigt und chemisch umgesetzt werden muessen.</li>"
+        "<li>Ziel ist ein Rohstoffkreislauf mit Monomeren oder Basischemikalien, aus denen wieder Kunststoffe mit eingestellten Additiven und Stabilisatoren hergestellt werden koennen.</li>"
+        "</ul>"
+        "<b>Beim Antworten aktiv abdecken:</b> Definition/Prinzip, Prozess oder Struktur, "
+        "wichtige Bedingungen, Produkte/Beispiele und typische Begruendung."
+        f"<br><br><span class='source'>Quelle: {source}</span>"
+    )
+    repaired["status"] = "active"
+    repaired["review_note"] = ""
+    return repaired
+
+
+def repair_english_artifact_card(card: dict) -> dict | None:
+    return depolymerisation_repair(card)
 
 
 def quality_score(card: dict) -> int:
@@ -608,6 +663,50 @@ def mark_card_needs_review(conn: sqlite3.Connection, card_id: str, note: str, up
     conn.commit()
 
 
+def repair_english_artifacts(conn: sqlite3.Connection, module: str | None = None,
+                             updated_at: str | None = None) -> int:
+    clauses = ["deck='anki'"]
+    params: list[object] = []
+    if module:
+        clauses.append("module=?")
+        params.append(module)
+    rows = conn.execute(
+        f"SELECT * FROM cards WHERE {' AND '.join(clauses)}",
+        params,
+    ).fetchall()
+    changed = 0
+    changed_at = updated_at or datetime.now(timezone.utc).isoformat()
+    for row in rows:
+        card = row_to_card(row)
+        repaired = repair_english_artifact_card(card)
+        if not repaired:
+            continue
+        status = "active"
+        if card.get("status") == "suspended" and not auto_deactivation_note(card.get("review_note")):
+            status = "suspended"
+        repaired["status"] = status
+        repaired["review_note"] = "" if status == "active" else card.get("review_note", "")
+        conn.execute(
+            """UPDATE cards
+               SET status=?, review_note=?, updated_at=?, payload=?
+               WHERE id=?""",
+            (
+                repaired["status"], repaired.get("review_note", ""), changed_at,
+                json.dumps(repaired, ensure_ascii=False), card["id"],
+            ),
+        )
+        conn.execute(
+            """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
+               VALUES(?,?,?,?,?,?)""",
+            (
+                card["id"], card.get("module", module or "organic"), "auto_quality",
+                "english_artifact_repaired", "Englische Recycling-Karte automatisch uebersetzt", changed_at,
+            ),
+        )
+        changed += 1
+    return changed
+
+
 def restore_seed_auto_suspensions(conn: sqlite3.Connection, seed_ids: set[str],
                                   updated_at: str | None = None) -> int:
     if not seed_ids:
@@ -687,7 +786,7 @@ def flag_english_noise(conn: sqlite3.Connection, module: str | None = None,
                        updated_at: str | None = None) -> int:
     clauses = ["deck='anki'", "status='active'", "review_note<>?"]
     params: list[object] = []
-    params.append(ENGLISH_ARTIFACT_NOTE)
+    params.append(ENGLISH_HOLD_NOTE)
     if module:
         clauses.append("module=?")
         params.append(module)
@@ -702,20 +801,29 @@ def flag_english_noise(conn: sqlite3.Connection, module: str | None = None,
         if not english_noise(card):
             continue
         payload = dict(card)
-        payload["status"] = "active"
-        payload["review_note"] = ENGLISH_ARTIFACT_NOTE
+        repaired = repair_english_artifact_card(card)
+        if repaired:
+            payload = repaired
+            payload["status"] = "active"
+            note = ""
+            reason = "english_artifact_repaired"
+        else:
+            payload["status"] = "needs_review"
+            payload["review_note"] = ENGLISH_HOLD_NOTE
+            note = ENGLISH_HOLD_NOTE
+            reason = "english_noise_held"
         conn.execute(
             """UPDATE cards
-               SET status='active', review_note=?, updated_at=?, payload=?
+               SET status=?, review_note=?, updated_at=?, payload=?
                WHERE id=?""",
-            (ENGLISH_ARTIFACT_NOTE, changed_at, json.dumps(payload, ensure_ascii=False), card["id"]),
+            (payload["status"], note, changed_at, json.dumps(payload, ensure_ascii=False), card["id"]),
         )
         conn.execute(
             """INSERT INTO quality_events(card_id, module, event_type, reason, note, created_at)
                VALUES(?,?,?,?,?,?)""",
             (
                 card["id"], card.get("module", module or "organic"), "auto_quality",
-                "english_noise", ENGLISH_ARTIFACT_NOTE, changed_at,
+                reason, note or "Englische Karte automatisch bearbeitet", changed_at,
             ),
         )
         changed += 1
@@ -723,7 +831,8 @@ def flag_english_noise(conn: sqlite3.Connection, module: str | None = None,
 
 
 def auto_quality_sweep(conn: sqlite3.Connection, module: str, updated_at: str) -> int:
-    changed = restore_english_artifact_suspensions(conn, module, updated_at)
+    changed = repair_english_artifacts(conn, module, updated_at)
+    changed += restore_english_artifact_suspensions(conn, module, updated_at)
     changed += flag_english_noise(conn, module, updated_at)
     rows = conn.execute(
         """SELECT * FROM cards
