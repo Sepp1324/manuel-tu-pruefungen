@@ -456,6 +456,63 @@ def _image_type(content_type: str, data: bytes) -> tuple[str, str]:
     return normalized, ext
 
 
+def _cards_photo_dir() -> Path:
+    path = UPLOAD_DIR / "cards"
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        raise HTTPException(503, "Fotopool-Verzeichnis ist nicht verfuegbar")
+    return path
+
+
+def _safe_photo_filename(filename: str) -> str:
+    name = Path(filename).name
+    if name != filename or not PHOTO_FILENAME_RE.fullmatch(name):
+        raise HTTPException(400, "ungueltiger Dateiname")
+    return name
+
+
+def _photo_usage(conn) -> dict[str, list[dict]]:
+    rows = conn.execute(
+        """SELECT id, module, kap, subname, source, payload FROM cards
+           WHERE deck='anki' AND payload LIKE '%/uploads/cards/%'"""
+    ).fetchall()
+    usage: dict[str, list[dict]] = {}
+    for row in rows:
+        try:
+            payload = json.loads(row["payload"] or "{}")
+        except json.JSONDecodeError:
+            continue
+        text = f"{payload.get('q', '')} {payload.get('a', '')}"
+        for match in PHOTO_URL_RE.findall(text):
+            filename = Path(match).name
+            if not PHOTO_FILENAME_RE.fullmatch(filename):
+                continue
+            usage.setdefault(filename, []).append({
+                "card_id": row["id"],
+                "module": row["module"],
+                "kap": row["kap"],
+                "subname": row["subname"],
+                "source": row["source"],
+                "question": str(payload.get("q", ""))[:120],
+            })
+    return usage
+
+
+def _photo_pool_item(path: Path, usage: dict[str, list[dict]]) -> dict:
+    stat = path.stat()
+    used_by = usage.get(path.name, [])
+    return {
+        "filename": path.name,
+        "url": f"/uploads/cards/{path.name}",
+        "size": stat.st_size,
+        "modified_at": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+        "used_count": len(used_by),
+        "used_by": used_by[:12],
+        "unused": len(used_by) == 0,
+    }
+
+
 def _card_context(card: dict) -> str:
     module_title = "Organische Chemie" if card.get("module") == "organic" else "Anorganische Chemie"
     bits = [module_title]
@@ -1626,11 +1683,19 @@ def photo_pool():
     conn = db.get_conn()
     usage = _photo_usage(conn)
     conn.close()
-    files = [
-        _photo_pool_item(path, usage)
-        for path in photo_dir.iterdir()
-        if path.is_file() and PHOTO_FILENAME_RE.fullmatch(path.name)
-    ]
+    files = []
+    skipped = 0
+    try:
+        paths = list(photo_dir.iterdir())
+    except OSError:
+        raise HTTPException(503, "Fotopool-Verzeichnis ist nicht lesbar")
+    for path in paths:
+        try:
+            if not path.is_file() or not PHOTO_FILENAME_RE.fullmatch(path.name):
+                continue
+            files.append(_photo_pool_item(path, usage))
+        except OSError:
+            skipped += 1
     files.sort(key=lambda item: item["modified_at"], reverse=True)
     return {
         "ok": True,
@@ -1639,6 +1704,7 @@ def photo_pool():
         "unused": sum(1 for item in files if item["unused"]),
         "used": sum(1 for item in files if not item["unused"]),
         "bytes": sum(item["size"] for item in files),
+        "skipped": skipped,
     }
 
 
@@ -1653,7 +1719,12 @@ def delete_photo(filename: str):
     conn.close()
     if usage.get(safe_name):
         raise HTTPException(409, "Foto wird noch in Karten verwendet")
-    target.unlink()
+    try:
+        target.unlink()
+    except FileNotFoundError:
+        raise HTTPException(404, "Foto nicht gefunden")
+    except OSError:
+        raise HTTPException(503, "Foto konnte nicht geloescht werden")
     return {"ok": True, "deleted": safe_name}
 
 
@@ -1664,14 +1735,24 @@ def cleanup_unused_photos():
     usage = _photo_usage(conn)
     conn.close()
     deleted = []
-    for path in photo_dir.iterdir():
-        if not path.is_file() or not PHOTO_FILENAME_RE.fullmatch(path.name):
+    skipped = 0
+    try:
+        paths = list(photo_dir.iterdir())
+    except OSError:
+        raise HTTPException(503, "Fotopool-Verzeichnis ist nicht lesbar")
+    for path in paths:
+        try:
+            if not path.is_file() or not PHOTO_FILENAME_RE.fullmatch(path.name):
+                continue
+            if usage.get(path.name):
+                continue
+            path.unlink()
+            deleted.append(path.name)
+        except FileNotFoundError:
             continue
-        if usage.get(path.name):
-            continue
-        path.unlink()
-        deleted.append(path.name)
-    return {"ok": True, "deleted": deleted, "count": len(deleted)}
+        except OSError:
+            skipped += 1
+    return {"ok": True, "deleted": deleted, "count": len(deleted), "skipped": skipped}
 
 
 @app.post("/api/uploads/photo")
