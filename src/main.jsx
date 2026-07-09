@@ -10,12 +10,16 @@ import {
   Flame,
   ImagePlus,
   LogOut,
+  Mic,
+  MicOff,
   Plus,
   RefreshCw,
   Search,
   Tag,
   Target,
   Trophy,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import "./styles.css";
@@ -454,6 +458,127 @@ function answerComparison(answer = "", question = {}) {
     missing,
     score: terms.length ? Math.round((hits.length / terms.length) * 100) : 0,
   };
+}
+
+function VoiceExamControls({ readText = "", value = "", onValue }) {
+  const recognitionRef = useRef(null);
+  const latestValueRef = useRef(value || "");
+  const [listening, setListening] = useState(false);
+  const [liveText, setLiveText] = useState("");
+  const [msg, setMsg] = useState("");
+  const SpeechRecognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+  const canListen = Boolean(SpeechRecognition);
+  const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  useEffect(() => {
+    latestValueRef.current = value || "";
+  }, [value]);
+
+  useEffect(() => () => {
+    recognitionRef.current?.abort?.();
+    if (canSpeak) window.speechSynthesis.cancel();
+  }, [canSpeak]);
+
+  function speak() {
+    if (!canSpeak) {
+      setMsg("Vorlesen wird von diesem Browser nicht unterstuetzt.");
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(stripHtmlText(readText));
+    utterance.lang = "de-AT";
+    utterance.rate = .94;
+    utterance.pitch = 1;
+    const voice = window.speechSynthesis.getVoices().find((item) => /^de[-_]/i.test(item.lang));
+    if (voice) utterance.voice = voice;
+    utterance.onend = () => setMsg("");
+    utterance.onerror = () => setMsg("Vorlesen fehlgeschlagen.");
+    setMsg("Pruefer liest vor...");
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function stopSpeaking() {
+    if (!canSpeak) return;
+    window.speechSynthesis.cancel();
+    setMsg("Vorlesen gestoppt.");
+  }
+
+  function startListening() {
+    if (!canListen) {
+      setMsg("Mikro-Diktat wird von diesem Browser nicht unterstuetzt.");
+      return;
+    }
+    recognitionRef.current?.abort?.();
+    const recognition = new SpeechRecognition();
+    recognition.lang = "de-AT";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onstart = () => {
+      setListening(true);
+      setLiveText("");
+      setMsg("Mikro hoert zu...");
+    };
+    recognition.onerror = (event) => {
+      setMsg(event.error === "not-allowed" ? "Mikrofonzugriff blockiert." : "Diktat abgebrochen.");
+      setListening(false);
+    };
+    recognition.onend = () => {
+      setListening(false);
+      setLiveText("");
+      setMsg((old) => old === "Mikro hoert zu..." ? "Diktat beendet." : old);
+    };
+    recognition.onresult = (event) => {
+      let finalText = "";
+      let interimText = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const transcript = event.results[i][0]?.transcript || "";
+        if (event.results[i].isFinal) finalText += transcript;
+        else interimText += transcript;
+      }
+      if (finalText.trim()) {
+        const next = appendInline(latestValueRef.current, finalText.trim());
+        latestValueRef.current = next;
+        onValue?.(next);
+      }
+      setLiveText(interimText.trim());
+    };
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch {
+      setMsg("Mikro konnte nicht gestartet werden.");
+      setListening(false);
+    }
+  }
+
+  function stopListening() {
+    recognitionRef.current?.stop?.();
+    setListening(false);
+  }
+
+  return (
+    <div className="voice-exam-controls">
+      <div>
+        <b>Voice-Pruefung</b>
+        <span>{canListen || canSpeak ? "Vorlesen lassen und Antwort diktieren." : "Dieser Browser bietet keine Web-Speech-Funktionen."}</span>
+      </div>
+      <div className="voice-actions">
+        <button type="button" onClick={speak} disabled={!readText.trim()}><Volume2 size={16} /> Vorlesen</button>
+        <button type="button" onClick={stopSpeaking}><VolumeX size={16} /> Stop</button>
+        {listening ? (
+          <button type="button" className="active" onClick={stopListening}><MicOff size={16} /> Mikro stoppen</button>
+        ) : (
+          <button type="button" onClick={startListening}><Mic size={16} /> Mikro starten</button>
+        )}
+      </div>
+      {(liveText || msg) && (
+        <p>
+          {liveText ? <strong>{liveText}</strong> : null}
+          {msg ? <span>{msg}</span> : null}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function reasonLabel(reason) {
@@ -1748,6 +1873,10 @@ function OralExamRunner({ exam, module, onClose }) {
   const currentAnswer = answers[currentKey] || "";
   const currentScores = scores[currentKey] || {};
   const currentErrors = errorTypes[currentKey] || [];
+  const voiceText = [
+    `Frage ${idx + 1}: ${stripHtmlText(question?.question || "")}`,
+    ...shownPrompts.map((prompt) => `${prompt.label}: ${prompt.prompt}`),
+  ].join(" ");
   const comparison = question ? answerComparison(currentAnswer, question) : { terms: [], hits: [], missing: [], score: 0 };
   const earned = (exam.questions || []).reduce((sum, q) => sum + scoreForQuestion(scores[q.card_id] || {}, q), 0);
 
@@ -1877,6 +2006,11 @@ function OralExamRunner({ exam, module, onClose }) {
             Nachfrage stellen
           </button>
         </div>
+        <VoiceExamControls
+          readText={voiceText}
+          value={currentAnswer}
+          onValue={(next) => setAnswers((old) => ({ ...old, [currentKey]: next }))}
+        />
         <label className="exam-answer-editor">
           Antwortnotiz
           <PhotoTextarea
