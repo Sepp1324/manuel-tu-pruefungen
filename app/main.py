@@ -262,6 +262,20 @@ class ArchiveCorrectionSubmitIn(BaseModel):
     results: list[ArchiveCorrectionResultIn] = Field(default_factory=list)
 
 
+WORKSHOP_CATEGORIES = [
+    ("english", "Englisch", "Englische Folienreste oder Begriffe"),
+    ("long", "Zu lang", "Frage oder Antwort ist schwer scanbar"),
+    ("missing_context", "Kein Kontext", "Quelle, VO oder fachlicher Rahmen fehlt"),
+    ("photo", "Foto empfohlen", "Struktur, Formel, Schema oder Mechanismus braucht ein Bild"),
+    ("sketch", "Skizze erforderlich", "Formel- oder Strukturkarte aktiv skizzieren"),
+    ("extracted", "Extraktion holprig", "OCR-/HTML-/Folienreste in der Karte"),
+    ("person_company", "Person/Firma", "Personen-, Firmen- oder Quellenrauschen"),
+    ("lecture_info", "Vorlesungsinfo", "Organisatorische Vorlesungsinfos statt Fachstoff"),
+    ("duplicate", "Duplikate", "Sehr aehnliche Karten zusammenfuehren oder deaktivieren"),
+    ("nonsense", "Nonsense", "Zu wenig verwertbare Antwortpunkte"),
+]
+
+
 def _daily_goal(stats: dict, chapters: list[dict]) -> dict:
     days = max(_days_left(), 1)
     open_cards = (stats["new"] or 0) + (stats["due"] or 0)
@@ -440,6 +454,209 @@ def _image_type(content_type: str, data: bytes) -> tuple[str, str]:
     return normalized, ext
 
 
+def _card_context(card: dict) -> str:
+    module_title = "Organische Chemie" if card.get("module") == "organic" else "Anorganische Chemie"
+    bits = [module_title]
+    if card.get("sub") or card.get("subname"):
+        bits.append(" ".join(str(x) for x in [card.get("sub"), card.get("subname")] if x))
+    if card.get("tags"):
+        bits.append(" / ".join(card.get("tags", [])[:3]))
+    context = " / ".join(bits)
+    if card.get("source"):
+        context = f"{context}. Quelle: {card.get('source')}"
+    return context
+
+
+def _workshop_card(card: dict, issues: list[str] | None = None) -> dict:
+    return {
+        "id": card["id"],
+        "kap": card.get("kap"),
+        "subname": card.get("subname"),
+        "source": card.get("source"),
+        "status": card.get("status"),
+        "title": _question_title(card),
+        "question": str(card.get("q", ""))[:180],
+        "quality_score": card.get("quality_score", 0),
+        "tags": card.get("tags", []),
+        "has_photo": card.get("has_photo"),
+        "photo_recommended": card.get("photo_recommended"),
+        "sketch_required": card.get("sketch_required"),
+        "issues": issues or [],
+    }
+
+
+def _card_signature(card: dict) -> str:
+    text = _question_title(card).lower()
+    text = text.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss")
+    words = [w for w in re.findall(r"[a-z0-9]{4,}", text) if w not in {"gehen", "nennen", "erklaeren", "beschreiben"}]
+    return " ".join(words[:9])
+
+
+def _card_issues(card: dict) -> list[str]:
+    q = str(card.get("q", ""))
+    a = str(card.get("a", ""))
+    text = db.plain_card_text(card)
+    lower = text.lower()
+    issues: list[str] = []
+    if card.get("english_noise") or db.english_noise(card):
+        issues.append("english")
+    if len(q) > 260 or len(a) > 950:
+        issues.append("long")
+    if not q.startswith("Kontext:") or "Quelle:" not in f"{q} {a}":
+        issues.append("missing_context")
+    if card.get("photo_recommended") or db.photo_recommended(card):
+        issues.append("photo")
+    if card.get("sketch_required") or db.sketch_required(card):
+        issues.append("sketch")
+    if any(x in f"{q} {a}" for x in ["_____", "[Seite", "(cid:", "", "", "", "", "&amp;"]):
+        issues.append("extracted")
+    if re.search(r"\b(?:AG|GmbH|Inc|Ltd|LLC|International)\b", text) or re.search(
+        r"\b[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\s+[A-Z]\.?\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß'.-]+\b",
+        text,
+    ):
+        issues.append("person_company")
+    if re.search(r"(?i)\b(vorlesungseinheiten|vor-?\s*(?:&|und)\s*nachbereitung|tiss|pruefungsbeginn|prüfungsbeginn|raumnummer|allgemeine informationen)\b", text):
+        issues.append("lecture_info")
+    points = _answer_points(a)
+    if len(points) < 2 or len(text) < 60 or lower.count("quelle") >= 3:
+        issues.append("nonsense")
+    return list(dict.fromkeys(issues))
+
+
+def _workshop_data(conn, module: str, limit: int = 8) -> dict:
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+           ORDER BY status DESC, lapses DESC, reps ASC, kap ASC, ord ASC
+           LIMIT 1200""",
+        (module,),
+    ).fetchall()
+    cards = [db.row_to_card(r) for r in rows]
+    category_defs = {key: {"key": key, "label": label, "description": desc, "count": 0, "cards": []} for key, label, desc in WORKSHOP_CATEGORIES}
+    card_issues: dict[str, list[str]] = {}
+    for card in cards:
+        issues = _card_issues(card)
+        card_issues[card["id"]] = issues
+        for issue in issues:
+            if issue not in category_defs:
+                continue
+            category_defs[issue]["count"] += 1
+            if len(category_defs[issue]["cards"]) < limit:
+                category_defs[issue]["cards"].append(_workshop_card(card, issues))
+    groups: dict[str, list[dict]] = {}
+    for card in cards:
+        sig = _card_signature(card)
+        if len(sig) >= 12:
+            groups.setdefault(sig, []).append(card)
+    duplicates = [group for group in groups.values() if len(group) > 1]
+    for group in duplicates:
+        for card in group[:3]:
+            issues = card_issues.setdefault(card["id"], [])
+            if "duplicate" not in issues:
+                issues.append("duplicate")
+        category_defs["duplicate"]["count"] += len(group)
+        if len(category_defs["duplicate"]["cards"]) < limit:
+            category_defs["duplicate"]["cards"].append(_workshop_card(group[0], card_issues.get(group[0]["id"], [])))
+    category_list = [category_defs[key] for key, *_ in WORKSHOP_CATEGORIES]
+    queue = sorted(
+        [_workshop_card(card, card_issues.get(card["id"], [])) for card in cards if card_issues.get(card["id"])],
+        key=lambda item: (-len(item["issues"]), -item["quality_score"], item.get("kap") or 99),
+    )[:40]
+    return {
+        "module": module,
+        "categories": category_list,
+        "queue": queue,
+        "duplicates": [
+            {
+                "signature": _card_signature(group[0]),
+                "cards": [_workshop_card(card, card_issues.get(card["id"], [])) for card in group[:6]],
+            }
+            for group in duplicates[:12]
+        ],
+    }
+
+
+def _improved_card_payload(card: dict) -> dict:
+    title = _question_title(card)
+    title = (
+        title.replace("Depolymerization", "Depolymerisation")
+        .replace("depolymerization", "Depolymerisation")
+        .replace("Polymerization", "Polymerisation")
+        .replace("polymerization", "Polymerisation")
+        .replace("Plastics Recycling", "Kunststoffrecycling")
+        .replace("Chemical Recycling", "chemisches Recycling")
+    )
+    if db.english_noise({"q": title, "a": ""}):
+        title = str(card.get("subname") or card.get("source") or "das Thema")
+    context = _card_context(card)
+    points = []
+    for point in _answer_points(card.get("a", "")):
+        point = re.sub(r"(?i)\b(?:quelle|source):?.*$", "", point).strip(" -;:")
+        if db.english_noise({"q": title, "a": point}):
+            continue
+        if len(point) >= 18 and point not in points:
+            points.append(point)
+    if len(points) < 3:
+        points = _scaffold_for(card, points)
+    points = points[:6]
+    if len(points) < 4:
+        points.extend([
+            "Definition oder Grundprinzip klar nennen.",
+            "Wichtige Prozessschritte, Bedingungen oder Strukturmerkmale erklaeren.",
+            "Ein passendes Beispiel oder eine typische Anwendung nennen.",
+        ])
+    question = (
+        f"Kontext: {context}\n\n"
+        f"Erlaeutern Sie {title}. Gehen Sie auf Definition/Prinzip, Prozess oder Aufbau, "
+        "wichtige Bedingungen, Produkte/Beispiele und typische Begruendung ein."
+    )
+    lis = "".join(f"<li>{escape(point)}</li>" for point in points[:6])
+    answer = (
+        f"<b>Kontext:</b> {escape(context)}<br><br>"
+        f"<b>Pruefungsantwort zu {escape(title)}:</b><ul>{lis}</ul>"
+        "<b>Beim Antworten aktiv abdecken:</b> Definition/Prinzip, Prozess oder Struktur, "
+        "wichtige Bedingungen, Produkte/Beispiele und typische Begruendung."
+        f"<br><br><span class='source'>Quelle: {escape(str(card.get('source') or 'Manuell'))}</span>"
+    )
+    payload = dict(card)
+    payload["q"] = question
+    payload["a"] = answer
+    payload["status"] = "active"
+    payload["review_note"] = ""
+    payload["kind"] = payload.get("kind") or "exam_concept"
+    return payload
+
+
+def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quality: dict) -> dict:
+    due = stats.get("due") or 0
+    new = stats.get("new") or 0
+    focus = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c.get("kap") or 99))[:3]
+    formula = _formula_checklist(conn, module)
+    workshop = _workshop_data(conn, module, 3)
+    tasks = [
+        {"key": "due", "label": "Faellige Karten", "amount": min(max(due, 20), 80) if due else 20, "route": "home", "detail": "Erst faellige Karten abarbeiten."},
+        {"key": "weak", "label": "Schwaechen-VO", "amount": len(focus), "route": "dashboard", "detail": "Die staerksten Luecken gezielt wiederholen."},
+        {"key": "workshop", "label": "Karten-Werkstatt", "amount": len(workshop.get("queue", [])), "route": "workshop", "detail": "Holprige Karten glaetten oder deaktivieren."},
+        {"key": "formula", "label": "Skizzen/Formeln", "amount": len(formula.get("draw", [])), "route": "exam", "detail": "Struktur- und Formelbilder aktiv abrufen."},
+        {"key": "mini_exam", "label": "Mini-Pruefung", "amount": 1, "route": "exam", "detail": "Eine kurze offene Simulation mit Punkteschema."},
+    ]
+    if new:
+        tasks.insert(1, {"key": "new", "label": "Neue Karten", "amount": min(new, 20), "route": "home", "detail": "Nur dosiert neue Karten aufnehmen."})
+    return {
+        "date": date.today().isoformat(),
+        "exam_date": EXAM_DATE.isoformat(),
+        "days_left": _days_left(),
+        "tasks": tasks,
+        "focus": focus,
+        "quality": {
+            "needs_review": quality.get("needs_review", 0),
+            "photo_recommended": quality.get("photo_recommended", 0),
+            "workshop_open": len(workshop.get("queue", [])),
+        },
+        "message": "Heute: faellige Karten, eine echte Schwachstelle, dann Werkstatt oder Mini-Pruefung.",
+    }
+
+
 def _rubric_category(text: str) -> str:
     value = text.lower()
     if any(x in value for x in ["defin", "nennen", "zusammensetzung", "struktur", "aufbau"]):
@@ -524,6 +741,7 @@ def _exam_question(card: dict, idx: int, module: str, formula: bool = False) -> 
         question = card.get("q", "")
         if question.startswith("Kontext:") and "\n\n" in question:
             question = question.split("\n\n", 1)[1]
+    rubric_prompts = [f"{sub['category']}: {sub['prompt']}" for sub in subquestions]
     return {
         "idx": idx,
         "card_id": card["id"],
@@ -534,10 +752,12 @@ def _exam_question(card: dict, idx: int, module: str, formula: bool = False) -> 
         "title": title,
         "question": question,
         "subquestions": subquestions,
+        "rubric": _rubric_for_prompts(rubric_prompts, 4),
         "points": 4,
         "answer": card.get("a", ""),
         "scaffold": _scaffold_for(card, points),
         "tags": card.get("tags", []),
+        "sketch_required": bool(card.get("sketch_required") or db.sketch_required(card)),
     }
 
 
@@ -807,7 +1027,7 @@ def _weekly_plan(conn, module: str) -> dict:
             tasks = ["1 volle Simulation", "2 Schwaechen-Mini-Pruefungen", "Nachlern-Queue jeden zweiten Tag"]
         else:
             phase = "Aufbau"
-            tasks = ["faellige Karten taeglich", "1 offene Mini-Pruefung", "rote Mastery-Themen glätten"]
+            tasks = ["faellige Karten taeglich", "1 offene Mini-Pruefung", "rote Mastery-Themen glaetten"]
         weeks.append({
             "start": current.isoformat(),
             "end": end.isoformat(),
@@ -890,6 +1110,7 @@ def stats(module: str = "organic"):
     tags = db.tag_stats(conn, module)
     auto_quality = db.auto_quality_sweep(conn, module, now)
     quality = db.quality_summary(conn, module)
+    today = _today_work_plan(conn, module, st, chapters, quality)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
     exam_score = _exam_score_projection(st, chapters, module)
@@ -908,6 +1129,7 @@ def stats(module: str = "organic"):
         "weaknesses": weaknesses,
         "tags": tags,
         "quality": quality,
+        "today_plan": today,
         "auto_quality": {"moved": auto_quality},
         "exam_score": exam_score,
         "xp": xp,
@@ -1074,6 +1296,19 @@ def weekly_plan(module: str = "organic"):
     return out
 
 
+@app.get("/api/today")
+def today_plan(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    now = _now_iso()
+    st = db.deck_stats(conn, now, module)
+    chapters = db.chapter_stats(conn, now, module)
+    quality = db.quality_summary(conn, module)
+    out = _today_work_plan(conn, module, st, chapters, quality)
+    conn.close()
+    return {"module": module, **out}
+
+
 @app.get("/api/exam/history")
 def exam_history(module: str = "organic"):
     module = _valid_module(module)
@@ -1162,6 +1397,16 @@ def quality_autoprune(module: str = "organic"):
     summary = db.quality_summary(conn, module)
     conn.close()
     return {"ok": True, "moved": moved, "quality": summary}
+
+
+@app.get("/api/workshop")
+def workshop(module: str = "organic", limit: int = 8):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    db.auto_quality_sweep(conn, module, _now_iso())
+    out = _workshop_data(conn, module, max(3, min(limit, 20)))
+    conn.close()
+    return out
 
 
 @app.post("/api/exam/open/submit")
@@ -1271,6 +1516,16 @@ def triage(module: str = "organic", limit: int = 10, tag: str = ""):
     return out
 
 
+@app.get("/api/cards/{card_id:path}")
+def get_card(card_id: str):
+    conn = db.get_conn()
+    card = db.get_card(conn, card_id)
+    conn.close()
+    if not card:
+        raise HTTPException(404, "Karte nicht gefunden")
+    return {"card": card}
+
+
 @app.patch("/api/cards/{card_id:path}")
 def edit_card(card_id: str, inp: CardEditIn):
     conn = db.get_conn()
@@ -1279,6 +1534,20 @@ def edit_card(card_id: str, inp: CardEditIn):
     if not card:
         raise HTTPException(404, "Karte nicht gefunden")
     return {"ok": True, "card": card}
+
+
+@app.post("/api/cards/{card_id:path}/improve")
+def improve_card(card_id: str):
+    conn = db.get_conn()
+    card = db.get_card(conn, card_id)
+    if not card:
+        conn.close()
+        raise HTTPException(404, "Karte nicht gefunden")
+    improved = _improved_card_payload(card)
+    updated = db.update_card(conn, card_id, improved["q"], improved["a"], "active", "", _now_iso())
+    db.add_quality_event(conn, card_id, card.get("module", "organic"), "workshop", "auto_improved", "Karte automatisch pruefungsnah geglaettet", _now_iso())
+    conn.close()
+    return {"ok": True, "card": updated}
 
 
 @app.post("/api/cards/{card_id:path}/triage")
