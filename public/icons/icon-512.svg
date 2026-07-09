@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TU Chemie">
+  <rect width="512" height="512" rx="64" fill="#006699"/>
+  <path d="M112 140h288v64H290v188h-68V204H112z" fill="#fff"/>
+  <path d="M326 246h58v58h-58zm-198 102h256v42H128z" fill="#85c8d0"/>
+</svg>
