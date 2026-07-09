@@ -729,6 +729,209 @@ button:disabled { cursor: default; opacity: .48; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.knowledge-map-page {
+  display: grid;
+  gap: 14px;
+}
+.knowledge-hero {
+  border-top: 5px solid var(--tu-blue);
+}
+.quality-metrics.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.knowledge-layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(360px, 1.35fr) minmax(300px, .65fr);
+}
+.knowledge-canvas, .knowledge-detail, .knowledge-route, .knowledge-edge-panel {
+  align-content: start;
+  display: grid;
+  gap: 12px;
+}
+.knowledge-node-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+.knowledge-node {
+  align-content: start;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--tu-blue);
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-height: 128px;
+  padding: 12px;
+  text-align: left;
+}
+.knowledge-node.active {
+  box-shadow: inset 0 0 0 2px rgba(0, 102, 153, .28);
+}
+.knowledge-node.critical { border-left-color: var(--graphite); }
+.knowledge-node.shaky { border-left-color: var(--gold); }
+.knowledge-node.building { border-left-color: var(--tu-blue); }
+.knowledge-node.secure { border-left-color: var(--cyan); }
+.knowledge-node span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.knowledge-node b {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.22;
+}
+.knowledge-node em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+.knowledge-node i {
+  background: var(--line);
+  border-radius: 999px;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+.knowledge-node strong {
+  background: linear-gradient(90deg, var(--tu-blue), var(--cyan));
+  display: block;
+  height: 100%;
+}
+.knowledge-badge {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--tu-blue);
+  font-size: 14px;
+  font-weight: 900;
+  padding: 7px 10px;
+}
+.knowledge-badge.critical { color: var(--graphite); }
+.knowledge-badge.shaky { color: var(--gold); }
+.knowledge-badge.secure { color: var(--cyan); }
+.knowledge-card-list {
+  display: grid;
+  gap: 8px;
+}
+.knowledge-card-list button {
+  align-items: start;
+  display: grid;
+  gap: 4px 8px;
+  grid-template-columns: 46px 1fr;
+  justify-items: start;
+  min-height: 54px;
+  padding: 9px;
+  text-align: left;
+}
+.knowledge-card-list b {
+  color: var(--tu-blue);
+  font-size: 12px;
+}
+.knowledge-card-list span {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.knowledge-card-list em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  grid-column: 2;
+}
+.knowledge-connections {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 7px;
+  padding-top: 10px;
+}
+.knowledge-connections > b {
+  color: var(--tu-blue);
+  font-size: 13px;
+}
+.knowledge-connections span,
+.edge-list span {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  display: grid;
+  gap: 3px;
+  padding: 8px 9px;
+}
+.knowledge-connections em,
+.edge-list em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+}
+.route-steps {
+  display: grid;
+  gap: 10px;
+}
+.route-steps article {
+  align-items: center;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 42px 1fr auto;
+  padding: 10px;
+}
+.route-steps article > span {
+  align-items: center;
+  background: var(--tu-blue);
+  border-radius: 999px;
+  color: white;
+  display: inline-grid;
+  font-weight: 900;
+  height: 32px;
+  justify-items: center;
+  width: 32px;
+}
+.route-steps b {
+  color: var(--ink);
+  font-size: 14px;
+}
+.route-steps p {
+  color: var(--tu-blue);
+  font-size: 13px;
+  font-weight: 800;
+  margin: 0;
+}
+.route-steps em {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  margin-top: 3px;
+}
+.edge-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.edge-list span {
+  grid-template-columns: 1fr auto 1fr;
+}
+.edge-list b {
+  color: var(--ink);
+  font-size: 12px;
+}
+.edge-list i {
+  color: var(--tu-blue);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  text-align: center;
+}
+.edge-list em {
+  grid-column: 1 / -1;
+}
 .checklist-grid {
   display: grid;
   gap: 14px;
@@ -2290,11 +2493,13 @@ textarea {
   .wrap { padding: 18px 12px 60px; }
   .hero, .day-card, .forecast { display: grid; grid-template-columns: 1fr; }
   .days { font-size: 50px; }
-  .stats, .ratings, .chart-grid, .chapter-grid, .heatmap, .form-grid, .quality-layout, .workshop-layout, .workshop-categories, .today-task-grid, .triage-layout, .quality-center-grid, .quality-metrics, .result-grid, .exam-actions-grid, .exam-score-panel, .mastery-grid, .checklist-grid, .archive-layout, .correction-raster, .attempt-grid, .week-grid, .rubric-checklist > div, .exam-meta-controls > div, .answer-compare, .point-schema article, .perf-grid, .audit-grid, .media-actions, .import-layout, .import-preview-grid { grid-template-columns: 1fr; }
+  .stats, .ratings, .chart-grid, .chapter-grid, .heatmap, .form-grid, .quality-layout, .workshop-layout, .workshop-categories, .today-task-grid, .triage-layout, .quality-center-grid, .quality-metrics, .result-grid, .exam-actions-grid, .exam-score-panel, .mastery-grid, .knowledge-layout, .quality-metrics.compact, .route-steps article, .knowledge-card-list button, .edge-list span, .checklist-grid, .archive-layout, .correction-raster, .attempt-grid, .week-grid, .rubric-checklist > div, .exam-meta-controls > div, .answer-compare, .point-schema article, .perf-grid, .audit-grid, .media-actions, .import-layout, .import-preview-grid { grid-template-columns: 1fr; }
   .exam-toolbar { grid-template-columns: 1fr; }
   .subquestion { grid-template-columns: 1fr; }
   .subquestion > span { text-align: left; }
   .subquestion div { justify-content: flex-start; }
+  .knowledge-card-list em { grid-column: 1; }
+  .route-steps article > span { height: 28px; width: 28px; }
   .point-schema em { text-align: left; }
   .rubric-checklist > div > span { text-align: left; }
   .rubric-checklist em { justify-content: flex-start; }
