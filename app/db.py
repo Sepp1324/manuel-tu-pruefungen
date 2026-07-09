@@ -51,6 +51,33 @@ OLD_ENGLISH_ARTIFACT_NOTE = "Automatisch deaktiviert: englische Folien- oder Que
 ENGLISH_ARTIFACT_NOTE = "Auto-Review: englische Folien- oder Quellenartefakte pruefen"
 ENGLISH_HOLD_NOTE = "Auto-Review: englische Karte aus dem Lernmodus genommen"
 
+CHEM_FORMULA_REPAIRS = (
+    (r"\bH\s+SO\b", "H<sub>2</sub>SO<sub>4</sub>"),
+    (r"\bH\s+S\s+O\b", "H<sub>2</sub>S<sub>2</sub>O<sub>7</sub>"),
+    (r"\bNa\s+S\s+O\b", "Na<sub>2</sub>S<sub>2</sub>O<sub>3</sub>"),
+    (r"\bNa\s+SO\b", "Na<sub>2</sub>SO<sub>4</sub>"),
+    (r"\bCu\.?\s+SO\b", "CuSO<sub>4</sub>"),
+    (r"\bCa\.?\s+SO\b", "CaSO<sub>4</sub>"),
+    (r"\bH\s+CO\b", "H<sub>2</sub>CO<sub>3</sub>"),
+    (r"\bNa\s+CO\b", "Na<sub>2</sub>CO<sub>3</sub>"),
+    (r"\bCa\.?\s+CO\b", "CaCO<sub>3</sub>"),
+    (r"\bH\s+O\b", "H<sub>2</sub>O"),
+    (r"\bH\s+S\b", "H<sub>2</sub>S"),
+    (r"\bNH\b(?![A-Za-z0-9])", "NH<sub>3</sub>"),
+    (r"\bSi\.?\s+O\b", "SiO<sub>2</sub>"),
+    (r"\bAl\s+O\b", "Al<sub>2</sub>O<sub>3</sub>"),
+    (r"\bFe\s+O\b", "Fe<sub>2</sub>O<sub>3</sub>"),
+    (r"\bV\s+O\b", "V<sub>2</sub>O<sub>5</sub>"),
+    (r"\bB\s+O\b", "B<sub>2</sub>O<sub>3</sub>"),
+    (r"\bNa\s+O\b", "Na<sub>2</sub>O"),
+    (r"\bK\s+O\b", "K<sub>2</sub>O"),
+    (r"\bMg\.?\s+O\b", "MgO"),
+    (r"\bCa\.?\s+O\b", "CaO"),
+    (r"\bBa\.?\s+O\b", "BaO"),
+    (r"\bPb\.?\s+O\b", "PbO"),
+    (r"\bMn\.?\s+O\b", "MnO"),
+)
+
 
 def auto_deactivation_note(note: str | None) -> bool:
     text = str(note or "").strip()
@@ -448,6 +475,15 @@ def infer_tags(card: dict) -> list[str]:
     return sorted(tags)
 
 
+def normalize_chemical_formulas(value: str) -> str:
+    text = str(value or "")
+    if not text:
+        return text
+    for pattern, replacement in CHEM_FORMULA_REPAIRS:
+        text = re.sub(pattern, replacement, text)
+    return text
+
+
 def plain_card_text(card: dict) -> str:
     raw = f"{card.get('q', '')} {card.get('a', '')} {card.get('source', '')} {card.get('subname', '')}"
     raw = re.sub(r"<span[^>]*class=['\"]source['\"][^>]*>.*?</span>", " ", raw, flags=re.I | re.S)
@@ -572,6 +608,8 @@ def row_to_card(row: sqlite3.Row) -> dict:
     d = dict(row)
     payload = json.loads(d.pop("payload"))
     payload.update(d)
+    payload["q"] = normalize_chemical_formulas(payload.get("q", ""))
+    payload["a"] = normalize_chemical_formulas(payload.get("a", ""))
     payload["tags"] = infer_tags(payload)
     payload["has_photo"] = has_photo(payload)
     payload["photo_recommended"] = photo_recommended(payload)

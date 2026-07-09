@@ -617,6 +617,10 @@ function Study({ session, setSession, finish }) {
   const [revealed, setRevealed] = useState(false);
   const [preview, setPreview] = useState({});
   const [feedbackReason, setFeedbackReason] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({ q: "", a: "", review_note: "" });
+  const [editMsg, setEditMsg] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
   const progress = pct(session.idx, Math.max(cards.length, 1));
   const isExam = session.deck === "exam";
 
@@ -624,6 +628,10 @@ function Study({ session, setSession, finish }) {
     setRevealed(false);
     setPreview({});
     setFeedbackReason("");
+    setEditing(false);
+    setEditMsg("");
+    setSavingEdit(false);
+    setDraft({ q: card?.q || "", a: card?.a || "", review_note: card?.review_note || "" });
     if (card?.id) api(`/api/preview/${encodeURIComponent(card.id)}`).then(setPreview).catch(() => {});
   }, [card?.id]);
 
@@ -644,6 +652,44 @@ function Study({ session, setSession, finish }) {
       else finish();
     } else {
       setSession((old) => ({ ...old, idx: old.idx + 1, results: [...(old.results || []), nextResult] }));
+    }
+  }
+
+  function startEdit() {
+    if (!card) return;
+    setDraft({ q: card.q || "", a: card.a || "", review_note: card.review_note || "" });
+    setEditMsg("");
+    setEditing(true);
+  }
+
+  async function saveEdit(nextStatus = card?.status || "active") {
+    if (!card) return;
+    setSavingEdit(true);
+    setEditMsg("");
+    try {
+      const res = await api(`/api/cards/${encodeURIComponent(card.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          q: draft.q,
+          a: draft.a,
+          status: nextStatus,
+          review_note: draft.review_note || "",
+        }),
+      });
+      const updated = res.card;
+      setSession((old) => ({
+        ...old,
+        cards: (old.cards || []).map((item) => item.id === updated.id ? { ...item, ...updated } : item),
+      }));
+      setDraft({ q: updated.q || "", a: updated.a || "", review_note: updated.review_note || "" });
+      setEditing(false);
+      setEditMsg("Karte gespeichert.");
+      api(`/api/preview/${encodeURIComponent(updated.id)}`).then(setPreview).catch(() => {});
+    } catch (err) {
+      setEditMsg(err.message || "Speichern fehlgeschlagen");
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -689,7 +735,35 @@ function Study({ session, setSession, finish }) {
         <button onClick={finish}><ArrowLeft size={16} /> Zurueck</button>
         <div className="progress"><span style={{ width: `${progress}%` }} /></div>
         <span>{session.idx + 1}/{cards.length}</span>
+        <button onClick={startEdit}><Edit3 size={16} /> Bearbeiten</button>
       </div>
+      {editing ? (
+        <article className="study-card study-edit-card">
+          <div className="study-meta">
+            <span className="deck-pill">VO{card.kap}</span>
+            <span>{card.subname}</span>
+            <span>Quelle: {card.source}</span>
+          </div>
+          <label>Frage
+            <PhotoTextarea value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} rows={5} />
+          </label>
+          <PhotoButton label="Foto in Frage" onInsert={(html) => setDraft((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
+          <label>Antwort
+            <PhotoTextarea value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} rows={9} />
+          </label>
+          <PhotoButton label="Foto in Antwort" onInsert={(html) => setDraft((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
+          <label>Notiz
+            <input value={draft.review_note || ""} onChange={(e) => setDraft({ ...draft, review_note: e.target.value })} />
+          </label>
+          <CardRenderPreview question={draft.q || ""} answer={draft.a || ""} />
+          <div className="button-row-inline">
+            <button className="primary" disabled={savingEdit} onClick={() => saveEdit("active")}><Check size={16} /> Speichern</button>
+            <button disabled={savingEdit} onClick={() => { setEditing(false); setEditMsg(""); }}><X size={16} /> Abbrechen</button>
+            <button disabled={savingEdit} onClick={() => saveEdit("needs_review")}>Review markieren</button>
+          </div>
+          {editMsg && <div className="form-msg">{editMsg}</div>}
+        </article>
+      ) : (
       <article className="study-card">
         <div className="study-meta">
           <span className="deck-pill">VO{card.kap}</span>
@@ -697,6 +771,7 @@ function Study({ session, setSession, finish }) {
           <span>Quelle: {card.source}</span>
           <span>faellig: {formatDate(card.due)}</span>
         </div>
+        {editMsg && <div className="form-msg">{editMsg}</div>}
         <QuestionContent html={card.q} />
         {revealed ? (
           <>
@@ -727,6 +802,7 @@ function Study({ session, setSession, finish }) {
           <button className="primary reveal" onClick={() => setRevealed(true)}>Antwort aufdecken</button>
         )}
       </article>
+      )}
     </section>
   );
 }
