@@ -558,6 +558,16 @@ def photo_recommended(card: dict) -> bool:
     return any(marker in text for marker in markers)
 
 
+def sketch_required(card: dict) -> bool:
+    text = f"{card.get('q', '')} {card.get('a', '')} {card.get('kind', '')}".lower()
+    markers = (
+        "strukturformel", "reaktionsformel", "formel", "gleichung", "skizz",
+        "zeichnen", "wiederholeinheit", "mechanismus", "chemischen aufbau",
+        "monomer", "polymerarchitektur",
+    )
+    return any(marker in text for marker in markers)
+
+
 def row_to_card(row: sqlite3.Row) -> dict:
     d = dict(row)
     payload = json.loads(d.pop("payload"))
@@ -565,6 +575,7 @@ def row_to_card(row: sqlite3.Row) -> dict:
     payload["tags"] = infer_tags(payload)
     payload["has_photo"] = has_photo(payload)
     payload["photo_recommended"] = photo_recommended(payload)
+    payload["sketch_required"] = sketch_required(payload)
     payload["english_noise"] = english_noise(payload)
     payload["quality_score"] = quality_score(payload)
     return payload

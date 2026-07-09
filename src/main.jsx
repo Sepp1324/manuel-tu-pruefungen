@@ -56,6 +56,9 @@ const QUALITY_REASONS = [
   ["pruefung_miss", "Pruefung nicht gewusst"],
   ["archiv_partial", "Archiv teilweise"],
   ["archiv_miss", "Archiv nicht gewusst"],
+  ["auto_improved", "Automatisch verbessert"],
+  ["english_noise", "Englisch"],
+  ["seed_auto_suspension_restored", "Auto-Reaktivierung"],
 ];
 const ALL_REASONS = [...TRIAGE_REASONS, ...REVIEW_REASONS, ...EXAM_REASONS, ...QUALITY_REASONS];
 const EXAM_EVALS = [
@@ -63,6 +66,18 @@ const EXAM_EVALS = [
   ["partial", "teilweise"],
   ["miss", "nicht gewusst"],
 ];
+const WORKSHOP_ISSUE_LABELS = {
+  english: "Englisch",
+  long: "Zu lang",
+  missing_context: "Kein Kontext",
+  photo: "Foto empfohlen",
+  sketch: "Skizze",
+  extracted: "Extraktion",
+  person_company: "Person/Firma",
+  lecture_info: "Vorlesungsinfo",
+  duplicate: "Duplikat",
+  nonsense: "Nonsense",
+};
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -242,6 +257,10 @@ function reasonLabel(reason) {
   return ALL_REASONS.find(([key]) => key === reason)?.[1] || reason || "Ohne Grund";
 }
 
+function issueLabel(issue) {
+  return WORKSHOP_ISSUE_LABELS[issue] || issue || "Hinweis";
+}
+
 function formatSeconds(s) {
   const safe = Math.max(0, Math.floor(s || 0));
   const h = Math.floor(safe / 3600);
@@ -370,6 +389,42 @@ function StudyPlan({ plan, startSession }) {
   );
 }
 
+function TodayPlan({ plan, setRoute, startSession }) {
+  if (!plan) return null;
+  return (
+    <section className="panel today-plan">
+      <div className="section-head">
+        <div>
+          <h2>Heute solltest du machen</h2>
+          <p>{plan.message}</p>
+        </div>
+        <span className="deck-pill">{plan.days_left} Tage</span>
+      </div>
+      <div className="today-task-grid">
+        {(plan.tasks || []).map((task) => (
+          <button
+            key={task.key}
+            onClick={() => task.key === "due" ? startSession?.("anki") : setRoute?.(task.route || "home")}
+          >
+            <b>{task.amount}</b>
+            <span>{task.label}</span>
+            <em>{task.detail}</em>
+          </button>
+        ))}
+      </div>
+      {!!plan.focus?.length && (
+        <div className="focus-strip">
+          {plan.focus.map((ch) => (
+            <button key={ch.kap} onClick={() => startSession?.("anki", ch.kap)}>
+              VO{ch.kap} · {ch.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function WeaknessHeatmap({ items = [], startSession }) {
   const max = Math.max(1, ...items.map((x) => x.weak_score || 0));
   return (
@@ -479,12 +534,14 @@ function Home({ data, startSession, setRoute, refresh, module, setModule }) {
           <div className="hero-actions">
             <button className="primary" onClick={() => startSession("anki")}>Session starten</button>
             <button onClick={() => setRoute("dashboard")}><BarChart3 size={16} /> Dashboard</button>
+            <button onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
           </div>
         </div>
       </section>
 
       <XpCard xp={data.xp} streak={data.streak} />
       <StudyPlan plan={data.study_plan} startSession={startSession} />
+      <TodayPlan plan={data.today_plan} setRoute={setRoute} startSession={startSession} />
 
       <section className={`day-card ${goal.status || ""}`}>
         <div>
@@ -1061,6 +1118,8 @@ function OpenExamRunner({ exam, module, onClose }) {
   const currentErrors = errorTypes[question.card_id] || [];
   const currentAnswer = answers[question.card_id] || "";
   const isFormulaMode = exam.mode === "formula";
+  const rubric = question.rubric?.length ? question.rubric : question.subquestions || [];
+  const totalRubricPoints = rubric.reduce((sum, item) => sum + (item.points || 0), 0);
   return (
     <section className="open-exam">
       <div className="exam-toolbar">
@@ -1082,6 +1141,7 @@ function OpenExamRunner({ exam, module, onClose }) {
           <span>VO{question.kap}</span>
           <span>{question.source}</span>
           <span>{question.points} Punkte</span>
+          {question.sketch_required && <span>Skizze erforderlich</span>}
         </div>
         <h2 dangerouslySetInnerHTML={{ __html: question.question }} />
         <label className="exam-answer-editor">
@@ -1103,6 +1163,19 @@ function OpenExamRunner({ exam, module, onClose }) {
             <div dangerouslySetInnerHTML={{ __html: currentAnswer }} />
           </div>
         )}
+        <div className="point-schema">
+          <div>
+            <h3>Punkteschema</h3>
+            <span>{totalRubricPoints.toFixed(1).replace(".0", "")} Punkte</span>
+          </div>
+          {(rubric || []).map((item) => (
+            <article key={item.id || `${item.category}-${item.prompt}`}>
+              <b>{item.category}</b>
+              <p>{item.prompt}</p>
+              <em>{item.points} P</em>
+            </article>
+          ))}
+        </div>
         <div className="subquestion-list">
           {(question.subquestions || []).map((sub) => (
             <div key={sub.id} className="subquestion">
@@ -1616,7 +1689,7 @@ function CardReviewPage({ onDone, module }) {
           {(data.cards || []).map((card) => (
             <button key={card.id} className={selected?.id === card.id ? "active" : ""} onClick={() => select(card)}>
               <b>VO{card.kap} · {card.status}</b>
-              <em>{[(card.tags || []).join(" · "), card.has_photo ? "Foto" : "", card.photo_recommended ? "Foto empfohlen" : ""].filter(Boolean).join(" · ")}</em>
+              <em>{[(card.tags || []).join(" · "), card.has_photo ? "Foto" : "", card.photo_recommended ? "Foto empfohlen" : "", card.sketch_required ? "Skizze" : ""].filter(Boolean).join(" · ")}</em>
               <span dangerouslySetInnerHTML={{ __html: card.q }} />
             </button>
           ))}
@@ -1645,6 +1718,178 @@ function CardReviewPage({ onDone, module }) {
             {msg && <div className="form-msg">{msg}</div>}
           </>
         ) : <p className="muted">Keine Karte ausgewaehlt.</p>}
+      </div>
+    </section>
+  );
+}
+
+function WorkshopPage({ module, onDone }) {
+  const [data, setData] = useState({ categories: [], queue: [], duplicates: [] });
+  const [category, setCategory] = useState("queue");
+  const [selected, setSelected] = useState(null);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function selectSummary(card) {
+    if (!card?.id) return;
+    const res = await api(`/api/cards/${encodeURIComponent(card.id)}`);
+    setSelected(res.card);
+    setMsg("");
+  }
+
+  async function load(forcePick = false) {
+    const res = await api(`/api/workshop?module=${encodeURIComponent(module)}&limit=10`);
+    setData(res);
+    if ((forcePick || !selected) && res.queue?.[0]) await selectSummary(res.queue[0]);
+  }
+
+  useEffect(() => {
+    setSelected(null);
+    setCategory("queue");
+    load(true).catch(() => {});
+  }, [module]);
+
+  const activeCards = category === "queue"
+    ? data.queue || []
+    : (data.categories || []).find((item) => item.key === category)?.cards || [];
+  const activeCategory = (data.categories || []).find((item) => item.key === category);
+  const selectedSummary = [
+    ...(data.queue || []),
+    ...(data.categories || []).flatMap((item) => item.cards || []),
+  ].find((card) => card.id === selected?.id);
+
+  async function save(nextStatus = selected?.status || "active") {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      const res = await api(`/api/cards/${encodeURIComponent(selected.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          q: selected.q,
+          a: selected.a,
+          status: nextStatus,
+          review_note: selected.review_note || "",
+        }),
+      });
+      setSelected(res.card);
+      setMsg(nextStatus === "suspended" ? "Deaktiviert." : "Gespeichert.");
+      await load();
+      onDone?.();
+    } catch (err) {
+      setMsg(err.message || "Speichern fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function improve() {
+    if (!selected) return;
+    setBusy(true);
+    try {
+      const res = await api(`/api/cards/${encodeURIComponent(selected.id)}/improve`, { method: "POST" });
+      setSelected(res.card);
+      setMsg("Pruefungsnah geglaettet und aktiviert.");
+      await load();
+      onDone?.();
+    } catch (err) {
+      setMsg(err.message || "Verbessern fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="workshop-layout">
+      <div className="panel workshop-side">
+        <div className="section-head">
+          <div>
+            <h2>Karten-Werkstatt</h2>
+            <p>Review-Queue, Duplikate, Nonsense und Karten mit Skizzen- oder Foto-Bedarf.</p>
+          </div>
+          <Edit3 size={22} />
+        </div>
+        <div className="workshop-categories">
+          <button className={category === "queue" ? "active" : ""} onClick={() => setCategory("queue")}>
+            <b>{data.queue?.length || 0}</b>
+            <span>Review-Queue</span>
+          </button>
+          {(data.categories || []).map((item) => (
+            <button key={item.key} className={category === item.key ? "active" : ""} onClick={() => setCategory(item.key)}>
+              <b>{item.count || 0}</b>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+        {activeCategory?.description && <p className="muted workshop-hint">{activeCategory.description}</p>}
+        <div className="workshop-list">
+          {activeCards.length ? activeCards.map((card) => (
+            <button key={`${category}-${card.id}`} className={selected?.id === card.id ? "active" : ""} onClick={() => selectSummary(card)}>
+              <b>VO{card.kap} · {card.status}</b>
+              <span>{card.title}</span>
+              <em>{(card.issues || []).map(issueLabel).join(" · ") || "Hinweis"}</em>
+            </button>
+          )) : <p className="muted">In dieser Kategorie ist gerade nichts offen.</p>}
+        </div>
+        {!!(data.duplicates || []).length && (
+          <div className="duplicate-groups">
+            <h3>Duplikat-Finder</h3>
+            {data.duplicates.slice(0, 4).map((group) => (
+              <article key={group.signature}>
+                <b>{group.cards?.length || 0} aehnliche Karten</b>
+                <div>
+                  {(group.cards || []).map((card) => (
+                    <button key={card.id} onClick={() => selectSummary(card)}>VO{card.kap}: {card.title}</button>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="panel workshop-editor">
+        {selected ? (
+          <>
+            <div className="study-meta">
+              <span className="deck-pill">VO{selected.kap}</span>
+              <span>{selected.source}</span>
+              <span>{selected.status}</span>
+              {selected.photo_recommended && <span>Foto empfohlen</span>}
+              {selected.sketch_required && <span>Skizze erforderlich</span>}
+            </div>
+            <div className="issue-pills">
+              {(selectedSummary?.issues || []).map((issue) => (
+                <span key={issue}>{issueLabel(issue)}</span>
+              ))}
+            </div>
+            <label>Frage
+              <textarea value={selected.q || ""} onChange={(e) => setSelected({ ...selected, q: e.target.value })} rows={5} />
+            </label>
+            <PhotoButton label="Foto in Frage" onInsert={(html) => setSelected((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
+            <label>Antwort
+              <textarea value={selected.a || ""} onChange={(e) => setSelected({ ...selected, a: e.target.value })} rows={10} />
+            </label>
+            <PhotoButton label="Foto in Antwort" onInsert={(html) => setSelected((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
+            <label>Notiz
+              <input value={selected.review_note || ""} onChange={(e) => setSelected({ ...selected, review_note: e.target.value })} />
+            </label>
+            <CardRenderPreview question={selected.q || ""} answer={selected.a || ""} />
+            <div className="button-row-inline">
+              <button className="primary" disabled={busy} onClick={improve}><Edit3 size={16} /> Auto verbessern</button>
+              <button disabled={busy} onClick={() => save("active")}>Aktiv speichern</button>
+              <button disabled={busy} onClick={() => save("needs_review")}>Review</button>
+              <button disabled={busy} onClick={() => save("suspended")}>Deaktivieren</button>
+            </div>
+            {msg && <div className="form-msg">{msg}</div>}
+          </>
+        ) : (
+          <div className="done">
+            <Check size={30} />
+            <h2>Werkstatt leer</h2>
+            <p>Gerade ist keine Karte ausgewaehlt.</p>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -1795,6 +2040,7 @@ function QualityCenter({ data, setRoute }) {
         </div>
         <div className="button-row-inline">
           <button className="primary" onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage starten</button>
+          <button onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
           <button onClick={() => setRoute("quality")}><Search size={16} /> Karten bearbeiten</button>
           <button onClick={() => setRoute("photos")}><ImagePlus size={16} /> Fotopool</button>
         </div>
@@ -1977,6 +2223,7 @@ function App() {
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
     if (route === "exam") return <ExamPage startExam={startExam} startSession={startSession} module={module} />;
     if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} />;
+    if (route === "workshop") return <WorkshopPage module={module} onDone={load} />;
     if (route === "triage") return <TriagePage module={module} onDone={load} />;
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
     if (route === "photos") return <PhotoPoolPage onDone={load} />;
@@ -2000,6 +2247,7 @@ function App() {
         <button className={route === "dashboard" ? "active" : ""} onClick={() => setRoute("dashboard")}><BarChart3 size={16} /> Dashboard</button>
         <button className={route === "exam" ? "active" : ""} onClick={() => setRoute("exam")}><Target size={16} /> Pruefung</button>
         <button className={route === "quality-center" ? "active" : ""} onClick={() => setRoute("quality-center")}><ClipboardList size={16} /> Qualitaet</button>
+        <button className={route === "workshop" ? "active" : ""} onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
         <button className={route === "triage" ? "active" : ""} onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage</button>
         <button className={route === "quality" ? "active" : ""} onClick={() => setRoute("quality")}><ClipboardList size={16} /> Kartenqualitaet</button>
         <button className={route === "photos" ? "active" : ""} onClick={() => setRoute("photos")}><ImagePlus size={16} /> Fotopool</button>
