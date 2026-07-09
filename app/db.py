@@ -134,6 +134,8 @@ CREATE TABLE IF NOT EXISTS reviews (
     interval_due TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_reviews_at ON reviews(reviewed_at);
+CREATE INDEX IF NOT EXISTS idx_reviews_card ON reviews(card_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_card_rating ON reviews(card_id, rating);
 
 CREATE TABLE IF NOT EXISTS xp_events (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -236,6 +238,10 @@ def migrate(conn: sqlite3.Connection) -> None:
         if col not in cols:
             conn.execute(sql)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module ON cards(module)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module_deck_status_due ON cards(module, deck, status, due)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module_deck_status_kap ON cards(module, deck, status, kap)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_reviews_card ON reviews(card_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_reviews_card_rating ON reviews(card_id, rating)")
     conn.executescript("""
     CREATE TABLE IF NOT EXISTS quality_events (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -619,6 +625,25 @@ def row_to_card(row: sqlite3.Row) -> dict:
     return payload
 
 
+def lightweight_card_from_row(row: sqlite3.Row) -> dict:
+    try:
+        payload = json.loads(row["payload"] or "{}")
+    except json.JSONDecodeError:
+        payload = {}
+    payload.update({
+        "id": row["id"],
+        "module": row["module"],
+        "kap": row["kap"],
+        "sub": row["sub"],
+        "subname": row["subname"],
+        "source": row["source"],
+        "status": row["status"],
+        "due": row["due"],
+        "lapses": row["lapses"],
+    })
+    return payload
+
+
 def get_card(conn: sqlite3.Connection, card_id: str) -> dict | None:
     row = conn.execute("SELECT * FROM cards WHERE id=?", (card_id,)).fetchone()
     return row_to_card(row) if row else None
@@ -976,7 +1001,7 @@ def quality_summary(conn: sqlite3.Connection, module: str = "organic") -> dict:
            WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')""",
         (module,),
     ).fetchall()
-    media_cards = [row_to_card(row) for row in media_rows]
+    media_cards = [lightweight_card_from_row(row) for row in media_rows]
     return {
         "unchecked": unchecked or 0,
         "active": by_status["active"],
@@ -1106,24 +1131,17 @@ def deck_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic") 
         (now_iso, module),
     ).fetchone()
     today = now_iso[:10]
-    reviews_today = conn.execute(
-        """SELECT COUNT(*) c FROM reviews rv
-           JOIN cards c ON c.id=rv.card_id
-           WHERE c.module=? AND substr(rv.reviewed_at,1,10)=?""",
-        (module, today),
-    ).fetchone()["c"]
-    total_reviews = conn.execute(
-        """SELECT COUNT(*) c FROM reviews rv
+    review_row = conn.execute(
+        """SELECT COUNT(*) total_reviews,
+                  SUM(CASE WHEN rv.rating>=3 THEN 1 ELSE 0 END) ok,
+                  SUM(CASE WHEN substr(rv.reviewed_at,1,10)=? THEN 1 ELSE 0 END) reviews_today
+           FROM reviews rv
            JOIN cards c ON c.id=rv.card_id
            WHERE c.module=?""",
-        (module,),
-    ).fetchone()["c"]
-    ok = conn.execute(
-        """SELECT COUNT(*) c FROM reviews rv
-           JOIN cards c ON c.id=rv.card_id
-           WHERE c.module=? AND rv.rating>=3""",
-        (module,),
-    ).fetchone()["c"]
+        (today, module),
+    ).fetchone()
+    total_reviews = review_row["total_reviews"] or 0
+    ok = review_row["ok"] or 0
     return {
         "total": row["total"] or 0,
         "new": row["new"] or 0,
@@ -1131,7 +1149,7 @@ def deck_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic") 
         "learning": row["learning"] or 0,
         "review": row["review"] or 0,
         "seen": row["seen"] or 0,
-        "reviews_today": reviews_today or 0,
+        "reviews_today": review_row["reviews_today"] or 0,
         "total_reviews": total_reviews or 0,
         "hit_rate": round(ok / total_reviews * 100) if total_reviews else None,
     }
@@ -1149,20 +1167,31 @@ def chapter_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic
            GROUP BY kap, subname ORDER BY kap""",
         (now_iso, module),
     ).fetchall()
+    review_rows = conn.execute(
+        """SELECT c.kap,
+                  COUNT(*) reviews,
+                  SUM(CASE WHEN rv.rating>=3 THEN 1 ELSE 0 END) correct,
+                  SUM(CASE WHEN rv.rating=1 THEN 1 ELSE 0 END) again
+           FROM reviews rv
+           JOIN cards c ON c.id=rv.card_id
+           WHERE c.module=? AND c.status='active'
+           GROUP BY c.kap""",
+        (module,),
+    ).fetchall()
+    review_by_kap = {
+        r["kap"]: {
+            "reviews": r["reviews"] or 0,
+            "correct": r["correct"] or 0,
+            "again": r["again"] or 0,
+        }
+        for r in review_rows
+    }
     out = []
     for r in rows:
-        review_row = conn.execute(
-            """SELECT COUNT(*) reviews,
-                      SUM(CASE WHEN rating>=3 THEN 1 ELSE 0 END) correct,
-                      SUM(CASE WHEN rating=1 THEN 1 ELSE 0 END) again
-               FROM reviews rv
-               JOIN cards c ON c.id=rv.card_id
-               WHERE c.module=? AND c.kap=? AND c.status='active'""",
-            (module, r["kap"]),
-        ).fetchone()
-        reviews = review_row["reviews"] or 0
-        correct = review_row["correct"] or 0
-        again = review_row["again"] or 0
+        review_row = review_by_kap.get(r["kap"], {})
+        reviews = review_row.get("reviews", 0) or 0
+        correct = review_row.get("correct", 0) or 0
+        again = review_row.get("again", 0) or 0
         hit_rate = round(correct / reviews * 100) if reviews else None
         progress = round(((r["seen"] or 0) / (r["total"] or 1)) * 100)
         due = r["due"] or 0
@@ -1185,8 +1214,9 @@ def chapter_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic
     return out
 
 
-def weakness_heatmap(conn: sqlite3.Connection, now_iso: str, module: str = "organic") -> list[dict]:
-    rows = chapter_stats(conn, now_iso, module)
+def weakness_heatmap(conn: sqlite3.Connection, now_iso: str, module: str = "organic",
+                     chapters: list[dict] | None = None) -> list[dict]:
+    rows = chapters if chapters is not None else chapter_stats(conn, now_iso, module)
     return sorted(rows, key=lambda r: (-r["weak_score"], r["kap"]))
 
 
@@ -1249,8 +1279,8 @@ def tag_stats(conn: sqlite3.Connection, module: str = "organic") -> list[dict]:
     ).fetchall()
     counts: dict[str, dict] = {}
     for row in rows:
-        card = row_to_card(row)
-        for tag in card.get("tags", []):
+        card = lightweight_card_from_row(row)
+        for tag in infer_tags(card):
             item = counts.setdefault(tag, {"tag": tag, "total": 0, "due": 0, "again": 0})
             item["total"] += 1
             if card.get("due") is not None:

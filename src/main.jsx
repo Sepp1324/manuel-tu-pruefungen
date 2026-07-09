@@ -670,8 +670,11 @@ function Study({ session, setSession, finish }) {
     setEditMsg("");
     setSavingEdit(false);
     setDraft({ q: card?.q || "", a: card?.a || "", review_note: card?.review_note || "" });
-    if (card?.id) api(`/api/preview/${encodeURIComponent(card.id)}`).then(setPreview).catch(() => {});
   }, [card?.id]);
+
+  useEffect(() => {
+    if (revealed && card?.id) api(`/api/preview/${encodeURIComponent(card.id)}`).then(setPreview).catch(() => {});
+  }, [revealed, card?.id]);
 
   async function rate(rating) {
     const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
@@ -1682,13 +1685,23 @@ function ExamPage({ startExam, startSession, module }) {
   const [history, setHistory] = useState(null);
 
   async function loadExamMeta() {
-    api(`/api/exam/prognosis?module=${encodeURIComponent(module)}`).then(setPrognosis).catch(() => {});
-    api(`/api/exam/archive?module=${encodeURIComponent(module)}`).then(setArchive).catch(() => {});
-    api(`/api/exam/mastery?module=${encodeURIComponent(module)}`).then(setMastery).catch(() => {});
-    api(`/api/exam/formula-checklist?module=${encodeURIComponent(module)}`).then(setChecklist).catch(() => {});
-    api(`/api/exam/final-plan?module=${encodeURIComponent(module)}`).then(setFinalPlan).catch(() => {});
-    api(`/api/exam/weekly-plan?module=${encodeURIComponent(module)}`).then(setWeeklyPlan).catch(() => {});
-    api(`/api/exam/history?module=${encodeURIComponent(module)}`).then(setHistory).catch(() => {});
+    const base = `module=${encodeURIComponent(module)}`;
+    const [nextPrognosis, nextArchive, nextMastery, nextChecklist, nextFinalPlan, nextWeeklyPlan, nextHistory] = await Promise.all([
+      api(`/api/exam/prognosis?${base}`).catch(() => null),
+      api(`/api/exam/archive?${base}`).catch(() => null),
+      api(`/api/exam/mastery?${base}`).catch(() => null),
+      api(`/api/exam/formula-checklist?${base}`).catch(() => null),
+      api(`/api/exam/final-plan?${base}`).catch(() => null),
+      api(`/api/exam/weekly-plan?${base}`).catch(() => null),
+      api(`/api/exam/history?${base}`).catch(() => null),
+    ]);
+    setPrognosis(nextPrognosis);
+    setArchive(nextArchive);
+    setMastery(nextMastery);
+    setChecklist(nextChecklist);
+    setFinalPlan(nextFinalPlan);
+    setWeeklyPlan(nextWeeklyPlan);
+    setHistory(nextHistory);
   }
 
   useEffect(() => {
