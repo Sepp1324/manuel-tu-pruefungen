@@ -5,10 +5,12 @@ import json
 import re
 import uuid
 from datetime import date, datetime, timedelta, timezone
+from functools import lru_cache
 from html import escape
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -19,6 +21,7 @@ from fsrs import Scheduler
 
 
 app = FastAPI(title="Organische Chemie SR-Trainer")
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 sched = Scheduler()
 
 EXAM_DATE = date.fromisoformat(os.environ.get("EXAM_DATE", "2026-09-21"))
@@ -28,8 +31,10 @@ if not SPA_DIR.exists() and (Path(__file__).parent.parent / "dist").exists():
     SPA_DIR = Path(__file__).parent.parent / "dist"
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "/data/uploads"))
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(8 * 1024 * 1024)))
+AUTO_QUALITY_TTL_SECONDS = int(os.environ.get("AUTO_QUALITY_TTL_SECONDS", "300"))
 PHOTO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|webp|gif)$", re.I)
 PHOTO_URL_RE = re.compile(r"/uploads/cards/([^\"'\s<>]+)", re.I)
+_AUTO_QUALITY_CACHE: dict[str, tuple[datetime, int]] = {}
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "manuel").strip()
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
@@ -99,6 +104,7 @@ ALLOWED_IMAGE_TYPES = {
 }
 
 
+@lru_cache(maxsize=1)
 def _module_catalog() -> dict:
     fallback = {
         "organic": {
@@ -136,6 +142,18 @@ def _valid_module(module: str) -> str:
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _auto_quality_sweep_cached(conn, module: str, now_iso: str) -> int:
+    if AUTO_QUALITY_TTL_SECONDS <= 0:
+        return db.auto_quality_sweep(conn, module, now_iso)
+    now = datetime.now(timezone.utc)
+    cached = _AUTO_QUALITY_CACHE.get(module)
+    if cached and (now - cached[0]).total_seconds() < AUTO_QUALITY_TTL_SECONDS:
+        return 0
+    moved = db.auto_quality_sweep(conn, module, now_iso)
+    _AUTO_QUALITY_CACHE[module] = (now, moved)
+    return moved
 
 
 def _days_left() -> int:
@@ -194,6 +212,17 @@ async def auth_middleware(request: Request, call_next):
 
     request.state.user = user
     return await call_next(request)
+
+
+@app.middleware("http")
+async def cache_static_middleware(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if response.status_code == 200 and path.startswith("/assets/"):
+        response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+    elif response.status_code == 200 and path.startswith("/uploads/"):
+        response.headers.setdefault("Cache-Control", "private, max-age=3600")
+    return response
 
 
 class LoginIn(BaseModel):
@@ -745,11 +774,11 @@ def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quali
     new = stats.get("new") or 0
     focus = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c.get("kap") or 99))[:3]
     formula = _formula_checklist(conn, module)
-    workshop = _workshop_data(conn, module, 3)
+    workshop_open = min((quality.get("needs_review") or 0) + (quality.get("photo_recommended") or 0), 40)
     tasks = [
         {"key": "due", "label": "Faellige Karten", "amount": min(max(due, 20), 80) if due else 20, "route": "home", "detail": "Erst faellige Karten abarbeiten."},
         {"key": "weak", "label": "Schwaechen-VO", "amount": len(focus), "route": "dashboard", "detail": "Die staerksten Luecken gezielt wiederholen."},
-        {"key": "workshop", "label": "Karten-Werkstatt", "amount": len(workshop.get("queue", [])), "route": "workshop", "detail": "Holprige Karten glaetten oder deaktivieren."},
+        {"key": "workshop", "label": "Karten-Werkstatt", "amount": workshop_open, "route": "workshop", "detail": "Holprige Karten glaetten oder deaktivieren."},
         {"key": "formula", "label": "Skizzen/Formeln", "amount": len(formula.get("draw", [])), "route": "exam", "detail": "Struktur- und Formelbilder aktiv abrufen."},
         {"key": "mini_exam", "label": "Mini-Pruefung", "amount": 1, "route": "exam", "detail": "Eine kurze offene Simulation mit Punkteschema."},
     ]
@@ -764,7 +793,7 @@ def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quali
         "quality": {
             "needs_review": quality.get("needs_review", 0),
             "photo_recommended": quality.get("photo_recommended", 0),
-            "workshop_open": len(workshop.get("queue", [])),
+            "workshop_open": workshop_open,
         },
         "message": "Heute: faellige Karten, eine echte Schwachstelle, dann Werkstatt oder Mini-Pruefung.",
     }
@@ -1219,9 +1248,9 @@ def stats(module: str = "organic"):
     now = _now_iso()
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
-    weaknesses = db.weakness_heatmap(conn, now, module)
+    weaknesses = db.weakness_heatmap(conn, now, module, chapters)
     tags = db.tag_stats(conn, module)
-    auto_quality = db.auto_quality_sweep(conn, module, now)
+    auto_quality = _auto_quality_sweep_cached(conn, module, now)
     quality = db.quality_summary(conn, module)
     today = _today_work_plan(conn, module, st, chapters, quality)
     xp = db.xp_summary(conn)
@@ -1257,7 +1286,7 @@ def dashboard(module: str = "organic"):
     now = _now_iso()
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
-    auto_quality = db.auto_quality_sweep(conn, module, now)
+    auto_quality = _auto_quality_sweep_cached(conn, module, now)
     out = {
         "module": module,
         "stats": st,
@@ -1265,7 +1294,7 @@ def dashboard(module: str = "organic"):
         "timeline": db.reviews_timeline(conn, 21, module),
         "forecast": _forecast(st, chapters),
         "study_plan": _study_plan(st, chapters),
-        "weaknesses": db.weakness_heatmap(conn, now, module),
+        "weaknesses": db.weakness_heatmap(conn, now, module, chapters),
         "tags": db.tag_stats(conn, module),
         "quality": db.quality_summary(conn, module),
         "auto_quality": {"moved": auto_quality},

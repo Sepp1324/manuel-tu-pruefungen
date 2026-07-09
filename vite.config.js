@@ -2,6 +2,16 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom"],
+          icons: ["lucide-react"]
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     proxy: {
