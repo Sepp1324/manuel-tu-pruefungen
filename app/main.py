@@ -270,6 +270,7 @@ WORKSHOP_CATEGORIES = [
     ("missing_context", "Kein Kontext", "Quelle, VO oder fachlicher Rahmen fehlt"),
     ("photo", "Foto empfohlen", "Struktur, Formel, Schema oder Mechanismus braucht ein Bild"),
     ("sketch", "Skizze erforderlich", "Formel- oder Strukturkarte aktiv skizzieren"),
+    ("formula", "Formeln kaputt", "Chemische Formeln mit verlorenen Indizes reparieren"),
     ("extracted", "Extraktion holprig", "OCR-/HTML-/Folienreste in der Karte"),
     ("person_company", "Person/Firma", "Personen-, Firmen- oder Quellenrauschen"),
     ("lecture_info", "Vorlesungsinfo", "Organisatorische Vorlesungsinfos statt Fachstoff"),
@@ -540,8 +541,25 @@ def _workshop_card(card: dict, issues: list[str] | None = None) -> dict:
         "has_photo": card.get("has_photo"),
         "photo_recommended": card.get("photo_recommended"),
         "sketch_required": card.get("sketch_required"),
+        "formula_repair_available": card.get("formula_repair_available"),
         "issues": issues or [],
     }
+
+
+def _formula_repair_available(q: str, a: str) -> bool:
+    return db.normalize_chemical_formulas(q) != q or db.normalize_chemical_formulas(a) != a
+
+
+def _row_to_workshop_card(row) -> dict:
+    card = db.row_to_card(row)
+    try:
+        payload = json.loads(row["payload"] or "{}")
+    except json.JSONDecodeError:
+        payload = {}
+    raw_q = str(payload.get("q", ""))
+    raw_a = str(payload.get("a", ""))
+    card["formula_repair_available"] = _formula_repair_available(raw_q, raw_a)
+    return card
 
 
 def _card_signature(card: dict) -> str:
@@ -567,6 +585,8 @@ def _card_issues(card: dict) -> list[str]:
         issues.append("photo")
     if card.get("sketch_required") or db.sketch_required(card):
         issues.append("sketch")
+    if card.get("formula_repair_available"):
+        issues.append("formula")
     if any(x in f"{q} {a}" for x in ["_____", "[Seite", "(cid:", "", "", "", "", "&amp;"]):
         issues.append("extracted")
     if re.search(r"\b(?:AG|GmbH|Inc|Ltd|LLC|International)\b", text) or re.search(
@@ -590,7 +610,7 @@ def _workshop_data(conn, module: str, limit: int = 8) -> dict:
            LIMIT 1200""",
         (module,),
     ).fetchall()
-    cards = [db.row_to_card(r) for r in rows]
+    cards = [_row_to_workshop_card(r) for r in rows]
     category_defs = {key: {"key": key, "label": label, "description": desc, "count": 0, "cards": []} for key, label, desc in WORKSHOP_CATEGORIES}
     card_issues: dict[str, list[str]] = {}
     for card in cards:
@@ -683,6 +703,40 @@ def _improved_card_payload(card: dict) -> dict:
     payload["status"] = "active"
     payload["review_note"] = ""
     payload["kind"] = payload.get("kind") or "exam_concept"
+    return payload
+
+
+def _formula_repaired_payload(card: dict) -> dict:
+    payload = dict(card)
+    payload["q"] = db.normalize_chemical_formulas(str(card.get("q", "")))
+    payload["a"] = db.normalize_chemical_formulas(str(card.get("a", "")))
+    return payload
+
+
+def _summarized_card_payload(card: dict) -> dict:
+    title = _question_title(card)
+    context = _card_context(card)
+    points = []
+    for point in _answer_points(card.get("a", "")):
+        cleaned = re.sub(r"(?i)\b(?:quelle|source):?.*$", "", point).strip(" -;:")
+        if len(cleaned) >= 18 and cleaned not in points:
+            points.append(cleaned)
+    if len(points) < 3:
+        points = _scaffold_for(card, points)
+    points = points[:4]
+    lis = "".join(f"<li>{escape(point)}</li>" for point in points)
+    payload = dict(card)
+    payload["q"] = (
+        f"Kontext: {context}\n\n"
+        f"Erlaeutern Sie {title}. Antworten Sie kompakt, aber pruefungsnah."
+    )
+    payload["a"] = (
+        f"<b>Kurzantwort zu {escape(title)}:</b><ul>{lis}</ul>"
+        "<b>Merke:</b> Definition/Prinzip, Ablauf oder Struktur, Bedingungen und Beispiel/Zweck abdecken."
+        f"<br><br><span class='source'>Quelle: {escape(str(card.get('source') or 'Manuell'))}</span>"
+    )
+    payload["status"] = "active"
+    payload["review_note"] = "Automatisch gekuerzt: bitte kurz gegen das Skript pruefen"
     return payload
 
 
@@ -1609,6 +1663,83 @@ def improve_card(card_id: str):
     return {"ok": True, "card": updated}
 
 
+@app.post("/api/cards/{card_id:path}/summarize")
+def summarize_card(card_id: str):
+    conn = db.get_conn()
+    card = db.get_card(conn, card_id)
+    if not card:
+        conn.close()
+        raise HTTPException(404, "Karte nicht gefunden")
+    summarized = _summarized_card_payload(card)
+    updated = db.update_card(
+        conn,
+        card_id,
+        summarized["q"],
+        summarized["a"],
+        summarized.get("status", "active"),
+        summarized.get("review_note", ""),
+        _now_iso(),
+    )
+    db.add_quality_event(conn, card_id, card.get("module", "organic"), "workshop", "summarized", "Karte automatisch gekuerzt", _now_iso())
+    conn.close()
+    return {"ok": True, "card": updated}
+
+
+@app.post("/api/cards/{card_id:path}/repair-formulas")
+def repair_card_formulas(card_id: str):
+    conn = db.get_conn()
+    card = db.get_card(conn, card_id)
+    if not card:
+        conn.close()
+        raise HTTPException(404, "Karte nicht gefunden")
+    repaired = _formula_repaired_payload(card)
+    updated = db.update_card(
+        conn,
+        card_id,
+        repaired["q"],
+        repaired["a"],
+        repaired.get("status", card.get("status", "active")),
+        repaired.get("review_note", card.get("review_note", "")),
+        _now_iso(),
+    )
+    db.add_quality_event(conn, card_id, card.get("module", "organic"), "workshop", "formula_repaired", "Chemische Formelindizes repariert", _now_iso())
+    conn.close()
+    return {"ok": True, "card": updated}
+
+
+@app.post("/api/workshop/repair-formulas")
+def repair_formula_batch(module: str = "organic", limit: int = 120):
+    module = _valid_module(module)
+    limit = max(1, min(limit, 500))
+    conn = db.get_conn()
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+           ORDER BY updated_at DESC, kap ASC, ord ASC
+           LIMIT 1500""",
+        (module,),
+    ).fetchall()
+    fixed = 0
+    now = _now_iso()
+    for row in rows:
+        if fixed >= limit:
+            break
+        try:
+            payload = json.loads(row["payload"] or "{}")
+        except json.JSONDecodeError:
+            continue
+        raw_q = str(payload.get("q", ""))
+        raw_a = str(payload.get("a", ""))
+        if not _formula_repair_available(raw_q, raw_a):
+            continue
+        card = db.row_to_card(row)
+        db.update_card(conn, card["id"], card.get("q", ""), card.get("a", ""), card.get("status", "active"), card.get("review_note", ""), now)
+        db.add_quality_event(conn, card["id"], module, "workshop", "formula_repaired", "Chemische Formelindizes im Batch repariert", now)
+        fixed += 1
+    conn.close()
+    return {"ok": True, "fixed": fixed}
+
+
 @app.post("/api/cards/{card_id:path}/triage")
 def triage_card(card_id: str, inp: CardTriageIn):
     conn = db.get_conn()
@@ -1659,7 +1790,7 @@ def review(inp: ReviewIn):
     if inp.feedback_reason:
         note = f"Lernfeedback: {inp.feedback_reason}"
         db.add_quality_event(conn, inp.card_id, card.get("module", "organic"), "review_feedback", inp.feedback_reason, note, updated["last_review"])
-        if inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
+        if inp.rating == 1 or inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
             db.mark_card_needs_review(conn, inp.card_id, note, updated["last_review"])
     if inp.rating == 1:
         db.auto_quality_sweep(conn, card.get("module", "organic"), updated["last_review"])
