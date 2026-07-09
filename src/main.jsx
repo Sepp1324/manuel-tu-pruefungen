@@ -240,6 +240,111 @@ function PhotoButton({ onInsert, label = "Foto" }) {
   );
 }
 
+function VisualHtmlField({ label, value = "", onValue, photoLabel = "Foto", minHeight = 120 }) {
+  const ref = useRef(null);
+  const [pasteMsg, setPasteMsg] = useState("");
+
+  useEffect(() => {
+    if (!ref.current || document.activeElement === ref.current) return;
+    if ((ref.current.innerHTML || "") !== (value || "")) {
+      ref.current.innerHTML = value || "";
+    }
+  }, [value]);
+
+  function sync() {
+    onValue?.(ref.current?.innerHTML || "");
+  }
+
+  function command(cmd, arg = null) {
+    ref.current?.focus();
+    document.execCommand(cmd, false, arg);
+    sync();
+  }
+
+  function insertHtml(html) {
+    ref.current?.focus();
+    document.execCommand("insertHTML", false, html);
+    sync();
+  }
+
+  async function paste(e) {
+    const files = Array.from(e.clipboardData?.items || [])
+      .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (!files.length) return;
+    e.preventDefault();
+    setPasteMsg("Fuege Foto ein...");
+    try {
+      for (const file of files) {
+        const uploaded = await uploadPhoto(file);
+        insertHtml(uploaded.html);
+      }
+      setPasteMsg(files.length === 1 ? "Foto eingefuegt" : `${files.length} Fotos eingefuegt`);
+    } catch (err) {
+      setPasteMsg(err.message || "Einfuegen fehlgeschlagen");
+    }
+  }
+
+  return (
+    <div className="visual-field">
+      <div className="visual-field-head">
+        <b>{label}</b>
+        <span>direkt in der Vorschau bearbeiten</span>
+      </div>
+      <div className="visual-toolbar">
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); command("bold"); }}><b>B</b></button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); command("insertUnorderedList"); }}>Liste</button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); command("formatBlock", "p"); }}>Absatz</button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); command("removeFormat"); }}>Format weg</button>
+        {FORMULA_TOOLBAR_ITEMS.map(([labelText, html]) => (
+          <button key={labelText} type="button" onMouseDown={(e) => { e.preventDefault(); insertHtml(html); }}>
+            <span dangerouslySetInnerHTML={{ __html: html.trim() || labelText }} />
+          </button>
+        ))}
+        <PhotoButton label={photoLabel} onInsert={insertHtml} />
+      </div>
+      <div
+        ref={ref}
+        className="visual-html-editor"
+        contentEditable
+        suppressContentEditableWarning
+        style={{ minHeight }}
+        data-placeholder="Hier direkt in die gerenderte Karte schreiben..."
+        onInput={sync}
+        onBlur={sync}
+        onPaste={paste}
+      />
+      {pasteMsg && <small className="paste-status">{pasteMsg}</small>}
+      <details className="raw-html-details">
+        <summary>HTML bearbeiten</summary>
+        <PhotoTextarea value={value || ""} onValue={onValue} rows={5} />
+      </details>
+    </div>
+  );
+}
+
+function EditableCardPreview({ question = "", answer = "", onQuestion, onAnswer }) {
+  return (
+    <div className="editable-card-preview">
+      <VisualHtmlField
+        label="Frage"
+        value={question}
+        onValue={onQuestion}
+        photoLabel="Foto in Frage"
+        minHeight={110}
+      />
+      <VisualHtmlField
+        label="Antwort"
+        value={answer}
+        onValue={onAnswer}
+        photoLabel="Foto in Antwort"
+        minHeight={180}
+      />
+    </div>
+  );
+}
+
 function CardRenderPreview({ question = "", answer = "" }) {
   if (!question.trim() && !answer.trim()) return null;
   return (
@@ -923,20 +1028,15 @@ function Study({ session, setSession, finish }) {
             <span>{card.subname}</span>
             <span>Quelle: {card.source}</span>
           </div>
-          <label>Frage
-            <PhotoTextarea value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} rows={5} />
-          </label>
-          <FormulaToolbar value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} />
-          <PhotoButton label="Foto in Frage" onInsert={(html) => setDraft((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
-          <label>Antwort
-            <PhotoTextarea value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} rows={9} />
-          </label>
-          <FormulaToolbar value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} />
-          <PhotoButton label="Foto in Antwort" onInsert={(html) => setDraft((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
+          <EditableCardPreview
+            question={draft.q || ""}
+            answer={draft.a || ""}
+            onQuestion={(next) => setDraft({ ...draft, q: next })}
+            onAnswer={(next) => setDraft({ ...draft, a: next })}
+          />
           <label>Notiz
             <input value={draft.review_note || ""} onChange={(e) => setDraft({ ...draft, review_note: e.target.value })} />
           </label>
-          <CardRenderPreview question={draft.q || ""} answer={draft.a || ""} />
           <div className="button-row-inline">
             <button className="primary" disabled={savingEdit} onClick={() => saveEdit("active")}><Check size={16} /> Speichern</button>
             <button disabled={savingEdit} onClick={summarizeEdit}>Zusammenfassen</button>
@@ -1927,17 +2027,12 @@ function ManualCardPage({ onDone, module }) {
         <label>Quelle
           <input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
         </label>
-        <label>Frage
-          <PhotoTextarea value={form.q} onValue={(next) => setForm({ ...form, q: next })} rows={4} />
-        </label>
-        <FormulaToolbar value={form.q} onValue={(next) => setForm({ ...form, q: next })} />
-        <PhotoButton label="Foto in Frage" onInsert={(html) => setForm((old) => ({ ...old, q: appendHtml(old.q, html) }))} />
-        <label>Antwort
-          <PhotoTextarea value={form.a} onValue={(next) => setForm({ ...form, a: next })} rows={6} />
-        </label>
-        <FormulaToolbar value={form.a} onValue={(next) => setForm({ ...form, a: next })} />
-        <PhotoButton label="Foto in Antwort" onInsert={(html) => setForm((old) => ({ ...old, a: appendHtml(old.a, html) }))} />
-        <CardRenderPreview question={form.q} answer={form.a} />
+        <EditableCardPreview
+          question={form.q}
+          answer={form.a}
+          onQuestion={(next) => setForm({ ...form, q: next })}
+          onAnswer={(next) => setForm({ ...form, a: next })}
+        />
         <button className="primary"><Plus size={16} /> Speichern</button>
       </form>
       {msg && <div className="form-msg">{msg}</div>}
@@ -2192,20 +2287,15 @@ function CardReviewPage({ onDone, module }) {
       <div className="panel quality-editor">
         {selected ? (
           <>
-            <label>Frage
-              <PhotoTextarea value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} rows={5} />
-            </label>
-            <FormulaToolbar value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} />
-            <PhotoButton label="Foto in Frage" onInsert={(html) => setSelected((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
-            <label>Antwort
-              <PhotoTextarea value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} rows={9} />
-            </label>
-            <FormulaToolbar value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} />
-            <PhotoButton label="Foto in Antwort" onInsert={(html) => setSelected((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
+            <EditableCardPreview
+              question={selected.q || ""}
+              answer={selected.a || ""}
+              onQuestion={(next) => setSelected({ ...selected, q: next })}
+              onAnswer={(next) => setSelected({ ...selected, a: next })}
+            />
             <label>Notiz
               <input value={selected.review_note || ""} onChange={(e) => setSelected({ ...selected, review_note: e.target.value })} />
             </label>
-            <CardRenderPreview question={selected.q || ""} answer={selected.a || ""} />
             <div className="button-row-inline">
               <button className="primary" onClick={() => save("active")}><Edit3 size={16} /> Aktiv speichern</button>
               <button onClick={() => save("needs_review")}>Review markieren</button>
@@ -2410,20 +2500,15 @@ function WorkshopPage({ module, onDone }) {
                 <span key={issue}>{issueLabel(issue)}</span>
               ))}
             </div>
-            <label>Frage
-              <PhotoTextarea value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} rows={5} />
-            </label>
-            <FormulaToolbar value={selected.q || ""} onValue={(next) => setSelected({ ...selected, q: next })} />
-            <PhotoButton label="Foto in Frage" onInsert={(html) => setSelected((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
-            <label>Antwort
-              <PhotoTextarea value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} rows={10} />
-            </label>
-            <FormulaToolbar value={selected.a || ""} onValue={(next) => setSelected({ ...selected, a: next })} />
-            <PhotoButton label="Foto in Antwort" onInsert={(html) => setSelected((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
+            <EditableCardPreview
+              question={selected.q || ""}
+              answer={selected.a || ""}
+              onQuestion={(next) => setSelected({ ...selected, q: next })}
+              onAnswer={(next) => setSelected({ ...selected, a: next })}
+            />
             <label>Notiz
               <input value={selected.review_note || ""} onChange={(e) => setSelected({ ...selected, review_note: e.target.value })} />
             </label>
-            <CardRenderPreview question={selected.q || ""} answer={selected.a || ""} />
             <div className="button-row-inline">
               <button className="primary" disabled={busy} onClick={improve}><Edit3 size={16} /> Auto verbessern</button>
               <button disabled={busy} onClick={summarize}>Zusammenfassen</button>
@@ -2523,17 +2608,12 @@ function TriagePage({ module, onDone }) {
               <span>Score {draft.quality_score || 0}</span>
               {(draft.tags || []).map((t) => <span key={t}>{t}</span>)}
             </div>
-            <label>Frage
-              <PhotoTextarea value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} rows={5} />
-            </label>
-            <FormulaToolbar value={draft.q || ""} onValue={(next) => setDraft({ ...draft, q: next })} />
-            <PhotoButton label="Foto in Frage" onInsert={(html) => setDraft((old) => ({ ...old, q: appendHtml(old.q || "", html) }))} />
-            <label>Antwort
-              <PhotoTextarea value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} rows={9} />
-            </label>
-            <FormulaToolbar value={draft.a || ""} onValue={(next) => setDraft({ ...draft, a: next })} />
-            <PhotoButton label="Foto in Antwort" onInsert={(html) => setDraft((old) => ({ ...old, a: appendHtml(old.a || "", html) }))} />
-            <CardRenderPreview question={draft.q || ""} answer={draft.a || ""} />
+            <EditableCardPreview
+              question={draft.q || ""}
+              answer={draft.a || ""}
+              onQuestion={(next) => setDraft({ ...draft, q: next })}
+              onAnswer={(next) => setDraft({ ...draft, a: next })}
+            />
             <div className="reason-options">
               {TRIAGE_REASONS.map(([key, label]) => (
                 <button
