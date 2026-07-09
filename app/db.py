@@ -1444,6 +1444,64 @@ def add_manual_card(conn: sqlite3.Connection, kap: int, question: str, answer: s
     return get_card(conn, card_id)
 
 
+def add_imported_cards(conn: sqlite3.Connection, cards: list[dict],
+                       created_at: str, module: str = "organic") -> list[str]:
+    if not cards:
+        return []
+    kap_values = sorted({int(card.get("kap") or 1) for card in cards})
+    chapters = {
+        row["kap"]: row["subname"]
+        for row in conn.execute(
+            f"""SELECT kap, subname FROM cards
+                WHERE module=? AND kap IN ({','.join('?' for _ in kap_values)}) AND subname IS NOT NULL
+                GROUP BY kap""",
+            (module, *kap_values),
+        ).fetchall()
+    }
+    max_rows = conn.execute(
+        f"""SELECT kap, COALESCE(MAX(ord),0) m FROM cards
+            WHERE module=? AND kap IN ({','.join('?' for _ in kap_values)})
+            GROUP BY kap""",
+        (module, *kap_values),
+    ).fetchall()
+    ord_by_kap = {row["kap"]: row["m"] or 0 for row in max_rows}
+    rows = []
+    ids = []
+    for card in cards:
+        kap = int(card.get("kap") or 1)
+        ord_by_kap[kap] = ord_by_kap.get(kap, 0) + 1
+        card_id = f"import:{module}:{secrets.token_hex(8)}"
+        source = str(card.get("source") or "Import").strip() or "Import"
+        subname = chapters.get(kap) or f"VO{kap}"
+        payload = {
+            "id": card_id,
+            "module": module,
+            "deck": "anki",
+            "kap": kap,
+            "sub": f"VO{kap}",
+            "subname": subname,
+            "source": source,
+            "kind": "import",
+            "q": str(card.get("q") or ""),
+            "a": str(card.get("a") or ""),
+            "order": ord_by_kap[kap],
+            "status": "active",
+        }
+        ids.append(card_id)
+        rows.append((
+            card_id, module, "anki", kap, payload["sub"], subname, source,
+            ord_by_kap[kap], "active", created_at, json.dumps(payload, ensure_ascii=False),
+        ))
+    conn.executemany(
+        """INSERT INTO cards(id, module, deck, kap, sub, subname, source, ord, status,
+                             updated_at, payload)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+        rows,
+    )
+    conn.commit()
+    return ids
+
+
 def reviews_timeline(conn: sqlite3.Connection, days: int = 21, module: str = "organic") -> list[dict]:
     start = (date.today() - timedelta(days=days - 1)).isoformat()
     rows = conn.execute(

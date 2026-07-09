@@ -1945,6 +1945,161 @@ function ManualCardPage({ onDone, module }) {
   );
 }
 
+const IMPORT_SAMPLE = `Frage,Antwort,VO,Quelle
+"Erlaeutern Sie das Kontaktverfahren.","SO2 wird katalytisch zu SO3 oxidiert; daraus entsteht H2SO4.",1,"Eigene Notizen"
+"Was ist der Zweck der Chloralkali-Elektrolyse?","Herstellung von Chlor, Natronlauge und Wasserstoff aus NaCl-Loesung.",2,"Eigene Notizen"`;
+
+function CardImportPage({ onDone, module }) {
+  const [format, setFormat] = useState("csv");
+  const [source, setSource] = useState("Import");
+  const [defaultKap, setDefaultKap] = useState(1);
+  const [dedupe, setDedupe] = useState(true);
+  const [text, setText] = useState(IMPORT_SAMPLE);
+  const [preview, setPreview] = useState(null);
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState("");
+
+  const payload = {
+    module,
+    format,
+    source,
+    default_kap: Number(defaultKap),
+    text,
+    dedupe,
+  };
+
+  async function readFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith(".json")) setFormat("json");
+    else if (lower.endsWith(".tsv")) setFormat("tsv");
+    else setFormat("csv");
+    setSource(file.name.replace(/\.[^.]+$/, "") || "Import");
+    setText(await file.text());
+    setPreview(null);
+    setMsg(`${file.name} geladen.`);
+    e.target.value = "";
+  }
+
+  async function previewImport(e) {
+    e?.preventDefault?.();
+    setBusy("preview");
+    setMsg("");
+    try {
+      const res = await api("/api/cards/import/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setPreview(res);
+      setSelectedIdx(0);
+      setMsg(`${res.valid || 0} neue Karte(n) erkannt${res.skipped_duplicates ? `, ${res.skipped_duplicates} Duplikat(e) uebersprungen` : ""}.`);
+    } catch (err) {
+      setMsg(err.message || "Vorschau fehlgeschlagen");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function importCards() {
+    setBusy("import");
+    setMsg("");
+    try {
+      const res = await api("/api/cards/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setMsg(`${res.imported || 0} Karte(n) importiert${res.skipped_duplicates ? `, ${res.skipped_duplicates} Duplikat(e) uebersprungen` : ""}.`);
+      setPreview(null);
+      onDone?.();
+    } catch (err) {
+      setMsg(err.message || "Import fehlgeschlagen");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  const cards = preview?.cards || [];
+  const selected = cards[Math.min(selectedIdx, Math.max(cards.length - 1, 0))];
+  return (
+    <section className="import-layout">
+      <div className="panel import-panel">
+        <div className="section-head">
+          <div>
+            <h2>Karten importieren</h2>
+            <p>CSV, TSV oder JSON in Anki-Style: Frage, Antwort, optional VO und Quelle.</p>
+          </div>
+          <ClipboardList size={22} />
+        </div>
+        <form className="card-form" onSubmit={previewImport}>
+          <label>Format
+            <select value={format} onChange={(e) => setFormat(e.target.value)}>
+              <option value="csv">CSV</option>
+              <option value="tsv">TSV</option>
+              <option value="json">JSON</option>
+            </select>
+          </label>
+          <label>Standard-VO
+            <select value={defaultKap} onChange={(e) => setDefaultKap(Number(e.target.value))}>
+              {Array.from({ length: 11 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>VO{n}</option>)}
+            </select>
+          </label>
+          <label>Quelle
+            <input value={source} onChange={(e) => setSource(e.target.value)} />
+          </label>
+          <label className="checkbox-label">
+            <input type="checkbox" checked={dedupe} onChange={(e) => setDedupe(e.target.checked)} />
+            Duplikate ueberspringen
+          </label>
+          <label className="file-input-label">Datei
+            <input type="file" accept=".csv,.tsv,.json,.txt,text/csv,application/json" onChange={readFile} />
+          </label>
+          <label className="import-textarea">Importdaten
+            <textarea value={text} onChange={(e) => { setText(e.target.value); setPreview(null); }} rows={14} />
+          </label>
+          <div className="button-row-inline">
+            <button className="primary" disabled={!!busy || !text.trim()}><Search size={16} /> Vorschau</button>
+            <button type="button" disabled={busy === "import" || !(preview?.valid)} onClick={importCards}>
+              <Plus size={16} /> Importieren
+            </button>
+          </div>
+        </form>
+        {msg && <div className="form-msg">{msg}</div>}
+      </div>
+
+      <div className="panel import-preview-panel">
+        <div className="section-head">
+          <div>
+            <h2>Import-Vorschau</h2>
+            <p>{preview ? `${preview.valid || 0} gueltig · ${(preview.errors || []).length} Hinweis(e)` : "Noch keine Vorschau berechnet."}</p>
+          </div>
+        </div>
+        {!!(preview?.errors || []).length && (
+          <div className="import-errors">
+            {(preview.errors || []).slice(0, 8).map((err) => <span key={err}>{err}</span>)}
+          </div>
+        )}
+        <div className="import-preview-grid">
+          <div className="import-card-list">
+            {cards.length ? cards.map((card, idx) => (
+              <button key={`${card.kap}-${idx}-${card.q}`} className={idx === selectedIdx ? "active" : ""} onClick={() => setSelectedIdx(idx)}>
+                <b>VO{card.kap} · {card.source}</b>
+                <span>{stripHtmlText(card.q).slice(0, 110)}</span>
+              </button>
+            )) : <p className="muted">Nach der Vorschau erscheinen hier die erkannten Karten.</p>}
+          </div>
+          <div>
+            {selected ? <CardRenderPreview question={selected.q || ""} answer={selected.a || ""} /> : <p className="muted">Keine Karte ausgewaehlt.</p>}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CardReviewPage({ onDone, module }) {
   const [status, setStatus] = useState("needs_review");
   const [kap, setKap] = useState("");
@@ -2770,6 +2925,7 @@ function App() {
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
     if (route === "photos") return <PhotoPoolPage onDone={load} startSession={startSession} />;
     if (route === "add") return <ManualCardPage onDone={load} module={module} />;
+    if (route === "import") return <CardImportPage onDone={load} module={module} />;
     return <Home data={data} startSession={startSession} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
   }, [data, session, route, module]);
 
@@ -2794,6 +2950,7 @@ function App() {
         <button className={route === "quality" ? "active" : ""} onClick={() => setRoute("quality")}><ClipboardList size={16} /> Kartenqualitaet</button>
         <button className={route === "photos" ? "active" : ""} onClick={() => setRoute("photos")}><ImagePlus size={16} /> Fotopool</button>
         <button className={route === "add" ? "active" : ""} onClick={() => setRoute("add")}><Plus size={16} /> Eigene Karte</button>
+        <button className={route === "import" ? "active" : ""} onClick={() => setRoute("import")}><ClipboardList size={16} /> Import</button>
       </nav>
       {content}
       <PhotoLightbox photo={lightbox} onClose={() => setLightbox(null)} />

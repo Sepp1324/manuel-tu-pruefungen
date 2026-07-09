@@ -1392,6 +1392,72 @@ textarea {
   margin-top: 12px;
 }
 .card-form button { justify-self: start; }
+.import-layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(340px, .9fr) minmax(420px, 1.1fr);
+}
+.import-panel, .import-preview-panel {
+  align-content: start;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.import-textarea {
+  grid-column: 1 / -1;
+}
+.checkbox-label {
+  align-items: center;
+  display: flex !important;
+  gap: 8px !important;
+}
+.checkbox-label input {
+  width: auto;
+}
+.file-input-label input {
+  background: var(--paper);
+}
+.import-preview-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, .85fr) minmax(260px, 1.15fr);
+}
+.import-card-list, .import-errors {
+  display: grid;
+  gap: 8px;
+}
+.import-card-list {
+  max-height: 520px;
+  overflow: auto;
+}
+.import-card-list button {
+  align-items: start;
+  display: grid;
+  gap: 4px;
+  justify-content: stretch;
+  text-align: left;
+}
+.import-card-list button.active {
+  border-color: var(--tu-blue);
+  box-shadow: inset 4px 0 0 var(--tu-blue);
+}
+.import-card-list b {
+  color: var(--tu-blue);
+  font-size: 12px;
+}
+.import-card-list span {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.import-errors span {
+  background: #fff6e5;
+  border: 1px solid #f0d59c;
+  border-radius: 6px;
+  color: #805d00;
+  font-size: 12px;
+  padding: 8px;
+}
 .photo-upload {
   align-items: center;
   display: flex;
@@ -2102,7 +2168,7 @@ textarea {
   .wrap { padding: 18px 12px 60px; }
   .hero, .day-card, .forecast { display: grid; grid-template-columns: 1fr; }
   .days { font-size: 50px; }
-  .stats, .ratings, .chart-grid, .chapter-grid, .heatmap, .form-grid, .quality-layout, .workshop-layout, .workshop-categories, .today-task-grid, .triage-layout, .quality-center-grid, .quality-metrics, .result-grid, .exam-actions-grid, .exam-score-panel, .mastery-grid, .checklist-grid, .archive-layout, .correction-raster, .attempt-grid, .week-grid, .rubric-checklist > div, .exam-meta-controls > div, .answer-compare, .point-schema article, .perf-grid, .audit-grid, .media-actions { grid-template-columns: 1fr; }
+  .stats, .ratings, .chart-grid, .chapter-grid, .heatmap, .form-grid, .quality-layout, .workshop-layout, .workshop-categories, .today-task-grid, .triage-layout, .quality-center-grid, .quality-metrics, .result-grid, .exam-actions-grid, .exam-score-panel, .mastery-grid, .checklist-grid, .archive-layout, .correction-raster, .attempt-grid, .week-grid, .rubric-checklist > div, .exam-meta-controls > div, .answer-compare, .point-schema article, .perf-grid, .audit-grid, .media-actions, .import-layout, .import-preview-grid { grid-template-columns: 1fr; }
   .exam-toolbar { grid-template-columns: 1fr; }
   .subquestion { grid-template-columns: 1fr; }
   .subquestion > span { text-align: left; }
