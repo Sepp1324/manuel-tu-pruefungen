@@ -1,3 +1,24 @@
+
+# Topologie: Caddy (öffentlich, terminiert TLS) -> Traefik (HTTP, web) -> App.
+#
+# Da Caddy TLS terminiert und per HTTP an Traefik weitergibt, DARF Traefik KEINEN
+# http->https-Redirect machen — sonst Endlosschleife ("Load cannot follow more
+# than 20 redirections"). TLS und der http->https-Redirect gehören zu Caddy.
+#
+# Deshalb: EINE Ingress, nur web-Entrypoint, KEIN TLS, KEIN Redirect.
+#
+# Caddyfile-Block auf dem Caddy-Host (kein manuelles 'redir' — Caddy leitet
+# http->https automatisch um):
+#
+#   chemie-manuel.stoegerer-home.at {
+#       reverse_proxy <TRAEFIK-LB-IP>:80
+#   }
+#
+# <TRAEFIK-LB-IP> = kubectl -n kube-system get svc traefik  (EXTERNAL-IP)
+#
+# Hinweis: In dieser Variante wird cert-manager/05-cluster-issuer.yaml NICHT
+# benötigt (Caddy stellt das Zertifikat). Ist cert-manager nicht installiert,
+# 05-cluster-issuer.yaml aus kustomization.yaml entfernen.
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -5,16 +26,11 @@ metadata:
   name: organicsr
   namespace: organicsr
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   ingressClassName: traefik
-  tls:
-    - hosts:
-        - manuel.stoegerer-home.cloud
-      secretName: organicsr-tls
   rules:
-    - host: manuel.stoegerer-home.cloud
+    - host: chemie-manuel.stoegerer-home.at   # <-- ANPASSEN
       http:
         paths:
           - path: /

@@ -1,8 +1,11 @@
-# SQLite-Datenbank auf Longhorn.
+# SQLite-Datenbank auf lokaler k3s-Node-Storage.
 #
-# SQLite bleibt bei replicas=1 + Recreate, damit nie zwei Pods gleichzeitig in
-# dieselbe DB schreiben. Longhorn gibt uns Replikation und Node-Failover fuer
-# das Volume, ersetzt aber kein Backup.
+# Kein NFS: k3s bringt ueblicherweise die StorageClass `local-path` mit. Die
+# Daten liegen damit auf der Node, auf der der Pod geplant wird. Fuer SQLite ist
+# das robuster als ein NFS-Mount und passt zu replicas=1 + Recreate.
+#
+# Wenn spaeter eine bestimmte Node erzwungen werden soll, im Deployment
+# nodeSelector/affinity setzen und die PVC beibehalten.
 
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -12,7 +15,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn
+  storageClassName: local-path
   resources:
     requests:
       storage: 2Gi
