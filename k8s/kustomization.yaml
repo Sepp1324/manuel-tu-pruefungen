@@ -12,5 +12,5 @@ resources:
 #   kubectl kustomize k8s/ | kubectl apply -f -
 # oder Tag hier pflegen:
 images:
-  - name: registry.stoegerer-home.at/organicsr
+  - name: ghcr.io/sepp1324/manuel-tu-pruefungen
     newTag: "1.0.0"

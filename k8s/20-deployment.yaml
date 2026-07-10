@@ -1,5 +1,5 @@
-# Image-Referenz: an deine Registry anpassen.
-# Beispiel: registry.stoegerer-home.at/organicsr:1.0.0
+# Image-Referenz: Der Workflow ueberschreibt den Tag auf den aktuellen Git-SHA.
+# Beispiel: ghcr.io/sepp1324/manuel-tu-pruefungen:1.0.0
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: organicsr
-          image: registry.stoegerer-home.at/organicsr:1.0.0   # <-- ANPASSEN
+          image: ghcr.io/sepp1324/manuel-tu-pruefungen:1.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
