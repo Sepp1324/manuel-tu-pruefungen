@@ -1463,6 +1463,114 @@ button:disabled { cursor: default; opacity: .48; }
   border: 1px solid #f0d59c;
   color: #805d00;
 }
+.answer-review-panel {
+  border: 1px solid #b8dff2;
+  border-left: 5px solid var(--tu-blue);
+  border-radius: 6px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+.answer-review-panel.stark { border-left-color: var(--cyan); }
+.answer-review-panel.lueckenhaft { border-left-color: #b4452f; }
+.answer-review-head {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+.answer-review-head h3 {
+  font-size: 16px;
+  margin: 0 0 3px;
+}
+.answer-review-head span {
+  background: #eef8ff;
+  border: 1px solid #c7e5f4;
+  border-radius: 6px;
+  color: var(--muted);
+  display: grid;
+  font-size: 11px;
+  min-width: 92px;
+  padding: 8px;
+  text-align: center;
+}
+.answer-review-head span b {
+  color: var(--tu-blue);
+  font-size: 23px;
+  line-height: 1;
+}
+.answer-review-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.answer-review-grid article {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+.answer-review-grid b {
+  color: var(--tu-blue);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.answer-review-grid p {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.answer-review-grid span {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  justify-self: start;
+  padding: 4px 8px;
+}
+.answer-review-grid span.full {
+  background: #e8f7f4;
+  color: #12615a;
+}
+.answer-review-grid span.partial {
+  background: #fff6e5;
+  color: #805d00;
+}
+.answer-review-grid span.miss {
+  background: #f7e8e4;
+  color: #8f2f1d;
+}
+.answer-review-grid em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+}
+.answer-review-footer {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+.answer-review-footer div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.answer-review-footer b {
+  color: var(--ink);
+  flex-basis: 100%;
+  font-size: 12px;
+}
+.answer-review-footer span {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--blue-dark);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 8px;
+}
 .subquestion-list {
   display: grid;
   gap: 10px;
@@ -2683,7 +2791,7 @@ textarea {
   .wrap { padding: 18px 12px 60px; }
   .hero, .day-card, .forecast { display: grid; grid-template-columns: 1fr; }
   .days { font-size: 50px; }
-  .stats, .ratings, .chart-grid, .chapter-grid, .heatmap, .form-grid, .quality-layout, .workshop-layout, .workshop-categories, .today-task-grid, .mission-grid, .readiness-main, .readiness-components, .triage-layout, .quality-center-grid, .quality-metrics, .result-grid, .exam-actions-grid, .exam-score-panel, .mastery-grid, .knowledge-layout, .quality-metrics.compact, .route-steps article, .knowledge-card-list button, .edge-list span, .checklist-grid, .archive-layout, .correction-raster, .attempt-grid, .week-grid, .rubric-checklist > div, .exam-meta-controls > div, .answer-compare, .point-schema article, .perf-grid, .audit-grid, .media-actions, .import-layout, .import-preview-grid { grid-template-columns: 1fr; }
+  .stats, .ratings, .chart-grid, .chapter-grid, .heatmap, .form-grid, .quality-layout, .workshop-layout, .workshop-categories, .today-task-grid, .mission-grid, .readiness-main, .readiness-components, .triage-layout, .quality-center-grid, .quality-metrics, .result-grid, .exam-actions-grid, .exam-score-panel, .mastery-grid, .knowledge-layout, .quality-metrics.compact, .route-steps article, .knowledge-card-list button, .edge-list span, .checklist-grid, .archive-layout, .correction-raster, .attempt-grid, .week-grid, .rubric-checklist > div, .exam-meta-controls > div, .answer-compare, .answer-review-grid, .answer-review-footer, .point-schema article, .perf-grid, .audit-grid, .media-actions, .import-layout, .import-preview-grid { grid-template-columns: 1fr; }
   .exam-toolbar { grid-template-columns: 1fr; }
   .subquestion { grid-template-columns: 1fr; }
   .subquestion > span { text-align: left; }

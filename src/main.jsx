@@ -461,6 +461,95 @@ function answerComparison(answer = "", question = {}) {
   };
 }
 
+function normalizedAnswerText(value = "") {
+  return stripHtmlText(value).toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
+}
+
+function rubricTerms(item = {}, question = {}) {
+  const category = `${item.category || ""} ${item.prompt || ""}`.toLowerCase();
+  const source = [
+    item.category || "",
+    item.prompt || "",
+    ...(question.scaffold || []).filter((s) => {
+      const text = String(s || "").toLowerCase();
+      if (category.includes("definition") && /defin|prinzip|ist|begriff/.test(text)) return true;
+      if (category.includes("beding") && /temperatur|druck|katalys|beding|parameter/.test(text)) return true;
+      if (category.includes("formel") && /formel|gleichung|reaktion|struktur/.test(text)) return true;
+      if (category.includes("beispiel") && /beispiel|zweck|anwendung|produkt/.test(text)) return true;
+      return false;
+    }),
+    question.answer || "",
+  ].join(" ");
+  return importantTerms(source, 10);
+}
+
+function answerRubricReview(answer = "", question = {}) {
+  const answerText = normalizedAnswerText(answer);
+  const words = answerText.match(/[a-z0-9]{4,}/g) || [];
+  const rubric = question.rubric?.length ? question.rubric : question.subquestions || [];
+  const comparison = answerComparison(answer, question);
+  const categories = [];
+  const suggestedScores = {};
+  const subScores = {};
+  let earned = 0;
+  let total = 0;
+  rubric.forEach((item) => {
+    const terms = rubricTerms(item, question);
+    const hits = terms.filter((term) => answerText.includes(term));
+    const missing = terms.filter((term) => !answerText.includes(term));
+    const coverage = terms.length ? hits.length / terms.length : comparison.score / 100;
+    const score = coverage >= .58 ? "full" : coverage >= .25 || (words.length >= 18 && hits.length >= 1) ? "partial" : "miss";
+    const points = Number(item.points || 0);
+    total += points;
+    earned += points * (score === "full" ? 1 : score === "partial" ? .5 : 0);
+    suggestedScores[item.id] = score;
+    categories.push({
+      ...item,
+      terms,
+      hits,
+      missing,
+      score,
+      coverage: Math.round(coverage * 100),
+    });
+  });
+  (question.subquestions || []).forEach((item) => {
+    const terms = rubricTerms(item, question);
+    const hits = terms.filter((term) => answerText.includes(term));
+    const coverage = terms.length ? hits.length / terms.length : comparison.score / 100;
+    subScores[item.id] = coverage >= .58 ? "full" : coverage >= .25 || (words.length >= 18 && hits.length >= 1) ? "partial" : "miss";
+  });
+  const checklist = [];
+  if (/defin|prinzip|bedeutet|ist ein|ist eine|nennt man/.test(answerText)) checklist.push("definition");
+  if (/prozess|verfahren|schritt|ablauf|zuerst|danach|anschliessend|reaktion|redukt|oxid/.test(answerText)) checklist.push("process");
+  if (/temperatur|druck|katalys|ph|beding|konzentr|parameter|hoch|niedrig/.test(answerText)) checklist.push("conditions");
+  if (/[A-Z][a-z]?\d|->|→|<=>|reaktionsgleichung|struktur|formel|skizz/.test(stripHtmlText(answer))) checklist.push("formula");
+  if (/beispiel|anwendung|zweck|produkt|verwendung|dient|wichtig|industrie/.test(answerText)) checklist.push("example");
+  const missingChecklist = EXAM_CHECKLIST.filter(([key]) => !checklist.includes(key)).map(([key, label]) => ({ key, label }));
+  const errorTypes = [];
+  if (!checklist.includes("definition")) errorTypes.push("definition");
+  if (!checklist.includes("process")) errorTypes.push("process");
+  if (!checklist.includes("conditions")) errorTypes.push("conditions");
+  if (question.sketch_required && !checklist.includes("formula")) errorTypes.push("formula");
+  if (!checklist.includes("example")) errorTypes.push("example");
+  const pctScore = total ? Math.round((earned / total) * 100) : comparison.score;
+  return {
+    score: Math.max(0, Math.min(100, pctScore)),
+    earned: Number(earned.toFixed(1)),
+    total: Number((total || 4).toFixed(1)),
+    label: `${Number(earned.toFixed(1))}/${Number((total || 4).toFixed(1))} P`,
+    categories,
+    suggestedScores,
+    subScores,
+    checklist,
+    missingChecklist,
+    errorTypes,
+    missingTerms: comparison.missing,
+    hits: comparison.hits,
+    confidenceHint: pctScore >= 78 ? "stark" : pctScore >= 48 ? "teilweise" : "lueckenhaft",
+  };
+}
+
 function reasonLabel(reason) {
   return ALL_REASONS.find(([key]) => key === reason)?.[1] || reason || "Ohne Grund";
 }
@@ -1786,6 +1875,23 @@ function OpenExamRunner({ exam, module, onClose }) {
     });
   }
 
+  function applyAnswerReview() {
+    if (!question) return;
+    const review = answerRubricReview(answers[question.card_id] || "", question);
+    setScores((old) => ({
+      ...old,
+      [question.card_id]: { ...(old[question.card_id] || {}), ...review.subScores },
+    }));
+    setChecklist((old) => ({
+      ...old,
+      [question.card_id]: Array.from(new Set([...(old[question.card_id] || []), ...review.checklist])),
+    }));
+    setErrorTypes((old) => ({
+      ...old,
+      [question.card_id]: Array.from(new Set([...(old[question.card_id] || []), ...review.errorTypes])),
+    }));
+  }
+
   async function finish() {
     if (submitting) return;
     setSubmitting(true);
@@ -1795,16 +1901,24 @@ function OpenExamRunner({ exam, module, onClose }) {
       mode: exam.mode,
       exam_id: exam.id,
       duration_seconds: Math.round((Date.now() - startedAt) / 1000),
-      results: (exam.questions || []).map((q) => ({
-        card_id: q.card_id,
-        sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || "miss"),
-        confidence: confidence[q.card_id] || "",
-        error_types: errorTypes[q.card_id] || [],
-        answer_note: [
-          answers[q.card_id] || "",
-          (checklist[q.card_id] || []).length ? `Checkliste: ${(checklist[q.card_id] || []).map(checklistLabel).join(", ")}` : "",
-        ].filter(Boolean).join("\n\n"),
-      })),
+      results: (exam.questions || []).map((q) => {
+        const review = answerRubricReview(answers[q.card_id] || "", q);
+        return {
+          card_id: q.card_id,
+          sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || review.subScores[sub.id] || "miss"),
+          confidence: confidence[q.card_id] || "",
+          error_types: Array.from(new Set([...(errorTypes[q.card_id] || []), ...review.errorTypes])),
+          auto_score: review.score,
+          auto_missing_terms: review.missingTerms.slice(0, 12),
+          auto_checklist: review.checklist,
+          answer_note: [
+            answers[q.card_id] || "",
+            (checklist[q.card_id] || []).length ? `Checkliste: ${(checklist[q.card_id] || []).map(checklistLabel).join(", ")}` : "",
+            `Auto-Check: ${review.label}, ${review.score}% Abdeckung`,
+            review.missingTerms.length ? `Fehlt: ${review.missingTerms.slice(0, 8).join(", ")}` : "",
+          ].filter(Boolean).join("\n\n"),
+        };
+      }),
     };
     try {
       const res = await api("/api/exam/open/submit", {
@@ -1841,6 +1955,7 @@ function OpenExamRunner({ exam, module, onClose }) {
   const currentAnswer = answers[question.card_id] || "";
   const currentChecklist = checklist[question.card_id] || [];
   const currentComparison = answerComparison(currentAnswer, question);
+  const currentReview = answerRubricReview(currentAnswer, question);
   const isFormulaMode = exam.mode === "formula";
   const rubric = question.rubric?.length ? question.rubric : question.subquestions || [];
   const totalRubricPoints = rubric.reduce((sum, item) => sum + (item.points || 0), 0);
@@ -1897,6 +2012,42 @@ function OpenExamRunner({ exam, module, onClose }) {
             <div className="coverage-chip-row">
               {currentComparison.hits.slice(0, 10).map((term) => <span key={term} className="hit">{term}</span>)}
               {currentComparison.missing.slice(0, 10).map((term) => <span key={term} className="miss">{term}</span>)}
+            </div>
+          </div>
+        )}
+        {!!currentAnswer.trim() && (
+          <div className={`answer-review-panel ${currentReview.confidenceHint}`}>
+            <div className="answer-review-head">
+              <div>
+                <h3>Antwortpruefung 2.0</h3>
+                <p>Automatischer Rubrik-Check aus Musterantwort, Punkteschema und deiner Antwort.</p>
+              </div>
+              <span><b>{currentReview.score}%</b>{currentReview.label}</span>
+            </div>
+            <div className="answer-review-grid">
+              {currentReview.categories.map((item) => (
+                <article key={item.id}>
+                  <b>{item.category}</b>
+                  <p>{item.prompt}</p>
+                  <span className={item.score}>{item.score === "full" ? "voll" : item.score === "partial" ? "teilweise" : "fehlt"}</span>
+                  {!!item.missing.length && <em>Fehlt: {item.missing.slice(0, 4).join(", ")}</em>}
+                </article>
+              ))}
+            </div>
+            <div className="answer-review-footer">
+              <div>
+                <b>Fehlende Bausteine</b>
+                {currentReview.missingChecklist.length
+                  ? currentReview.missingChecklist.map((item) => <span key={item.key}>{item.label}</span>)
+                  : <span>Keine harte Luecke sichtbar</span>}
+              </div>
+              <div>
+                <b>Diagnose</b>
+                {currentReview.errorTypes.length
+                  ? currentReview.errorTypes.map((key) => <span key={key}>{EXAM_ERROR_TYPES.find(([item]) => item === key)?.[1] || key}</span>)
+                  : <span>Antwort wirkt pruefungsnah</span>}
+              </div>
+              <button onClick={applyAnswerReview}>Vorschlag uebernehmen</button>
             </div>
           </div>
         )}
@@ -2259,13 +2410,13 @@ function ExamPage({ startExam, startSession, module }) {
         <div className="section-head">
           <div>
             <h2>Pruefungsarbeitsplatz</h2>
-            <p>Offene TU-Fragen, Antwortgerueste, Mini-Pruefungen und Formeltraining.</p>
+            <p>Schriftliche Antwortpruefung mit Rubrik-Check, Musterantwort, Fehlerdiagnose und Formeltraining.</p>
           </div>
           <Target size={26} />
         </div>
         <div className="exam-actions-grid">
-          <button className="primary" onClick={() => startOpen("full")}>2h-Pruefung starten</button>
-          <button onClick={() => startOpen("mini")}>Schwaechen-Mini-Pruefung</button>
+          <button className="primary" onClick={() => startOpen("full")}>Antwortpruefung 2.0</button>
+          <button onClick={() => startOpen("mini")}>Schwaechen-Check</button>
           <button onClick={() => startOpen("explain")}>Kann ich erklaeren?</button>
           <button onClick={startFormula}>Skizzen-/Formelmodus</button>
         </div>
