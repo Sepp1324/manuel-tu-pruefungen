@@ -361,6 +361,9 @@ class OpenExamResultIn(BaseModel):
     confidence: str = ""
     error_types: list[str] = Field(default_factory=list)
     answer_note: str = ""
+    auto_score: int | None = Field(default=None, ge=0, le=100)
+    auto_missing_terms: list[str] = Field(default_factory=list)
+    auto_checklist: list[str] = Field(default_factory=list)
 
 
 class OpenExamSubmitIn(BaseModel):
@@ -2370,6 +2373,13 @@ def submit_open_exam(inp: OpenExamSubmitIn):
         db.apply_review(conn, result.card_id, updated, rating, elapsed, deck="open_exam")
         if rating == 1:
             db.add_quality_event(conn, result.card_id, module, "open_exam", "pruefung_miss", "In offener Pruefung nicht beantwortet", updated["last_review"])
+        auto_missing = [str(term).strip() for term in result.auto_missing_terms if str(term).strip()][:12]
+        if result.auto_score is not None and result.auto_score < 65:
+            reason = "pruefung_miss" if result.auto_score < 40 else "archiv_partial"
+            note = f"Antwortpruefung 2.0: {result.auto_score}%"
+            if auto_missing:
+                note += f"; fehlt: {', '.join(auto_missing[:6])}"
+            db.add_quality_event(conn, result.card_id, module, "answer_review", reason, note, updated["last_review"])
         if ratio < .85:
             for err in error_types:
                 db.add_quality_event(conn, result.card_id, module, "exam_error", f"exam_{err}", EXAM_ERROR_TYPES[err], updated["last_review"])
@@ -2388,6 +2398,9 @@ def submit_open_exam(inp: OpenExamSubmitIn):
             "confidence": confidence,
             "error_types": error_types,
             "sub_scores": result.sub_scores,
+            "auto_score": result.auto_score,
+            "auto_missing_terms": auto_missing,
+            "auto_checklist": [str(item).strip() for item in result.auto_checklist if str(item).strip()][:8],
             "answer_note": result.answer_note[:4000],
             "repair": ratio < .85,
         })
