@@ -575,9 +575,15 @@ def quality_score(card: dict) -> int:
         score += min(40, card.get("lapses", 0) * 8)
     if card.get("reps", 0) == 0:
         score += 5
-    if card.get("english_noise") or english_noise(card):
+    english = card.get("english_noise")
+    if english is None:
+        english = english_noise(card)
+    if english:
         score += 120
-    if photo_recommended(card):
+    recommended_photo = card.get("photo_recommended")
+    if recommended_photo is None:
+        recommended_photo = photo_recommended(card)
+    if recommended_photo:
         score += 22
     return score
 
@@ -631,7 +637,11 @@ def source_anchor(card: dict) -> dict:
     module_label = "Organische Chemie" if module == "organic" else "Anorganische Chemie"
     kap = card.get("kap")
     chapter = f"VO{kap}" if kap else "ohne VO"
-    tags = infer_tags(card)[:6]
+    raw_tags = card.get("tags")
+    if isinstance(raw_tags, list):
+        tags = [str(tag).strip() for tag in raw_tags if str(tag).strip()][:6]
+    else:
+        tags = infer_tags(card)[:6]
     topic = subname or CHAPTER_TAGS.get(module, {}).get(kap) or (tags[0] if tags else "Thema")
     text = plain_card_text(card)
     q = str(card.get("q") or "")
@@ -648,7 +658,10 @@ def source_anchor(card: dict) -> dict:
     if len(points) < 2:
         score -= 18
         issues.append("Antwort hat zu wenige pruefbare Punkte")
-    if english_noise(card):
+    english = card.get("english_noise")
+    if english is None:
+        english = english_noise(card)
+    if english:
         score -= 28
         issues.append("Englisches Quellen- oder Folienrauschen")
     if re.search(r"(?i)\b(vorlesungseinheiten|tiss|raumnummer|allgemeine informationen)\b", text):
@@ -686,7 +699,8 @@ def source_anchor(card: dict) -> dict:
     }
 
 
-def row_to_card(row: sqlite3.Row) -> dict:
+def row_to_card(row: sqlite3.Row, include_source_anchor: bool = True,
+                include_quality: bool = True) -> dict:
     d = dict(row)
     payload = json.loads(d.pop("payload"))
     payload.update(d)
@@ -697,8 +711,10 @@ def row_to_card(row: sqlite3.Row) -> dict:
     payload["photo_recommended"] = photo_recommended(payload)
     payload["sketch_required"] = sketch_required(payload)
     payload["english_noise"] = english_noise(payload)
-    payload["quality_score"] = quality_score(payload)
-    payload["source_anchor"] = source_anchor(payload)
+    if include_quality:
+        payload["quality_score"] = quality_score(payload)
+    if include_source_anchor:
+        payload["source_anchor"] = source_anchor(payload)
     return payload
 
 
@@ -817,7 +833,7 @@ def repair_english_artifacts(conn: sqlite3.Connection, module: str | None = None
     changed = 0
     changed_at = updated_at or datetime.now(timezone.utc).isoformat()
     for row in rows:
-        card = row_to_card(row)
+        card = row_to_card(row, include_source_anchor=False, include_quality=False)
         repaired = repair_english_artifact_card(card)
         if not repaired:
             continue
@@ -862,7 +878,7 @@ def restore_seed_auto_suspensions(conn: sqlite3.Connection, seed_ids: set[str],
     for row in rows:
         if not auto_deactivation_note(row["review_note"]):
             continue
-        card = row_to_card(row)
+        card = row_to_card(row, include_source_anchor=False, include_quality=False)
         note = ENGLISH_ARTIFACT_NOTE if english_noise(card) else ""
         payload = dict(card)
         payload["status"] = "active"
@@ -899,7 +915,7 @@ def restore_english_artifact_suspensions(conn: sqlite3.Connection, module: str |
     changed = 0
     changed_at = updated_at or datetime.now(timezone.utc).isoformat()
     for row in rows:
-        card = row_to_card(row)
+        card = row_to_card(row, include_source_anchor=False, include_quality=False)
         note = ENGLISH_ARTIFACT_NOTE if english_noise(card) else ""
         payload = dict(card)
         payload["status"] = "active"
@@ -937,7 +953,7 @@ def flag_english_noise(conn: sqlite3.Connection, module: str | None = None,
     changed = 0
     changed_at = updated_at or datetime.now(timezone.utc).isoformat()
     for row in rows:
-        card = row_to_card(row)
+        card = row_to_card(row, include_source_anchor=False, include_quality=False)
         if not english_noise(card):
             continue
         payload = dict(card)
@@ -986,7 +1002,7 @@ def auto_quality_sweep(conn: sqlite3.Connection, module: str, updated_at: str) -
         (module, module),
     ).fetchall()
     for row in rows:
-        card = row_to_card(row)
+        card = row_to_card(row, include_source_anchor=False, include_quality=False)
         payload = dict(card)
         payload["status"] = "needs_review"
         note = "Auto-Quality: wiederholt falsch oder als unklar markiert"
@@ -1019,7 +1035,7 @@ def auto_quality_sweep(conn: sqlite3.Connection, module: str, updated_at: str) -
         (module,),
     ).fetchall()
     for row in photo_rows:
-        card = row_to_card(row)
+        card = row_to_card(row, include_source_anchor=False, include_quality=False)
         if not photo_recommended(card):
             continue
         payload = dict(card)
