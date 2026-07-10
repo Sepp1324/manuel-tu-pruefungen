@@ -70,7 +70,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: organicsr-data-local
+            claimName: organicsr-data-longhorn
 ---
 apiVersion: v1
 kind: Service
