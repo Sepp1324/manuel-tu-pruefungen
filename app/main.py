@@ -394,6 +394,7 @@ class ArchiveCorrectionSubmitIn(BaseModel):
 WORKSHOP_CATEGORIES = [
     ("english", "Englisch", "Englische Folienreste oder Begriffe"),
     ("long", "Zu lang", "Frage oder Antwort ist schwer scanbar"),
+    ("source", "Quelle schwach", "Skriptanker, Quelle oder Herleitung ist nicht belastbar"),
     ("missing_context", "Kein Kontext", "Quelle, VO oder fachlicher Rahmen fehlt"),
     ("photo", "Foto empfohlen", "Struktur, Formel, Schema oder Mechanismus braucht ein Bild"),
     ("sketch", "Skizze erforderlich", "Formel- oder Strukturkarte aktiv skizzieren"),
@@ -802,6 +803,7 @@ def _workshop_card(card: dict, issues: list[str] | None = None) -> dict:
         "photo_recommended": card.get("photo_recommended"),
         "sketch_required": card.get("sketch_required"),
         "formula_repair_available": card.get("formula_repair_available"),
+        "source_anchor": card.get("source_anchor"),
         "issues": issues or [],
     }
 
@@ -841,6 +843,8 @@ def _card_issues(card: dict) -> list[str]:
         issues.append("long")
     if not q.startswith("Kontext:") or "Quelle:" not in f"{q} {a}":
         issues.append("missing_context")
+    if (card.get("source_anchor") or {}).get("score", 100) < 60:
+        issues.append("source")
     if card.get("photo_recommended") or db.photo_recommended(card):
         issues.append("photo")
     if card.get("sketch_required") or db.sketch_required(card):
@@ -949,6 +953,42 @@ def _quality_audit(conn, module: str, limit: int = 12) -> dict:
         "module": module,
         "items": items,
         "issue_counts": [{"issue": key, "label": WORKSHOP_CATEGORY_LABELS.get(key, key), "count": count} for key, count in sorted(issue_counts.items(), key=lambda item: (-item[1], item[0]))],
+    }
+
+
+def _source_audit(conn, module: str, limit: int = 12) -> dict:
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+           ORDER BY kap ASC, ord ASC
+           LIMIT 1800""",
+        (module,),
+    ).fetchall()
+    cards = [db.row_to_card(row) for row in rows]
+    anchors = [(card, card.get("source_anchor") or {}) for card in cards]
+    weak = [(card, anchor) for card, anchor in anchors if anchor.get("score", 0) < 60]
+    medium = [(card, anchor) for card, anchor in anchors if 60 <= anchor.get("score", 0) < 78]
+    strong = [(card, anchor) for card, anchor in anchors if anchor.get("score", 0) >= 78]
+    issue_counts: dict[str, int] = {}
+    for _, anchor in anchors:
+        for issue in anchor.get("issues") or []:
+            issue_counts[issue] = issue_counts.get(issue, 0) + 1
+    weak.sort(key=lambda item: (item[1].get("score", 0), item[0].get("kap") or 99, item[0].get("ord") or 0))
+    return {
+        "module": module,
+        "total": len(cards),
+        "strong": len(strong),
+        "medium": len(medium),
+        "weak": len(weak),
+        "avg_score": round(sum(anchor.get("score", 0) for _, anchor in anchors) / max(len(anchors), 1)),
+        "issue_counts": [{"issue": key, "count": count} for key, count in sorted(issue_counts.items(), key=lambda item: (-item[1], item[0]))],
+        "items": [
+            {
+                "card": _workshop_card(card, _card_issues(card)),
+                "anchor": anchor,
+            }
+            for card, anchor in weak[:limit]
+        ],
     }
 
 
@@ -1338,6 +1378,7 @@ def _exam_question(card: dict, idx: int, module: str, formula: bool = False) -> 
         "kap": card.get("kap"),
         "block": _exam_block(module, card.get("kap")),
         "source": card.get("source"),
+        "source_anchor": card.get("source_anchor"),
         "title": title,
         "question": question,
         "subquestions": subquestions,
@@ -2328,6 +2369,15 @@ def quality_audit(module: str = "organic", limit: int = 12):
     module = _valid_module(module)
     conn = db.get_conn()
     out = _quality_audit(conn, module, max(3, min(limit, 30)))
+    conn.close()
+    return out
+
+
+@app.get("/api/source-audit")
+def source_audit(module: str = "organic", limit: int = 12):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _source_audit(conn, module, max(3, min(limit, 30)))
     conn.close()
     return out
 

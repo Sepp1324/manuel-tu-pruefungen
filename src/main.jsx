@@ -79,6 +79,7 @@ const EXAM_EVALS = [
 const WORKSHOP_ISSUE_LABELS = {
   english: "Englisch",
   long: "Zu lang",
+  source: "Quelle schwach",
   missing_context: "Kein Kontext",
   photo: "Foto empfohlen",
   sketch: "Skizze",
@@ -881,6 +882,35 @@ function QuestionContent({ html = "" }) {
   return <h2 dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+function SourceAnchorPanel({ anchor, compact = false }) {
+  if (!anchor) return null;
+  return (
+    <div className={`source-anchor-panel ${anchor.status || ""} ${compact ? "compact" : ""}`}>
+      <div className="source-anchor-head">
+        <div>
+          <b>{anchor.anchor || "Quelle"}</b>
+          <span>{anchor.source || "nicht gesetzt"}</span>
+        </div>
+        <em>{anchor.score ?? 0}% · {anchor.label || "Quelle"}</em>
+      </div>
+      {!compact && (
+        <>
+          <div className="source-anchor-tags">
+            {(anchor.tags || []).slice(0, 6).map((tag) => <span key={tag}>{tag}</span>)}
+            {(anchor.issues || []).slice(0, 4).map((issue) => <span key={issue} className="issue">{issue}</span>)}
+          </div>
+          {!!(anchor.derivation || []).length && (
+            <div className="source-anchor-why">
+              <b>Warum diese Antwort?</b>
+              {(anchor.derivation || []).slice(0, 4).map((item) => <span key={item}>{item}</span>)}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ModuleSwitch({ modules = {}, active, onChange }) {
   const entries = Object.entries(modules);
   if (entries.length <= 1) return null;
@@ -1242,6 +1272,7 @@ function Study({ session, setSession, finish }) {
             <span>{card.subname}</span>
             <span>Quelle: {card.source}</span>
           </div>
+          <SourceAnchorPanel anchor={card.source_anchor} />
           <EditableCardPreview
             question={draft.q || ""}
             answer={draft.a || ""}
@@ -1267,6 +1298,7 @@ function Study({ session, setSession, finish }) {
           <span>Quelle: {card.source}</span>
           <span>faellig: {formatDate(card.due)}</span>
         </div>
+        <SourceAnchorPanel anchor={card.source_anchor} compact={!revealed} />
         {editMsg && <div className="form-msg">{editMsg}</div>}
         <QuestionContent html={card.q} />
         <div className="card-report-strip">
@@ -1982,6 +2014,7 @@ function OpenExamRunner({ exam, module, onClose }) {
           <span>{question.points} Punkte</span>
           {question.sketch_required && <span>Skizze erforderlich</span>}
         </div>
+        <SourceAnchorPanel anchor={question.source_anchor} />
         <h2 dangerouslySetInnerHTML={{ __html: question.question }} />
         <label className="exam-answer-editor">
           {isFormulaMode ? "Meine Skizze / Formel / Antwort" : "Meine Antwort"}
@@ -2758,6 +2791,7 @@ function CardReviewPage({ onDone, module }) {
       <div className="panel quality-editor">
         {selected ? (
           <>
+            <SourceAnchorPanel anchor={selected.source_anchor} />
             <EditableCardPreview
               question={selected.q || ""}
               answer={selected.a || ""}
@@ -2971,6 +3005,7 @@ function WorkshopPage({ module, onDone }) {
                 <span key={issue}>{issueLabel(issue)}</span>
               ))}
             </div>
+            <SourceAnchorPanel anchor={selected.source_anchor} />
             <EditableCardPreview
               question={selected.q || ""}
               answer={selected.a || ""}
@@ -3079,6 +3114,7 @@ function TriagePage({ module, onDone }) {
               <span>Score {draft.quality_score || 0}</span>
               {(draft.tags || []).map((t) => <span key={t}>{t}</span>)}
             </div>
+            <SourceAnchorPanel anchor={draft.source_anchor} />
             <EditableCardPreview
               question={draft.q || ""}
               answer={draft.a || ""}
@@ -3256,6 +3292,53 @@ function QualityAuditPanel({ module, setRoute }) {
   );
 }
 
+function SourceAuditPanel({ module, setRoute }) {
+  const [audit, setAudit] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  async function load() {
+    setMsg("");
+    try {
+      setAudit(await api(`/api/source-audit?module=${encodeURIComponent(module)}&limit=8`));
+    } catch (err) {
+      setMsg(err.message || "Quellen-Audit fehlgeschlagen");
+    }
+  }
+
+  useEffect(() => { load().catch(() => {}); }, [module]);
+  return (
+    <div className="panel source-audit-panel">
+      <div className="section-head">
+        <div>
+          <h3>Quellenmodus</h3>
+          <p>{audit ? `Durchschnitt ${audit.avg_score}% · ${audit.weak || 0} schwache Quellen` : "Skriptanker und Herleitung jeder Karte pruefen."}</p>
+        </div>
+        <button onClick={load}><RefreshCw size={16} /> Aktualisieren</button>
+      </div>
+      {audit && (
+        <>
+          <div className="source-audit-metrics">
+            <span><b>{audit.strong || 0}</b> gruen</span>
+            <span><b>{audit.medium || 0}</b> gelb</span>
+            <span><b>{audit.weak || 0}</b> rot</span>
+          </div>
+          <div className="source-audit-list">
+            {(audit.items || []).map((item) => (
+              <button key={item.card.id} onClick={() => setRoute?.("workshop")}>
+                <b>VO{item.card.kap} · {item.anchor.score}%</b>
+                <span>{item.card.title}</span>
+                <em>{(item.anchor.issues || []).join(" · ") || item.anchor.source}</em>
+              </button>
+            ))}
+            {!(audit.items || []).length && <p className="muted">Keine roten Quellenanker im Audit.</p>}
+          </div>
+        </>
+      )}
+      {msg && <div className="form-msg">{msg}</div>}
+    </div>
+  );
+}
+
 function QualityCenter({ data, setRoute, module, startSession }) {
   const quality = data.quality || {};
   const autoQuality = data.auto_quality || {};
@@ -3293,6 +3376,7 @@ function QualityCenter({ data, setRoute, module, startSession }) {
       <div className="quality-center-grid">
         <PerformancePanel />
         <QualityAuditPanel module={module} setRoute={setRoute} />
+        <SourceAuditPanel module={module} setRoute={setRoute} />
         <div className="panel">
           <h3>Haeufige Gruende</h3>
           <div className="reason-bars">

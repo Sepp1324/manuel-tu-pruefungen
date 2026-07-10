@@ -610,6 +610,82 @@ def sketch_required(card: dict) -> bool:
     return any(marker in text for marker in markers)
 
 
+def answer_points(card: dict) -> list[str]:
+    answer = str(card.get("a", ""))
+    points = re.findall(r"<li[^>]*>(.*?)</li>", answer, flags=re.I | re.S)
+    if not points:
+        points = re.split(r"(?:\n|<br\s*/?>|;)\s*", answer, flags=re.I)
+    cleaned = []
+    for point in points:
+        text = re.sub(r"<[^>]+>", " ", point)
+        text = unescape(re.sub(r"\s+", " ", text)).strip(" -*;")
+        if len(text) >= 12:
+            cleaned.append(text)
+    return cleaned[:8]
+
+
+def source_anchor(card: dict) -> dict:
+    source = str(card.get("source") or "").strip()
+    subname = str(card.get("subname") or "").strip()
+    module = card.get("module") or "organic"
+    module_label = "Organische Chemie" if module == "organic" else "Anorganische Chemie"
+    kap = card.get("kap")
+    chapter = f"VO{kap}" if kap else "ohne VO"
+    tags = infer_tags(card)[:6]
+    topic = subname or CHAPTER_TAGS.get(module, {}).get(kap) or (tags[0] if tags else "Thema")
+    text = plain_card_text(card)
+    q = str(card.get("q") or "")
+    a = str(card.get("a") or "")
+    points = answer_points(card)
+    issues: list[str] = []
+    score = 100
+    if not source or source.lower() in {"import", "manuell", "unbekannt"}:
+        score -= 28
+        issues.append("Quelle fehlt oder ist generisch")
+    if not q.startswith("Kontext:") and "Quelle:" not in f"{q} {a}":
+        score -= 22
+        issues.append("Kontext/Quelle steht nicht in der Karte")
+    if len(points) < 2:
+        score -= 18
+        issues.append("Antwort hat zu wenige pruefbare Punkte")
+    if english_noise(card):
+        score -= 28
+        issues.append("Englisches Quellen- oder Folienrauschen")
+    if re.search(r"(?i)\b(vorlesungseinheiten|tiss|raumnummer|allgemeine informationen)\b", text):
+        score -= 18
+        issues.append("Organisatorische Vorlesungsinfo statt Fachanker")
+    if tags:
+        score += 5
+    score = max(0, min(100, score))
+    status = "green" if score >= 78 else "yellow" if score >= 52 else "red"
+    label = "gute Quelle" if status == "green" else "Quelle pruefen" if status == "yellow" else "unsicher"
+    derivation = []
+    lower_answer = plain_card_text({"q": "", "a": a}).lower()
+    if any(x in lower_answer for x in ["definition", "prinzip", "ist ", "nennt man"]):
+        derivation.append("Definition/Prinzip ist in der Musterantwort erkennbar.")
+    if any(x in lower_answer for x in ["verfahren", "prozess", "ablauf", "schritt", "reaktion"]):
+        derivation.append("Prozess oder Ablauf wird aus den Antwortpunkten abgeleitet.")
+    if any(x in lower_answer for x in ["temperatur", "druck", "katalysator", "bedingungen", "parameter"]):
+        derivation.append("Wichtige Bedingungen sind als Pruefungspunkt vorhanden.")
+    if any(x in lower_answer for x in ["produkt", "beispiel", "anwendung", "zweck", "verwendung"]):
+        derivation.append("Produkte, Beispiele oder Zweck sichern die Einordnung.")
+    if not derivation and points:
+        derivation = [f"Antwortpunkt: {point[:110]}" for point in points[:3]]
+    return {
+        "score": score,
+        "status": status,
+        "label": label,
+        "module": module_label,
+        "chapter": chapter,
+        "topic": topic,
+        "source": source or "nicht gesetzt",
+        "anchor": f"{module_label} / {chapter} / {topic}",
+        "tags": tags,
+        "issues": issues,
+        "derivation": derivation[:5],
+    }
+
+
 def row_to_card(row: sqlite3.Row) -> dict:
     d = dict(row)
     payload = json.loads(d.pop("payload"))
@@ -622,6 +698,7 @@ def row_to_card(row: sqlite3.Row) -> dict:
     payload["sketch_required"] = sketch_required(payload)
     payload["english_noise"] = english_noise(payload)
     payload["quality_score"] = quality_score(payload)
+    payload["source_anchor"] = source_anchor(payload)
     return payload
 
 
