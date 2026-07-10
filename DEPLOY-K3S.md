@@ -4,7 +4,7 @@ Target:
 
 - Host: `manuel.stoegerer-home.cloud`
 - Namespace: `organicsr`
-- Image: `ghcr.io/sepp1324/manuel-tu-pruefungen:<tag>`
+- Image: `registry.stoegerer-home.at/organicsr:<tag>`
 - Storage: Longhorn PVC `organicsr-data-longhorn`
 
 ## 1. DNS
@@ -51,23 +51,19 @@ kubectl -n organicsr create secret generic organicsr-secrets \
 
 ## 4. Image
 
-The GitHub Actions workflow builds and pushes to GHCR from the VPS runner.
-Install a self-hosted runner on `srv1801804` with the label `k3s-vps`, and make
-sure Docker and kubectl are available on that runner host.
-
-Manual build and push:
+Build and push:
 
 ```bash
 TAG="$(git rev-parse --short HEAD)"
-docker build -t "ghcr.io/sepp1324/manuel-tu-pruefungen:${TAG}" .
-docker push "ghcr.io/sepp1324/manuel-tu-pruefungen:${TAG}"
+docker build -t "registry.stoegerer-home.at/organicsr:${TAG}" .
+docker push "registry.stoegerer-home.at/organicsr:${TAG}"
 ```
 
 ## 5. Apply
 
 ```bash
 kubectl apply -k k8s
-kubectl -n organicsr set image deployment/organicsr organicsr="ghcr.io/sepp1324/manuel-tu-pruefungen:${TAG}"
+kubectl -n organicsr set image deployment/organicsr organicsr="registry.stoegerer-home.at/organicsr:${TAG}"
 kubectl -n organicsr rollout status deployment/organicsr --timeout=180s
 ```
 

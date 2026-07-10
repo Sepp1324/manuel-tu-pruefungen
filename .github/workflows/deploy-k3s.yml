@@ -5,22 +5,18 @@ on:
     branches: [main]
 
 concurrency:
-  group: organicsr-deploy-vps-main
+  group: organicsr-deploy-main
   cancel-in-progress: false
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE: ghcr.io/sepp1324/manuel-tu-pruefungen
+  REGISTRY: registry.stoegerer-home.at
+  IMAGE: registry.stoegerer-home.at/organicsr
   KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   NAMESPACE: organicsr
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
   deploy:
-    runs-on: [self-hosted, k3s-vps]
+    runs-on: [self-hosted, organicsr]
 
     steps:
       - name: Checkout
@@ -28,9 +24,6 @@ jobs:
 
       - name: Image-Tag = Git-SHA
         run: echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-
-      - name: Bei GHCR anmelden
-        run: echo "${{ github.token }}" | docker login "$REGISTRY" -u "${{ github.actor }}" --password-stdin
 
       - name: Image bauen
         run: docker build -t "$IMAGE:$TAG" .
