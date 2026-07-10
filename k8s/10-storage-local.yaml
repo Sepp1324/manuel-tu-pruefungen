@@ -7,7 +7,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: organicsr-data-longhorn
+  name: organicsr-data-local
   namespace: organicsr
 spec:
   accessModes:

@@ -5,7 +5,7 @@ Target:
 - Host: `manuel.stoegerer-home.cloud`
 - Namespace: `organicsr`
 - Image: `registry.stoegerer-home.at/organicsr:<tag>`
-- Storage: Longhorn PVC `organicsr-data-longhorn`
+- Storage: Longhorn PVC `organicsr-data-local`
 
 ## 1. DNS
 
