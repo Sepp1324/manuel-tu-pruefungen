@@ -22,6 +22,14 @@ import auth
 import db
 from fsrs import Scheduler
 
+try:
+    import httpx
+except ImportError:  # httpx is optional; only needed for the LLM coach
+    httpx = None
+
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+COACH_MODEL = os.environ.get("COACH_MODEL", "claude-haiku-4-5-20251001")
+
 
 app = FastAPI(title="TU Chemie SR-Trainer")
 app.add_middleware(GZipMiddleware, minimum_size=1024)
@@ -2430,6 +2438,8 @@ def submit_archive_correction(inp: ArchiveCorrectionSubmitIn):
                     db.add_quality_event(conn, card_id, module, "exam_error", "exam_confidence_trap", "Sicher gefuehlt, aber Punkte verloren", now)
                 if result.score == "miss":
                     db.mark_card_needs_review(conn, card_id, note, now)
+                db.log_mistake(conn, card_id, module, "exam",
+                               f"Pruefung {result.topic}: {result.score}", now)
                 touched += 1
     pct_score = round(earned / total * 100) if total else 0
     attempt_id = db.record_exam_attempt(
@@ -2850,11 +2860,359 @@ def review(inp: ReviewIn):
             db.mark_card_needs_review(conn, inp.card_id, note, updated["last_review"])
     if inp.rating == 1:
         db.auto_quality_sweep(conn, card.get("module", "organic"), updated["last_review"])
+        db.log_mistake(conn, inp.card_id, card.get("module", "organic"), "review",
+                       "Im Trainer nicht gewusst", updated["last_review"])
+    elif inp.rating >= 3:
+        db.resolve_mistake(conn, inp.card_id, updated["last_review"])
     xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
     xp = db.add_xp_event(conn, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
     conn.close()
     _invalidate_module_caches(card.get("module", "organic"))
     return {"ok": True, "xp": xp, **updated}
+
+
+# ---------------------------------------------------------------------------
+# Fehlerbuch (error book)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/fehlerbuch")
+def fehlerbuch(module: str = "organic", include_resolved: bool = False):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    entries = db.fehlerbuch_entries(conn, module, include_resolved)
+    for e in entries:
+        e["title"] = _question_title({"q": e.get("q", ""), "subname": e.get("subname")})
+        e["points"] = _answer_points(e.get("a", ""))
+    summary = db.fehlerbuch_summary(conn, module)
+    conn.close()
+    return {"module": module, "summary": summary, "entries": entries}
+
+
+@app.post("/api/fehlerbuch/{card_id:path}/resolve")
+def fehlerbuch_resolve(card_id: str):
+    conn = db.get_conn()
+    ok = db.resolve_mistake(conn, card_id, _now_iso())
+    conn.close()
+    return {"ok": ok, "card_id": card_id}
+
+
+# ---------------------------------------------------------------------------
+# Item analytics
+# ---------------------------------------------------------------------------
+
+@app.get("/api/item-analytics")
+def item_analytics(module: str = "organic", limit: int = 40):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = db.item_analytics(conn, module, min(max(limit, 5), 120))
+    conn.close()
+    return {"module": module, **out}
+
+
+# ---------------------------------------------------------------------------
+# FSRS insights
+# ---------------------------------------------------------------------------
+
+@app.get("/api/fsrs-insights")
+def fsrs_insights(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = db.fsrs_insights(conn, module)
+    conn.close()
+    return {"module": module, **out}
+
+
+# ---------------------------------------------------------------------------
+# Last-minute sheet (condensed cram sheet from weak chapters)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/last-minute-sheet")
+def last_minute_sheet(module: str = "organic"):
+    module = _valid_module(module)
+    modules = _module_catalog()
+    conn = db.get_conn()
+    now = _now_iso()
+    chapters = db.chapter_stats(conn, now, module)
+    chapters_sorted = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c.get("kap") or 99))
+    sheet = []
+    for ch in chapters_sorted:
+        kap = ch.get("kap")
+        rows = conn.execute(
+            """SELECT payload FROM cards
+               WHERE module=? AND deck='anki' AND status='active' AND kap=?
+               ORDER BY (last_review IS NULL) DESC, difficulty DESC, ord ASC LIMIT 6""",
+            (module, kap),
+        ).fetchall()
+        facts = []
+        for r in rows:
+            card = db.row_to_card(r)
+            title = _question_title(card)
+            points = _answer_points(card.get("a", ""))
+            if points:
+                facts.append({"title": title, "point": points[0]})
+        if facts:
+            sheet.append({
+                "kap": kap,
+                "name": modules[module]["chapters"].get(str(kap), ch.get("name") or f"Kapitel {kap}"),
+                "weak_score": ch.get("weak_score", 0),
+                "facts": facts,
+            })
+    conn.close()
+    return {"module": module, "chapters": sheet}
+
+
+# ---------------------------------------------------------------------------
+# Readiness plan
+# ---------------------------------------------------------------------------
+
+@app.get("/api/readiness-plan")
+def readiness_plan(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    now = _now_iso()
+    st = db.deck_stats(conn, now, module)
+    chapters = db.chapter_stats(conn, now, module)
+    quality = db.quality_summary(conn, module)
+    exam_score = _exam_score_projection(st, chapters, module, quality)
+    fb = db.fehlerbuch_summary(conn, module)
+    conn.close()
+    days = max(_days_left(module), 1)
+    unseen = (st.get("total") or 0) - (st.get("seen") or 0)
+    due = st.get("due") or 0
+    # rough daily workload to be ready in time
+    daily_new = -(-unseen // days) if unseen else 0
+    daily_reviews = due + daily_new
+    band = "risk"
+    overall = int(exam_score.get("overall") or 0)
+    if overall >= 80:
+        band = "ready"
+    elif overall >= 60:
+        band = "steady"
+    blocks = exam_score.get("blocks") or []
+    focus = sorted(blocks, key=lambda b: b.get("score", 0))[:3]
+    milestones = []
+    for b in sorted(blocks, key=lambda b: b.get("score", 0)):
+        milestones.append({
+            "block": b.get("block"),
+            "score": b.get("score"),
+            "status": b.get("status"),
+            "action": "Grundlagen sichern" if b.get("score", 0) < 55 else
+                      "Prüfungsfragen üben" if b.get("score", 0) < 80 else "Halten & wiederholen",
+        })
+    return {
+        "module": module,
+        "days_left": _days_left(module),
+        "overall": overall,
+        "band": band,
+        "unseen": unseen,
+        "due": due,
+        "daily_new": daily_new,
+        "daily_reviews": daily_reviews,
+        "open_mistakes": fb.get("open", 0),
+        "focus_blocks": focus,
+        "milestones": milestones,
+        "components": exam_score.get("components", []),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Gamification: quests + level + badges
+# ---------------------------------------------------------------------------
+
+def _week_start_iso() -> str:
+    today = date.today()
+    return (today - timedelta(days=today.weekday())).isoformat()
+
+
+def _quest_defs(conn, module: str) -> list[dict]:
+    today = date.today().isoformat()
+    week = _week_start_iso()
+    day_reviews = db.reviews_count_since(conn, today + "T00:00:00", None)
+    week_reviews = db.reviews_count_since(conn, week + "T00:00:00", None)
+    week_exams = conn.execute(
+        "SELECT COUNT(*) n FROM exam_attempts WHERE module=? AND substr(created_at,1,10)>=?",
+        (module, week),
+    ).fetchone()["n"] or 0
+    fb = db.fehlerbuch_summary(conn, module)
+    return [
+        {"key": "daily_reviews", "period": "daily", "period_start": today,
+         "title": "Tagesdrill: 20 Karten wiederholen", "goal": 20,
+         "progress": min(day_reviews, 20), "raw": day_reviews, "xp": 40},
+        {"key": "weekly_reviews", "period": "weekly", "period_start": week,
+         "title": "Wochenpensum: 150 Karten", "goal": 150,
+         "progress": min(week_reviews, 150), "raw": week_reviews, "xp": 120},
+        {"key": "weekly_exam", "period": "weekly", "period_start": week,
+         "title": "Eine Prüfung/Simulation diese Woche", "goal": 1,
+         "progress": min(week_exams, 1), "raw": week_exams, "xp": 90},
+        {"key": "clear_mistakes", "period": "weekly", "period_start": week,
+         "title": "Fehlerbuch abbauen (max. 5 offen)", "goal": 1,
+         "progress": 1 if fb.get("open", 0) <= 5 else 0, "raw": fb.get("open", 0), "xp": 80},
+    ]
+
+
+def _badges(xp_level: dict, streak: dict, fb: dict, st: dict) -> list[dict]:
+    seen = st.get("seen") or 0
+    total = st.get("total") or 1
+    return [
+        {"key": "level5", "label": "Level 5", "earned": xp_level.get("level", 1) >= 5},
+        {"key": "streak7", "label": "7-Tage-Streak", "earned": streak.get("best", 0) >= 7},
+        {"key": "streak30", "label": "30-Tage-Streak", "earned": streak.get("best", 0) >= 30},
+        {"key": "half_deck", "label": "Halbes Deck gesehen", "earned": seen >= total / 2},
+        {"key": "full_deck", "label": "Ganzes Deck gesehen", "earned": seen >= total},
+        {"key": "clean_book", "label": "Fehlerbuch leer", "earned": fb.get("open", 0) == 0 and fb.get("total", 0) > 0},
+    ]
+
+
+@app.get("/api/gamification")
+def gamification(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    now = _now_iso()
+    xp = db.xp_summary(conn)
+    streak = db.streak(conn)
+    st = db.deck_stats(conn, now, module)
+    fb = db.fehlerbuch_summary(conn, module)
+    quests = _quest_defs(conn, module)
+    claimed = db.claimed_quests(conn, [q["period_start"] for q in quests])
+    for q in quests:
+        q["done"] = q["progress"] >= q["goal"]
+        q["claimed"] = f"{q['key']}|{q['period_start']}" in claimed
+    conn.close()
+    return {
+        "module": module,
+        "xp": xp,
+        "streak": streak,
+        "quests": quests,
+        "badges": _badges(xp, streak, fb, st),
+    }
+
+
+class QuestClaimIn(BaseModel):
+    key: str
+    module: str = "organic"
+
+
+@app.post("/api/gamification/quests/claim")
+def claim_quest(inp: QuestClaimIn):
+    module = _valid_module(inp.module)
+    conn = db.get_conn()
+    quests = {q["key"]: q for q in _quest_defs(conn, module)}
+    quest = quests.get(inp.key)
+    if not quest:
+        conn.close()
+        raise HTTPException(404, "Quest nicht gefunden")
+    if quest["progress"] < quest["goal"]:
+        conn.close()
+        raise HTTPException(400, "Quest noch nicht abgeschlossen")
+    ok = db.claim_quest(conn, quest["key"], quest["period_start"], quest["xp"], _now_iso())
+    xp = db.xp_summary(conn)
+    if ok:
+        xp = db.add_xp_event(conn, quest["xp"], "quest", f"Quest: {quest['title']}", quest["key"], _now_iso())
+    conn.close()
+    return {"ok": ok, "xp": xp, "awarded": quest["xp"] if ok else 0}
+
+
+# ---------------------------------------------------------------------------
+# LLM coach (optional; needs ANTHROPIC_API_KEY)
+# ---------------------------------------------------------------------------
+
+def _coach_available() -> bool:
+    return bool(ANTHROPIC_API_KEY and httpx is not None)
+
+
+def _call_anthropic(system: str, prompt: str, max_tokens: int = 700) -> str:
+    if not _coach_available():
+        raise HTTPException(503, "LLM-Coach ist nicht konfiguriert (ANTHROPIC_API_KEY fehlt).")
+    try:
+        resp = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": COACH_MODEL,
+                "max_tokens": max_tokens,
+                "system": system,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=45,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return "".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text").strip()
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(502, f"LLM-Coach-Aufruf fehlgeschlagen: {exc}")
+
+
+class CoachExplainIn(BaseModel):
+    card_id: str
+    question: str = ""
+
+
+@app.get("/api/coach/status")
+def coach_status():
+    return {"available": _coach_available(), "model": COACH_MODEL if _coach_available() else None}
+
+
+@app.post("/api/coach/explain")
+def coach_explain(inp: CoachExplainIn):
+    conn = db.get_conn()
+    card = db.get_card(conn, inp.card_id)
+    conn.close()
+    if not card:
+        raise HTTPException(404, "Karte nicht gefunden")
+    q = _strip_html(card.get("q", "")).replace("Kontext:", "").strip()
+    a = " ".join(_answer_points(card.get("a", "")))
+    system = ("Du bist ein Chemie-Tutor fuer eine oesterreichische TU-Pruefung "
+              "(Chemische Technologien organischer/anorganischer Stoffe). Antworte praegnant "
+              "auf Deutsch, praxisnah und pruefungsorientiert. Nutze bei Bedarf Reaktionsgleichungen.")
+    prompt = (f"Erklaere die folgende Pruefungsfrage verstaendlich (kurze Herleitung, Merksatz, "
+              f"typische Fehler):\n\nFRAGE: {q}\n\nERWARTETE ANTWORTPUNKTE: {a}")
+    text = _call_anthropic(system, prompt)
+    return {"ok": True, "card_id": inp.card_id, "explanation": text}
+
+
+class CoachDiagnosisIn(BaseModel):
+    module: str = "organic"
+
+
+@app.post("/api/coach/error-diagnosis")
+def coach_error_diagnosis(inp: CoachDiagnosisIn):
+    module = _valid_module(inp.module)
+    conn = db.get_conn()
+    entries = db.fehlerbuch_entries(conn, module, include_resolved=False)[:25]
+    summary = db.fehlerbuch_summary(conn, module)
+    modules = _module_catalog()
+    conn.close()
+    if not entries:
+        return {"ok": True, "offline": not _coach_available(),
+                "diagnosis": "Kein offener Fehler im Fehlerbuch. Weiter so!"}
+    topics = [_question_title({"q": e.get("q", ""), "subname": e.get("subname")}) for e in entries]
+    top_ch = ", ".join(
+        f"{modules[module]['chapters'].get(str(c['kap']), 'Kapitel ' + str(c['kap']))} ({c['count']})"
+        for c in summary.get("top_chapters", [])
+    )
+    if not _coach_available():
+        # offline rule-based fallback
+        lines = [
+            f"{summary.get('open', 0)} offene Fehler, Schwerpunkt: {top_ch or 'verteilt'}.",
+            "Empfehlung: die betroffenen Kapitel gezielt wiederholen und die Fehlerbuch-Karten "
+            "abarbeiten, bis sie zweimal sicher sitzen.",
+        ]
+        return {"ok": True, "offline": True, "diagnosis": "\n".join(lines),
+                "top_chapters": summary.get("top_chapters", [])}
+    system = ("Du bist ein Lerncoach fuer eine Chemie-Pruefung. Analysiere die Fehlerthemen und "
+              "gib eine kurze, konkrete Diagnose (Muster, wahrscheinliche Wissensluecken) plus 3 "
+              "priorisierte Lernempfehlungen. Deutsch, stichpunktartig.")
+    prompt = (f"Schwerpunkt-Kapitel der Fehler: {top_ch}.\n"
+              f"Verfehlte Themen:\n- " + "\n- ".join(topics))
+    text = _call_anthropic(system, prompt)
+    return {"ok": True, "offline": False, "diagnosis": text,
+            "top_chapters": summary.get("top_chapters", [])}
 
 
 @app.post("/api/reset")

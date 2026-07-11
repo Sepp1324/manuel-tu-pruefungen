@@ -21,6 +21,13 @@ import {
   Volume2,
   VolumeX,
   X,
+  AlertTriangle,
+  Gauge,
+  Sparkles,
+  ListChecks,
+  Award,
+  Brain,
+  CalendarClock,
 } from "lucide-react";
 import "./styles.css";
 
@@ -3785,6 +3792,268 @@ function PhotoPoolPage({ onDone, startSession }) {
   );
 }
 
+function FehlerbuchPage({ module, startSession }) {
+  const [data, setData] = useState(null);
+  const [showResolved, setShowResolved] = useState(false);
+  const [explain, setExplain] = useState({});
+  const [diagnosis, setDiagnosis] = useState(null);
+  const [busy, setBusy] = useState("");
+  const [coach, setCoach] = useState(false);
+
+  async function load() {
+    setData(await api(`/api/fehlerbuch?module=${module}&include_resolved=${showResolved}`));
+  }
+  useEffect(() => { load().catch(() => {}); }, [module, showResolved]);
+  useEffect(() => { api("/api/coach/status").then((s) => setCoach(!!s.available)).catch(() => {}); }, []);
+
+  async function resolve(cardId) {
+    await api(`/api/fehlerbuch/${encodeURIComponent(cardId)}/resolve`, { method: "POST" });
+    load().catch(() => {});
+  }
+  async function doExplain(cardId) {
+    setBusy(cardId);
+    try {
+      const res = await api("/api/coach/explain", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ card_id: cardId }),
+      });
+      setExplain((old) => ({ ...old, [cardId]: res.explanation }));
+    } catch (err) {
+      setExplain((old) => ({ ...old, [cardId]: `Coach nicht verfuegbar: ${err.message}` }));
+    } finally { setBusy(""); }
+  }
+  async function runDiagnosis() {
+    setBusy("diag");
+    try {
+      const res = await api("/api/coach/error-diagnosis", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ module }),
+      });
+      setDiagnosis(res);
+    } catch (err) {
+      setDiagnosis({ diagnosis: `Diagnose fehlgeschlagen: ${err.message}`, offline: true });
+    } finally { setBusy(""); }
+  }
+
+  if (!data) return <div className="loading">Fehlerbuch laedt...</div>;
+  const s = data.summary || {};
+  const entries = data.entries || [];
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div>
+          <h2><AlertTriangle size={18} /> Fehlerbuch</h2>
+          <p>{s.open || 0} offen · {s.resolved || 0} erledigt · {s.total || 0} gesamt</p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowResolved((v) => !v)}>{showResolved ? "Nur offene" : "Auch erledigte"}</button>
+          <button onClick={runDiagnosis} disabled={busy === "diag"}>
+            <Brain size={16} /> {busy === "diag" ? "Analysiere..." : "Fehler-Diagnose"}
+          </button>
+        </div>
+      </div>
+      {diagnosis && (
+        <div className="panel" style={{ background: "var(--surface-2, #f4f6f8)", marginBottom: 12 }}>
+          <b>Diagnose {diagnosis.offline ? "(offline)" : "(KI)"}</b>
+          <pre style={{ whiteSpace: "pre-wrap", margin: "6px 0 0", fontFamily: "inherit" }}>{diagnosis.diagnosis}</pre>
+        </div>
+      )}
+      {!entries.length && <p className="muted">Kein offener Fehler. Sauber! 🎉</p>}
+      {entries.map((e) => (
+        <div key={e.card_id} className="panel" style={{ marginBottom: 10, opacity: e.resolved_at ? 0.6 : 1 }}>
+          <div className="section-head">
+            <div>
+              <b>VO{e.kap} · {e.miss_count}× verfehlt · {e.source === "exam" ? "Pruefung" : "Trainer"}</b>
+              <p style={{ margin: "4px 0" }}>{e.title}</p>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {coach && <button onClick={() => doExplain(e.card_id)} disabled={busy === e.card_id}>
+                <Sparkles size={14} /> {busy === e.card_id ? "..." : "Erklaeren"}
+              </button>}
+              {!e.resolved_at && <button className="primary" onClick={() => resolve(e.card_id)}><Check size={14} /> Erledigt</button>}
+            </div>
+          </div>
+          <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+            {(e.points || []).slice(0, 4).map((p, i) => <li key={i}>{p}</li>)}
+          </ul>
+          {explain[e.card_id] && (
+            <div style={{ marginTop: 8, padding: 8, borderLeft: "3px solid var(--accent, #06c)" }}>
+              <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontFamily: "inherit" }}>{explain[e.card_id]}</pre>
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function AnalyticsPage({ module }) {
+  const [items, setItems] = useState(null);
+  const [insights, setInsights] = useState(null);
+  useEffect(() => {
+    api(`/api/item-analytics?module=${module}`).then(setItems).catch(() => {});
+    api(`/api/fsrs-insights?module=${module}`).then(setInsights).catch(() => {});
+  }, [module]);
+  if (!items || !insights) return <div className="loading">Analytics laedt...</div>;
+  const maxF = Math.max(1, ...insights.forecast.map((f) => f.count));
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div><h2><Gauge size={18} /> Analytics</h2>
+          <p>{items.cards_reviewed}/{items.cards_total} Karten geuebt · Trefferquote {items.overall_hit_rate}% · Retention {insights.retention_pct ?? "–"}%</p></div>
+      </div>
+      <h3>Faellig – naechste 14 Tage</h3>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 90, margin: "8px 0 16px" }}>
+        {insights.forecast.map((f) => (
+          <div key={f.date} title={`${f.date}: ${f.count}`} style={{ flex: 1, textAlign: "center" }}>
+            <div style={{ height: `${(f.count / maxF) * 70}px`, background: "var(--accent, #06c)", borderRadius: 3, minHeight: f.count ? 3 : 0 }} />
+            <small style={{ fontSize: 9 }}>{f.date.slice(8)}</small>
+          </div>
+        ))}
+      </div>
+      <div className="source-audit-metrics" style={{ marginBottom: 14 }}>
+        <span><b>{insights.overdue}</b> ueberfaellig</span>
+        <span><b>{insights.new}</b> neu</span>
+        {insights.stability_buckets.map((b) => <span key={b.label}><b>{b.count}</b> {b.label}</span>)}
+      </div>
+      <h3>Schwerste Karten</h3>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead><tr style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>
+            <th>Karte</th><th>VO</th><th>Quote</th><th>Reviews</th><th>Nochmal</th></tr></thead>
+          <tbody>
+            {items.worst.slice(0, 25).map((it) => (
+              <tr key={it.card_id} style={{ borderBottom: "1px solid #eee" }}>
+                <td>{it.title}</td><td>{it.kap}</td>
+                <td style={{ color: (it.hit_rate ?? 100) < 60 ? "#c0392b" : "inherit" }}>{it.hit_rate ?? "–"}%</td>
+                <td>{it.reviews}</td><td>{it.agains}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function ReadinessPage({ module, startExam, setRoute }) {
+  const [d, setD] = useState(null);
+  useEffect(() => { api(`/api/readiness-plan?module=${module}`).then(setD).catch(() => {}); }, [module]);
+  if (!d) return <div className="loading">Reifeplan laedt...</div>;
+  const bandColor = { ready: "#27ae60", steady: "#e67e22", risk: "#c0392b" }[d.band] || "#888";
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div><h2><CalendarClock size={18} /> Reifeplan</h2>
+          <p>{d.days_left} Tage bis zur Pruefung</p></div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 30, fontWeight: 700, color: bandColor }}>{d.overall}%</div>
+          <small>Pruefungsreife</small>
+        </div>
+      </div>
+      <div className="source-audit-metrics">
+        <span><b>{d.daily_reviews}</b> Karten/Tag empfohlen</span>
+        <span><b>{d.daily_new}</b> neue/Tag</span>
+        <span><b>{d.unseen}</b> ungesehen</span>
+        <span><b>{d.open_mistakes}</b> offene Fehler</span>
+      </div>
+      <h3 style={{ marginTop: 16 }}>Fokus-Blöcke</h3>
+      {(d.milestones || []).map((m) => (
+        <div key={m.block} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #eee" }}>
+          <span><b>{m.block}</b> — {m.action}</span>
+          <span style={{ color: { ready: "#27ae60", steady: "#e67e22", risk: "#c0392b" }[m.status] || "#888" }}>{m.score}%</span>
+        </div>
+      ))}
+      <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+        <button className="primary" onClick={() => startExam?.(12, "weak")}><Target size={16} /> Schwaechen-Pruefung</button>
+        <button onClick={() => setRoute?.("home")}>Zum Trainer</button>
+      </div>
+    </section>
+  );
+}
+
+function LastMinutePage({ module }) {
+  const [d, setD] = useState(null);
+  useEffect(() => { api(`/api/last-minute-sheet?module=${module}`).then(setD).catch(() => {}); }, [module]);
+  if (!d) return <div className="loading">Spickzettel laedt...</div>;
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div><h2><ListChecks size={18} /> Last-Minute-Spickzettel</h2>
+          <p>Kernaussagen der schwaechsten Kapitel zuerst</p></div>
+        <button onClick={() => window.print()}>Drucken</button>
+      </div>
+      {(d.chapters || []).map((ch) => (
+        <div key={ch.kap} style={{ marginBottom: 14 }}>
+          <h3 style={{ marginBottom: 4 }}>{ch.name}</h3>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {ch.facts.map((f, i) => <li key={i}><b>{f.title}:</b> {f.point}</li>)}
+          </ul>
+        </div>
+      ))}
+      {!(d.chapters || []).length && <p className="muted">Noch keine Daten.</p>}
+    </section>
+  );
+}
+
+function QuestsPage({ module }) {
+  const [d, setD] = useState(null);
+  const [msg, setMsg] = useState("");
+  async function load() { setD(await api(`/api/gamification?module=${module}`)); }
+  useEffect(() => { load().catch(() => {}); }, [module]);
+  async function claim(key) {
+    setMsg("");
+    try {
+      const res = await api("/api/gamification/quests/claim", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, module }),
+      });
+      setMsg(res.ok ? `+${res.awarded} XP!` : "Bereits abgeholt.");
+      load().catch(() => {});
+    } catch (err) { setMsg(err.message); }
+  }
+  if (!d) return <div className="loading">Quests laden...</div>;
+  const xp = d.xp || {};
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div><h2><Trophy size={18} /> Quests & Fortschritt</h2>
+          <p>Level {xp.level} · {xp.rank} · <Flame size={13} /> {d.streak?.current || 0} Tage Streak</p></div>
+        <div style={{ textAlign: "right" }}><b>{xp.total_xp} XP</b></div>
+      </div>
+      <div style={{ background: "#e9edf1", borderRadius: 6, height: 10, margin: "6px 0 4px", overflow: "hidden" }}>
+        <div style={{ width: `${xp.progress_pct || 0}%`, height: "100%", background: "var(--accent, #06c)" }} />
+      </div>
+      <small className="muted">{xp.xp_in_level}/{xp.next_level_xp} bis Level {xp.level + 1}</small>
+      {msg && <div className="form-msg">{msg}</div>}
+      <h3 style={{ marginTop: 16 }}>Quests</h3>
+      {(d.quests || []).map((q) => (
+        <div key={q.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #eee" }}>
+          <div style={{ flex: 1 }}>
+            <b>{q.title}</b>
+            <div style={{ background: "#e9edf1", borderRadius: 5, height: 7, marginTop: 4 }}>
+              <div style={{ width: `${Math.min(100, (q.progress / q.goal) * 100)}%`, height: "100%", background: q.done ? "#27ae60" : "var(--accent, #06c)", borderRadius: 5 }} />
+            </div>
+            <small className="muted">{q.progress}/{q.goal} · +{q.xp} XP</small>
+          </div>
+          {q.claimed ? <span style={{ color: "#27ae60" }}><Check size={16} /> abgeholt</span>
+            : q.done ? <button className="primary" onClick={() => claim(q.key)}>Abholen</button>
+            : <span className="muted">offen</span>}
+        </div>
+      ))}
+      <h3 style={{ marginTop: 16 }}>Abzeichen</h3>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {(d.badges || []).map((b) => (
+          <span key={b.key} style={{ padding: "6px 10px", borderRadius: 16, fontSize: 13,
+            background: b.earned ? "#27ae60" : "#e9edf1", color: b.earned ? "#fff" : "#888" }}>
+            <Award size={13} /> {b.label}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function App() {
   const isLogin = window.location.pathname === "/login";
   const [route, setRoute] = useState("home");
@@ -3842,6 +4111,11 @@ function App() {
     if (route === "photos") return <PhotoPoolPage onDone={load} startSession={startSession} />;
     if (route === "add") return <ManualCardPage onDone={load} module={module} />;
     if (route === "import") return <CardImportPage onDone={load} module={module} />;
+    if (route === "fehlerbuch") return <FehlerbuchPage module={module} startSession={startSession} />;
+    if (route === "analytics") return <AnalyticsPage module={module} />;
+    if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} />;
+    if (route === "lastminute") return <LastMinutePage module={module} />;
+    if (route === "quests") return <QuestsPage module={module} />;
     return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
   }, [data, session, route, module]);
 
@@ -3867,6 +4141,11 @@ function App() {
         <button className={route === "quality" ? "active" : ""} onClick={() => setRoute("quality")}><ClipboardList size={16} /> Kartenqualitaet</button>
         <button className={route === "photos" ? "active" : ""} onClick={() => setRoute("photos")}><ImagePlus size={16} /> Fotopool</button>
         <button className={route === "add" ? "active" : ""} onClick={() => setRoute("add")}><Plus size={16} /> Eigene Karte</button>
+        <button className={route === "fehlerbuch" ? "active" : ""} onClick={() => setRoute("fehlerbuch")}><AlertTriangle size={16} /> Fehlerbuch</button>
+        <button className={route === "readiness" ? "active" : ""} onClick={() => setRoute("readiness")}><CalendarClock size={16} /> Reifeplan</button>
+        <button className={route === "analytics" ? "active" : ""} onClick={() => setRoute("analytics")}><Gauge size={16} /> Analytics</button>
+        <button className={route === "lastminute" ? "active" : ""} onClick={() => setRoute("lastminute")}><ListChecks size={16} /> Spickzettel</button>
+        <button className={route === "quests" ? "active" : ""} onClick={() => setRoute("quests")}><Trophy size={16} /> Quests</button>
         <button className={route === "import" ? "active" : ""} onClick={() => setRoute("import")}><ClipboardList size={16} /> Import</button>
       </nav>
       {content}

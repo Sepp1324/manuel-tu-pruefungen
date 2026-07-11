@@ -269,6 +269,24 @@ def migrate(conn: sqlite3.Connection) -> None:
         payload      TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_exam_attempts_module ON exam_attempts(module, created_at);
+    CREATE TABLE IF NOT EXISTS fehlerbuch (
+        card_id       TEXT PRIMARY KEY,
+        module        TEXT NOT NULL,
+        first_missed_at TEXT NOT NULL,
+        last_missed_at  TEXT NOT NULL,
+        miss_count    INTEGER NOT NULL DEFAULT 1,
+        source        TEXT NOT NULL DEFAULT 'review',
+        note          TEXT NOT NULL DEFAULT '',
+        resolved_at   TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_fehlerbuch_module ON fehlerbuch(module, resolved_at);
+    CREATE TABLE IF NOT EXISTS quest_claims (
+        quest_key    TEXT NOT NULL,
+        period_start TEXT NOT NULL,
+        claimed_at   TEXT NOT NULL,
+        amount       INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY(quest_key, period_start)
+    );
     """)
     conn.commit()
 
@@ -1711,3 +1729,242 @@ def streak(conn: sqlite3.Connection) -> dict:
         best = max(best, run)
         prev = current
     return {"current": cur, "best": best, "active_today": date.today().isoformat() in days}
+
+
+# ---------------------------------------------------------------------------
+# Fehlerbuch (error book): tracks cards that were missed in review or exam.
+# ---------------------------------------------------------------------------
+
+def log_mistake(conn: sqlite3.Connection, card_id: str, module: str, source: str,
+                note: str, created_at: str) -> None:
+    row = conn.execute("SELECT miss_count FROM fehlerbuch WHERE card_id=?", (card_id,)).fetchone()
+    if row:
+        conn.execute(
+            """UPDATE fehlerbuch SET last_missed_at=?, miss_count=miss_count+1,
+               source=?, note=?, resolved_at=NULL WHERE card_id=?""",
+            (created_at, source, note or "", card_id),
+        )
+    else:
+        conn.execute(
+            """INSERT INTO fehlerbuch(card_id, module, first_missed_at, last_missed_at,
+               miss_count, source, note, resolved_at) VALUES(?,?,?,?,1,?,?,NULL)""",
+            (card_id, module, created_at, created_at, source, note or ""),
+        )
+    conn.commit()
+
+
+def resolve_mistake(conn: sqlite3.Connection, card_id: str, resolved_at: str) -> bool:
+    cur = conn.execute(
+        "UPDATE fehlerbuch SET resolved_at=? WHERE card_id=?", (resolved_at, card_id)
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def fehlerbuch_entries(conn: sqlite3.Connection, module: str = "organic",
+                       include_resolved: bool = False) -> list[dict]:
+    clause = "WHERE f.module=?"
+    if not include_resolved:
+        clause += " AND f.resolved_at IS NULL"
+    rows = conn.execute(
+        f"""SELECT f.*, c.payload, c.kap, c.sub, c.subname, c.status, c.due
+            FROM fehlerbuch f JOIN cards c ON c.id=f.card_id
+            {clause}
+            ORDER BY (f.resolved_at IS NOT NULL), f.miss_count DESC, f.last_missed_at DESC""",
+        (module,),
+    ).fetchall()
+    out = []
+    for r in rows:
+        card = row_to_card(r)
+        out.append({
+            "card_id": r["card_id"],
+            "kap": r["kap"],
+            "sub": r["sub"],
+            "subname": r["subname"],
+            "miss_count": r["miss_count"],
+            "source": r["source"],
+            "note": r["note"],
+            "first_missed_at": r["first_missed_at"],
+            "last_missed_at": r["last_missed_at"],
+            "resolved_at": r["resolved_at"],
+            "q": card.get("q", ""),
+            "a": card.get("a", ""),
+        })
+    return out
+
+
+def fehlerbuch_summary(conn: sqlite3.Connection, module: str = "organic") -> dict:
+    row = conn.execute(
+        """SELECT
+             COUNT(*) total,
+             SUM(CASE WHEN resolved_at IS NULL THEN 1 ELSE 0 END) open,
+             SUM(CASE WHEN resolved_at IS NOT NULL THEN 1 ELSE 0 END) resolved
+           FROM fehlerbuch WHERE module=?""",
+        (module,),
+    ).fetchone()
+    by_kap = conn.execute(
+        """SELECT c.kap kap, COUNT(*) n FROM fehlerbuch f JOIN cards c ON c.id=f.card_id
+           WHERE f.module=? AND f.resolved_at IS NULL AND c.kap IS NOT NULL
+           GROUP BY c.kap ORDER BY n DESC LIMIT 5""",
+        (module,),
+    ).fetchall()
+    return {
+        "total": row["total"] or 0,
+        "open": row["open"] or 0,
+        "resolved": row["resolved"] or 0,
+        "top_chapters": [{"kap": r["kap"], "count": r["n"]} for r in by_kap],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Item analytics: per-card performance from the reviews log.
+# ---------------------------------------------------------------------------
+
+def item_analytics(conn: sqlite3.Connection, module: str = "organic", limit: int = 40) -> dict:
+    rows = conn.execute(
+        """SELECT c.id, c.kap, c.subname, c.payload, c.reps, c.lapses,
+                  c.stability, c.difficulty, c.status,
+                  COUNT(r.id) n_rev,
+                  SUM(CASE WHEN r.rating>=3 THEN 1 ELSE 0 END) hits,
+                  SUM(CASE WHEN r.rating=1 THEN 1 ELSE 0 END) agains,
+                  AVG(r.rating) avg_rating
+           FROM cards c LEFT JOIN reviews r ON r.card_id=c.id
+           WHERE c.module=? AND c.deck='anki'
+           GROUP BY c.id""",
+        (module,),
+    ).fetchall()
+    items = []
+    for r in rows:
+        n = r["n_rev"] or 0
+        hit_rate = round((r["hits"] or 0) / n * 100) if n else None
+        card = row_to_card(r)
+        # difficulty score: FSRS difficulty + penalty for low hit-rate + lapses
+        pain = (r["difficulty"] or 0) * 8 + (r["lapses"] or 0) * 12
+        if hit_rate is not None:
+            pain += (100 - hit_rate) * 0.6
+        items.append({
+            "card_id": r["id"],
+            "kap": r["kap"],
+            "subname": r["subname"],
+            "title": _plain_title(card.get("q", "")),
+            "reps": r["reps"] or 0,
+            "reviews": n,
+            "hit_rate": hit_rate,
+            "agains": r["agains"] or 0,
+            "lapses": r["lapses"] or 0,
+            "avg_rating": round(r["avg_rating"], 2) if r["avg_rating"] is not None else None,
+            "stability": round(r["stability"] or 0, 1),
+            "difficulty": round(r["difficulty"] or 0, 2),
+            "pain": round(pain, 1),
+            "status": r["status"],
+        })
+    reviewed = [i for i in items if i["reviews"] > 0]
+    worst = sorted(reviewed, key=lambda i: -i["pain"])[:limit]
+    total_rev = sum(i["reviews"] for i in items)
+    overall_hits = sum((i["hit_rate"] or 0) * i["reviews"] for i in reviewed)
+    overall_hit_rate = round(overall_hits / sum(i["reviews"] for i in reviewed)) if reviewed else 0
+    return {
+        "worst": worst,
+        "cards_total": len(items),
+        "cards_reviewed": len(reviewed),
+        "reviews_total": total_rev,
+        "overall_hit_rate": overall_hit_rate,
+    }
+
+
+def _plain_title(q: str) -> str:
+    text = q.split("\n\n", 1)[1] if "\n\n" in q else q
+    text = re.sub(r"<[^>]+>", "", text)
+    return text[:110].strip()
+
+
+# ---------------------------------------------------------------------------
+# FSRS insights: scheduling forecast and state/retention distribution.
+# ---------------------------------------------------------------------------
+
+def fsrs_insights(conn: sqlite3.Connection, module: str = "organic", days: int = 14) -> dict:
+    today = date.today()
+    rows = conn.execute(
+        """SELECT status, state, stability, due FROM cards
+           WHERE module=? AND deck='anki'""",
+        (module,),
+    ).fetchall()
+    active = [r for r in rows if r["status"] == "active"]
+    forecast = []
+    for i in range(days):
+        d = (today + timedelta(days=i)).isoformat()
+        n = sum(1 for r in active if (r["due"] or "")[:10] == d)
+        forecast.append({"date": d, "count": n})
+    overdue = sum(1 for r in active if r["due"] and r["due"][:10] < today.isoformat())
+    new = sum(1 for r in active if not r["due"])
+    buckets = {"jung (<7d)": 0, "reifend (7-30d)": 0, "stabil (>30d)": 0}
+    for r in active:
+        s = r["stability"] or 0
+        if s <= 0:
+            continue
+        if s < 7:
+            buckets["jung (<7d)"] += 1
+        elif s < 30:
+            buckets["reifend (7-30d)"] += 1
+        else:
+            buckets["stabil (>30d)"] += 1
+    retention_row = conn.execute(
+        """SELECT AVG(CASE WHEN rating>=3 THEN 1.0 ELSE 0.0 END) ret, COUNT(*) n
+           FROM reviews r JOIN cards c ON c.id=r.card_id
+           WHERE c.module=? AND r.elapsed_days >= 1""",
+        (module,),
+    ).fetchone()
+    return {
+        "forecast": forecast,
+        "overdue": overdue,
+        "new": new,
+        "active": len(active),
+        "stability_buckets": [{"label": k, "count": v} for k, v in buckets.items()],
+        "retention_pct": round((retention_row["ret"] or 0) * 100) if retention_row["n"] else None,
+        "retention_reviews": retention_row["n"] or 0,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Gamification: quest claims.
+# ---------------------------------------------------------------------------
+
+def claim_quest(conn: sqlite3.Connection, quest_key: str, period_start: str,
+                amount: int, created_at: str) -> bool:
+    exists = conn.execute(
+        "SELECT 1 FROM quest_claims WHERE quest_key=? AND period_start=?",
+        (quest_key, period_start),
+    ).fetchone()
+    if exists:
+        return False
+    conn.execute(
+        "INSERT INTO quest_claims(quest_key, period_start, claimed_at, amount) VALUES(?,?,?,?)",
+        (quest_key, period_start, created_at, amount),
+    )
+    conn.commit()
+    return True
+
+
+def claimed_quests(conn: sqlite3.Connection, period_starts: list[str]) -> set[str]:
+    if not period_starts:
+        return set()
+    marks = ",".join("?" for _ in period_starts)
+    rows = conn.execute(
+        f"SELECT quest_key, period_start FROM quest_claims WHERE period_start IN ({marks})",
+        period_starts,
+    ).fetchall()
+    return {f"{r['quest_key']}|{r['period_start']}" for r in rows}
+
+
+def reviews_count_since(conn: sqlite3.Connection, since_iso: str, module: str | None = None) -> int:
+    if module:
+        row = conn.execute(
+            """SELECT COUNT(*) n FROM reviews r JOIN cards c ON c.id=r.card_id
+               WHERE r.reviewed_at>=? AND c.module=?""",
+            (since_iso, module),
+        ).fetchone()
+    else:
+        row = conn.execute(
+            "SELECT COUNT(*) n FROM reviews WHERE reviewed_at>=?", (since_iso,)
+        ).fetchone()
+    return row["n"] or 0
