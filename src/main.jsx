@@ -83,6 +83,7 @@ const EXAM_EVALS = [
 const WORKSHOP_ISSUE_LABELS = {
   english: "Englisch",
   long: "Zu lang",
+  source: "Quelle schwach",
   missing_context: "Kein Kontext",
   photo: "Foto empfohlen",
   sketch: "Skizze",
@@ -404,6 +405,11 @@ function formatDate(s) {
   return `${d.toLocaleDateString("de-AT")} ${d.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
+function formatExamDate(s) {
+  if (!s) return "Pruefung";
+  return new Date(`${s}T12:00:00`).toLocaleDateString("de-AT", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 function formatBytes(n = 0) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
@@ -637,7 +643,7 @@ function Login() {
       <form className="login-card" onSubmit={submit}>
         <div className="brand-mark">TU</div>
         <h1>TU Chemie SR-Trainer</h1>
-        <p>Chemische Technologien organischer Stoffe, fokussiert auf Manuels Pruefung am 21.09.</p>
+        <p>Chemische Technologien organischer und anorganischer Stoffe, fokussiert auf Manuels Pruefungen.</p>
         <label>
           Benutzer
           <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
@@ -719,30 +725,96 @@ function StudyPlan({ plan, startSession }) {
   );
 }
 
+function ReadinessCoach({ score, setRoute, startExam, startSession }) {
+  if (!score) return null;
+  const components = score.components || [];
+  const blockers = score.blockers || [];
+  return (
+    <section className={`panel readiness-panel ${score.band || ""}`}>
+      <div className="section-head">
+        <div>
+          <h2>Pruefungsreife</h2>
+          <p>{score.next_step}</p>
+        </div>
+        <div className="readiness-score">
+          <b>{score.overall || 0}%</b>
+          <span>{score.band_label || score.status || "Status"}</span>
+        </div>
+      </div>
+      <div className="readiness-main">
+        <div className="readiness-components">
+          {components.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <b>{item.score}%</b>
+              <i><em style={{ width: `${item.score}%` }} /></i>
+              <small>{item.detail}</small>
+            </div>
+          ))}
+        </div>
+        <div className="readiness-blockers">
+          <b>Blocker bis 80%</b>
+          {blockers.slice(0, 5).map((item) => (
+            <button key={item.key} onClick={() => item.kap ? startSession?.("anki", item.kap) : setRoute?.(item.route || "dashboard")}>
+              <span>{item.label}</span>
+              <em>{item.detail}</em>
+            </button>
+          ))}
+          {!blockers.length && <p>Keine harte Luecke sichtbar. Jetzt mit einer Simulation absichern.</p>}
+          <div className="button-row-inline">
+            <button className="primary" onClick={() => startExam?.(12, "weak")}>Mini-Pruefung</button>
+            <button onClick={() => setRoute?.("knowledge")}>Landkarte</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TodayPlan({ plan, setRoute, startSession }) {
   if (!plan) return null;
   const workload = plan.workload || {};
+  const missions = plan.missions || [];
   function runTask(task) {
-    if (task.key === "due" || task.key === "new") startSession?.("anki");
-    else if (task.key === "photo") startSession?.("photos");
-    else setRoute?.(task.route || "home");
+    if (task.deck === "anki" || task.key === "due" || task.key === "new" || task.key === "weak_chapter") {
+      startSession?.("anki", task.kap || null);
+    } else {
+      setRoute?.(task.route || "home");
+    }
   }
   return (
-    <section className="panel today-plan">
+    <section className={`panel today-plan ${plan.band || ""}`}>
       <div className="section-head">
         <div>
-          <h2>Heute solltest du machen</h2>
+          <h2>{plan.title || "Heute solltest du machen"}</h2>
           <p>{plan.message}</p>
         </div>
-        <span className="deck-pill">{plan.days_left} Tage</span>
+        <span className="deck-pill">{plan.mission?.summary || `${plan.days_left} Tage`}</span>
       </div>
       <div className="plan-metrics">
+        <span><b>{plan.readiness?.score || 0}%</b> Reife</span>
         <span><b>{workload.daily_cards || 0}</b> Karten heute</span>
         <span><b>{workload.backlog_per_day || 0}</b> pro Tag offen</span>
         <span><b>{workload.repair_cards || 0}</b> Werkstattkarten</span>
         <span><b>{workload.photo_cards || 0}</b> Foto-Queue</span>
       </div>
-      <div className="today-task-grid">
+      {!!missions.length && (
+        <div className="mission-grid">
+          {missions.map((task, idx) => (
+            <article key={task.key} className={`mission-card ${task.priority || ""}`}>
+              <div className="mission-index">{idx + 1}</div>
+              <div>
+                <span>{task.priority || "mittel"} · {task.minutes} min</span>
+                <h3>{task.title}</h3>
+                <p>{task.detail}</p>
+                <em>Ziel: {task.done_when}</em>
+              </div>
+              <button onClick={() => runTask(task)}>{task.cta || "Start"}</button>
+            </article>
+          ))}
+        </div>
+      )}
+      <div className={`today-task-grid ${missions.length ? "compact" : ""}`}>
         {(plan.tasks || []).filter((task) => task.amount !== 0).map((task) => (
           <button
             key={task.key}
@@ -846,6 +918,35 @@ function QuestionContent({ html = "" }) {
   return <h2 dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+function SourceAnchorPanel({ anchor, compact = false }) {
+  if (!anchor) return null;
+  return (
+    <div className={`source-anchor-panel ${anchor.status || ""} ${compact ? "compact" : ""}`}>
+      <div className="source-anchor-head">
+        <div>
+          <b>{anchor.anchor || "Quelle"}</b>
+          <span>{anchor.source || "nicht gesetzt"}</span>
+        </div>
+        <em>{anchor.score ?? 0}% · {anchor.label || "Quelle"}</em>
+      </div>
+      {!compact && (
+        <>
+          <div className="source-anchor-tags">
+            {(anchor.tags || []).slice(0, 6).map((tag) => <span key={tag}>{tag}</span>)}
+            {(anchor.issues || []).slice(0, 4).map((issue) => <span key={issue} className="issue">{issue}</span>)}
+          </div>
+          {!!(anchor.derivation || []).length && (
+            <div className="source-anchor-why">
+              <b>Warum diese Antwort?</b>
+              {(anchor.derivation || []).slice(0, 4).map((item) => <span key={item}>{item}</span>)}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ModuleSwitch({ modules = {}, active, onChange }) {
   const entries = Object.entries(modules);
   if (entries.length <= 1) return null;
@@ -860,10 +961,11 @@ function ModuleSwitch({ modules = {}, active, onChange }) {
   );
 }
 
-function Home({ data, startSession, setRoute, refresh, module, setModule }) {
+function Home({ data, startSession, startExam, setRoute, refresh, module, setModule }) {
   const st = data.anki || {};
   const goal = data.daily_goal || {};
   const forecast = data.forecast || {};
+  const examDate = formatExamDate(data.exam_date);
   return (
     <>
       <ModuleSwitch modules={data.modules || {}} active={module} onChange={setModule} />
@@ -872,16 +974,18 @@ function Home({ data, startSession, setRoute, refresh, module, setModule }) {
         <div>
           <span className="hero-kicker">Technische Universität · Prüfungsvorbereitung</span>
           <h1>{data.title}</h1>
-          <p>Manuels Anki-Style Trainer bis zur Pruefung am 21.09.2026.</p>
+          <p>Manuels Anki-Style Trainer bis zur Pruefung am {examDate}.</p>
           <div className="hero-actions">
             <button className="primary" onClick={() => startSession("anki")}>Session starten</button>
             <button onClick={() => setRoute("dashboard")}><BarChart3 size={16} /> Dashboard</button>
+            <button onClick={() => setRoute("knowledge")}><Tag size={16} /> Landkarte</button>
             <button onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
           </div>
         </div>
       </section>
 
       <XpCard xp={data.xp} streak={data.streak} />
+      <ReadinessCoach score={data.exam_score} setRoute={setRoute} startExam={startExam} startSession={startSession} />
       <StudyPlan plan={data.study_plan} startSession={startSession} />
       <TodayPlan plan={data.today_plan} setRoute={setRoute} startSession={startSession} />
 
@@ -1204,6 +1308,7 @@ function Study({ session, setSession, finish }) {
             <span>{card.subname}</span>
             <span>Quelle: {card.source}</span>
           </div>
+          <SourceAnchorPanel anchor={card.source_anchor} />
           <EditableCardPreview
             question={draft.q || ""}
             answer={draft.a || ""}
@@ -1229,6 +1334,7 @@ function Study({ session, setSession, finish }) {
           <span>Quelle: {card.source}</span>
           <span>faellig: {formatDate(card.due)}</span>
         </div>
+        <SourceAnchorPanel anchor={card.source_anchor} compact={!revealed} />
         {editMsg && <div className="form-msg">{editMsg}</div>}
         <QuestionContent html={card.q} />
         <div className="card-report-strip">
@@ -1340,15 +1446,178 @@ function Dashboard({ startSession, module }) {
   );
 }
 
+const KNOWLEDGE_STATUS_LABELS = {
+  critical: "kritisch",
+  shaky: "wackelig",
+  building: "im Aufbau",
+  secure: "sicher",
+  unknown: "offen",
+};
+
+function KnowledgeMapPage({ module, startSession, setRoute }) {
+  const [data, setData] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState("");
+
+  useEffect(() => {
+    setData(null);
+    setSelectedTopic("");
+    api(`/api/knowledge-map?module=${encodeURIComponent(module)}`)
+      .then((res) => {
+        setData(res);
+        setSelectedTopic(res.nodes?.[0]?.topic || "");
+      })
+      .catch(() => {});
+  }, [module]);
+
+  if (!data) return <div className="loading">Wissenslandkarte laedt...</div>;
+  const nodes = data.nodes || [];
+  const edges = data.edges || [];
+  const route = data.route || [];
+  const selected = nodes.find((node) => node.topic === selectedTopic) || nodes[0];
+  const connected = selected ? edges.filter((edge) => edge.source === selected.topic || edge.target === selected.topic).slice(0, 8) : [];
+
+  return (
+    <section className="knowledge-map-page">
+      <div className="panel knowledge-hero">
+        <div className="section-head">
+          <div>
+            <h2>Wissenslandkarte</h2>
+            <p>Themen, Abhaengigkeiten und Lernroute bis {formatExamDate(data.exam_date)}.</p>
+          </div>
+          <Tag size={24} />
+        </div>
+        <div className="quality-metrics">
+          <span><b>{data.summary?.topics || 0}</b> Themen</span>
+          <span><b>{data.summary?.critical || 0}</b> kritisch</span>
+          <span><b>{data.summary?.shaky || 0}</b> wackelig</span>
+          <span><b>{data.summary?.edges || 0}</b> Verbindungen</span>
+        </div>
+      </div>
+
+      <div className="knowledge-layout">
+        <section className="panel knowledge-canvas">
+          <div className="section-head">
+            <div>
+              <h2>Themenknoten</h2>
+              <p>Farbe und Score zeigen, wie stabil der Bereich aktuell ist.</p>
+            </div>
+          </div>
+          <div className="knowledge-node-grid">
+            {nodes.map((node) => (
+              <button
+                key={node.topic}
+                className={`knowledge-node ${node.status} ${selected?.topic === node.topic ? "active" : ""}`}
+                onClick={() => setSelectedTopic(node.topic)}
+              >
+                <span>{node.chapter_label}</span>
+                <b>{node.topic}</b>
+                <em>{KNOWLEDGE_STATUS_LABELS[node.status] || node.status} · {node.score}%</em>
+                <i><strong style={{ width: `${node.score}%` }} /></i>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel knowledge-detail">
+          {selected ? (
+            <>
+              <div className="section-head">
+                <div>
+                  <h2>{selected.topic}</h2>
+                  <p>{selected.chapter_label} · {KNOWLEDGE_STATUS_LABELS[selected.status] || selected.status}</p>
+                </div>
+                <span className={`knowledge-badge ${selected.status}`}>{selected.score}%</span>
+              </div>
+              <div className="quality-metrics compact">
+                <span><b>{selected.total}</b> Karten</span>
+                <span><b>{selected.seen}</b> gesehen</span>
+                <span><b>{selected.due}</b> faellig</span>
+                <span><b>{selected.needs_review}</b> Review</span>
+              </div>
+              <div className="knowledge-card-list">
+                {(selected.cards || []).map((card) => (
+                  <button key={card.id} onClick={() => startSession?.("anki", card.kap)}>
+                    <b>VO{card.kap || "?"}</b>
+                    <span>{card.title}</span>
+                    <em>{card.due ? "faellig" : card.status === "needs_review" ? "Review" : card.source}</em>
+                  </button>
+                ))}
+              </div>
+              <div className="button-row-inline">
+                <button className="primary" onClick={() => startSession?.("anki", selected.chapters?.[0])}>Knoten lernen</button>
+                <button onClick={() => setRoute?.("exam")}>Pruefungsfragen</button>
+                <button onClick={() => setRoute?.("workshop")}>Werkstatt</button>
+              </div>
+              {!!connected.length && (
+                <div className="knowledge-connections">
+                  <b>Direkte Verbindungen</b>
+                  {connected.map((edge) => (
+                    <span key={`${edge.source}-${edge.target}-${edge.kind}`}>
+                      {edge.source === selected.topic ? edge.target : edge.source}
+                      <em>{edge.kind === "dependency" ? edge.label : `${edge.weight} gemeinsame Karten`}</em>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : <p className="muted">Noch keine Themen gefunden.</p>}
+        </section>
+      </div>
+
+      <section className="panel knowledge-route">
+        <div className="section-head">
+          <div>
+            <h2>Auto-Lernroute</h2>
+            <p>Sortiert nach Risiko, faelligen Karten und Review-Druck.</p>
+          </div>
+          <button onClick={() => setRoute?.("exam")}>Simulation starten</button>
+        </div>
+        <div className="route-steps">
+          {route.map((step) => (
+            <article key={`${step.step}-${step.topic}`}>
+              <span>{step.step}</span>
+              <div>
+                <b>{step.topic}</b>
+                <p>{step.action}</p>
+                <em>{step.detail}</em>
+              </div>
+              <button onClick={() => startSession?.("anki", step.kap)} disabled={!step.kap}>Start</button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel knowledge-edge-panel">
+        <div className="section-head">
+          <div>
+            <h2>Querverbindungen</h2>
+            <p>Aus gemeinsamen Karten und fachlichen Abhaengigkeiten.</p>
+          </div>
+        </div>
+        <div className="edge-list">
+          {edges.slice(0, 16).map((edge) => (
+            <span key={`${edge.source}-${edge.target}-${edge.kind}`}>
+              <b>{edge.source}</b>
+              <i>{edge.kind === "dependency" ? "braucht" : "gemeinsam"}</i>
+              <b>{edge.target}</b>
+              <em>{edge.label}</em>
+            </span>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
 function ExamScorePanel({ prognosis }) {
   if (!prognosis) return null;
   return (
-    <section className="panel exam-score-panel">
+    <section className={`panel exam-score-panel ${prognosis.band || ""}`}>
       <div>
-        <h2>Pruefungs-Score-Prognose</h2>
+        <h2>Pruefungsreife</h2>
         <p>{prognosis.next_step}</p>
       </div>
-      <div className="forecast-score compact"><b>{prognosis.label}</b><span>gesamt</span></div>
+      <div className="forecast-score compact"><b>{prognosis.overall || 0}%</b><span>{prognosis.band_label || "gesamt"}</span></div>
       <div className="exam-blocks">
         {(prognosis.blocks || []).map((b) => (
           <div key={b.block}>
@@ -1359,6 +1628,14 @@ function ExamScorePanel({ prognosis }) {
           </div>
         ))}
       </div>
+      {!!prognosis.blockers?.length && (
+        <div className="exam-blockers">
+          <b>Naechste Blocker</b>
+          {prognosis.blockers.slice(0, 4).map((item) => (
+            <span key={item.key}>{item.label}<em>{item.detail}</em></span>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -1454,6 +1731,7 @@ function MediaTrainingPanel({ checklist, onFormula, onPhotos }) {
 
 function FinalPlanPanel({ plan }) {
   if (!plan) return null;
+  const examDate = formatExamDate(plan.exam_date);
   return (
     <section className="panel final-plan">
       <div className="section-head">
@@ -1461,7 +1739,7 @@ function FinalPlanPanel({ plan }) {
           <h2>7-Tage-Endspurtplan</h2>
           <p>{plan.rule}</p>
         </div>
-        <span className="deck-pill">bis {plan.exam_date}</span>
+        <span className="deck-pill">bis {examDate}</span>
       </div>
       <div className="final-days">
         {(plan.days || []).map((day) => (
@@ -1581,14 +1859,15 @@ function RepairQueuePanel({ history, onStart }) {
 
 function WeeklyPlanPanel({ plan }) {
   if (!plan) return null;
+  const examDate = formatExamDate(plan.exam_date);
   return (
     <section className="panel weekly-plan">
       <div className="section-head">
         <div>
-          <h2>Wochenansicht bis 21.09.</h2>
+          <h2>Wochenansicht bis {examDate}</h2>
           <p>{plan.rule}</p>
         </div>
-        <span className="deck-pill">{plan.exam_date}</span>
+        <span className="deck-pill">{examDate}</span>
       </div>
       <div className="week-grid">
         {(plan.weeks || []).map((week) => (
@@ -1664,6 +1943,23 @@ function OpenExamRunner({ exam, module, onClose }) {
     });
   }
 
+  function applyAnswerReview() {
+    if (!question) return;
+    const review = answerRubricReview(answers[question.card_id] || "", question);
+    setScores((old) => ({
+      ...old,
+      [question.card_id]: { ...(old[question.card_id] || {}), ...review.subScores },
+    }));
+    setChecklist((old) => ({
+      ...old,
+      [question.card_id]: Array.from(new Set([...(old[question.card_id] || []), ...review.checklist])),
+    }));
+    setErrorTypes((old) => ({
+      ...old,
+      [question.card_id]: Array.from(new Set([...(old[question.card_id] || []), ...review.errorTypes])),
+    }));
+  }
+
   async function finish() {
     if (submitting) return;
     setSubmitting(true);
@@ -1673,16 +1969,24 @@ function OpenExamRunner({ exam, module, onClose }) {
       mode: exam.mode,
       exam_id: exam.id,
       duration_seconds: Math.round((Date.now() - startedAt) / 1000),
-      results: (exam.questions || []).map((q) => ({
-        card_id: q.card_id,
-        sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || "miss"),
-        confidence: confidence[q.card_id] || "",
-        error_types: errorTypes[q.card_id] || [],
-        answer_note: [
-          answers[q.card_id] || "",
-          (checklist[q.card_id] || []).length ? `Checkliste: ${(checklist[q.card_id] || []).map(checklistLabel).join(", ")}` : "",
-        ].filter(Boolean).join("\n\n"),
-      })),
+      results: (exam.questions || []).map((q) => {
+        const review = answerRubricReview(answers[q.card_id] || "", q);
+        return {
+          card_id: q.card_id,
+          sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || review.subScores[sub.id] || "miss"),
+          confidence: confidence[q.card_id] || "",
+          error_types: Array.from(new Set([...(errorTypes[q.card_id] || []), ...review.errorTypes])),
+          auto_score: review.score,
+          auto_missing_terms: review.missingTerms.slice(0, 12),
+          auto_checklist: review.checklist,
+          answer_note: [
+            answers[q.card_id] || "",
+            (checklist[q.card_id] || []).length ? `Checkliste: ${(checklist[q.card_id] || []).map(checklistLabel).join(", ")}` : "",
+            `Auto-Check: ${review.label}, ${review.score}% Abdeckung`,
+            review.missingTerms.length ? `Fehlt: ${review.missingTerms.slice(0, 8).join(", ")}` : "",
+          ].filter(Boolean).join("\n\n"),
+        };
+      }),
     };
     try {
       const res = await api("/api/exam/open/submit", {
@@ -1719,6 +2023,7 @@ function OpenExamRunner({ exam, module, onClose }) {
   const currentAnswer = answers[question.card_id] || "";
   const currentChecklist = checklist[question.card_id] || [];
   const currentComparison = answerComparison(currentAnswer, question);
+  const currentReview = answerRubricReview(currentAnswer, question);
   const isFormulaMode = exam.mode === "formula";
   const rubric = question.rubric?.length ? question.rubric : question.subquestions || [];
   const totalRubricPoints = rubric.reduce((sum, item) => sum + (item.points || 0), 0);
@@ -1745,6 +2050,7 @@ function OpenExamRunner({ exam, module, onClose }) {
           <span>{question.points} Punkte</span>
           {question.sketch_required && <span>Skizze erforderlich</span>}
         </div>
+        <SourceAnchorPanel anchor={question.source_anchor} />
         <h2 dangerouslySetInnerHTML={{ __html: question.question }} />
         <label className="exam-answer-editor">
           {isFormulaMode ? "Meine Skizze / Formel / Antwort" : "Meine Antwort"}
@@ -1775,6 +2081,42 @@ function OpenExamRunner({ exam, module, onClose }) {
             <div className="coverage-chip-row">
               {currentComparison.hits.slice(0, 10).map((term) => <span key={term} className="hit">{term}</span>)}
               {currentComparison.missing.slice(0, 10).map((term) => <span key={term} className="miss">{term}</span>)}
+            </div>
+          </div>
+        )}
+        {!!currentAnswer.trim() && (
+          <div className={`answer-review-panel ${currentReview.confidenceHint}`}>
+            <div className="answer-review-head">
+              <div>
+                <h3>Antwortpruefung 2.0</h3>
+                <p>Automatischer Rubrik-Check aus Musterantwort, Punkteschema und deiner Antwort.</p>
+              </div>
+              <span><b>{currentReview.score}%</b>{currentReview.label}</span>
+            </div>
+            <div className="answer-review-grid">
+              {currentReview.categories.map((item) => (
+                <article key={item.id}>
+                  <b>{item.category}</b>
+                  <p>{item.prompt}</p>
+                  <span className={item.score}>{item.score === "full" ? "voll" : item.score === "partial" ? "teilweise" : "fehlt"}</span>
+                  {!!item.missing.length && <em>Fehlt: {item.missing.slice(0, 4).join(", ")}</em>}
+                </article>
+              ))}
+            </div>
+            <div className="answer-review-footer">
+              <div>
+                <b>Fehlende Bausteine</b>
+                {currentReview.missingChecklist.length
+                  ? currentReview.missingChecklist.map((item) => <span key={item.key}>{item.label}</span>)
+                  : <span>Keine harte Luecke sichtbar</span>}
+              </div>
+              <div>
+                <b>Diagnose</b>
+                {currentReview.errorTypes.length
+                  ? currentReview.errorTypes.map((key) => <span key={key}>{EXAM_ERROR_TYPES.find(([item]) => item === key)?.[1] || key}</span>)
+                  : <span>Antwort wirkt pruefungsnah</span>}
+              </div>
+              <button onClick={applyAnswerReview}>Vorschlag uebernehmen</button>
             </div>
           </div>
         )}
@@ -2370,7 +2712,7 @@ function ExamPage({ startExam, startSession, module }) {
         <div className="section-head">
           <div>
             <h2>Pruefungsarbeitsplatz</h2>
-            <p>Offene TU-Fragen, Antwortgerueste, Mini-Pruefungen und Formeltraining.</p>
+            <p>Schriftliche Antwortpruefung mit Rubrik-Check, Musterantwort, Fehlerdiagnose und Formeltraining.</p>
           </div>
           <Target size={26} />
         </div>
@@ -2719,6 +3061,7 @@ function CardReviewPage({ onDone, module }) {
       <div className="panel quality-editor">
         {selected ? (
           <>
+            <SourceAnchorPanel anchor={selected.source_anchor} />
             <EditableCardPreview
               question={selected.q || ""}
               answer={selected.a || ""}
@@ -2932,6 +3275,7 @@ function WorkshopPage({ module, onDone }) {
                 <span key={issue}>{issueLabel(issue)}</span>
               ))}
             </div>
+            <SourceAnchorPanel anchor={selected.source_anchor} />
             <EditableCardPreview
               question={selected.q || ""}
               answer={selected.a || ""}
@@ -3040,6 +3384,7 @@ function TriagePage({ module, onDone }) {
               <span>Score {draft.quality_score || 0}</span>
               {(draft.tags || []).map((t) => <span key={t}>{t}</span>)}
             </div>
+            <SourceAnchorPanel anchor={draft.source_anchor} />
             <EditableCardPreview
               question={draft.q || ""}
               answer={draft.a || ""}
@@ -3217,6 +3562,53 @@ function QualityAuditPanel({ module, setRoute }) {
   );
 }
 
+function SourceAuditPanel({ module, setRoute }) {
+  const [audit, setAudit] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  async function load() {
+    setMsg("");
+    try {
+      setAudit(await api(`/api/source-audit?module=${encodeURIComponent(module)}&limit=8`));
+    } catch (err) {
+      setMsg(err.message || "Quellen-Audit fehlgeschlagen");
+    }
+  }
+
+  useEffect(() => { load().catch(() => {}); }, [module]);
+  return (
+    <div className="panel source-audit-panel">
+      <div className="section-head">
+        <div>
+          <h3>Quellenmodus</h3>
+          <p>{audit ? `Durchschnitt ${audit.avg_score}% · ${audit.weak || 0} schwache Quellen` : "Skriptanker und Herleitung jeder Karte pruefen."}</p>
+        </div>
+        <button onClick={load}><RefreshCw size={16} /> Aktualisieren</button>
+      </div>
+      {audit && (
+        <>
+          <div className="source-audit-metrics">
+            <span><b>{audit.strong || 0}</b> gruen</span>
+            <span><b>{audit.medium || 0}</b> gelb</span>
+            <span><b>{audit.weak || 0}</b> rot</span>
+          </div>
+          <div className="source-audit-list">
+            {(audit.items || []).map((item) => (
+              <button key={item.card.id} onClick={() => setRoute?.("workshop")}>
+                <b>VO{item.card.kap} · {item.anchor.score}%</b>
+                <span>{item.card.title}</span>
+                <em>{(item.anchor.issues || []).join(" · ") || item.anchor.source}</em>
+              </button>
+            ))}
+            {!(audit.items || []).length && <p className="muted">Keine roten Quellenanker im Audit.</p>}
+          </div>
+        </>
+      )}
+      {msg && <div className="form-msg">{msg}</div>}
+    </div>
+  );
+}
+
 function QualityCenter({ data, setRoute, module, startSession }) {
   const quality = data.quality || {};
   const autoQuality = data.auto_quality || {};
@@ -3254,6 +3646,7 @@ function QualityCenter({ data, setRoute, module, startSession }) {
       <div className="quality-center-grid">
         <PerformancePanel />
         <QualityAuditPanel module={module} setRoute={setRoute} />
+        <SourceAuditPanel module={module} setRoute={setRoute} />
         <div className="panel">
           <h3>Haeufige Gruende</h3>
           <div className="reason-bars">
@@ -3440,6 +3833,7 @@ function App() {
     if (!data) return <div className="loading">Laedt...</div>;
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
+    if (route === "knowledge") return <KnowledgeMapPage module={module} startSession={startSession} setRoute={setRoute} />;
     if (route === "exam") return <ExamPage startExam={startExam} startSession={startSession} module={module} />;
     if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} module={module} startSession={startSession} />;
     if (route === "workshop") return <WorkshopPage module={module} onDone={load} />;
@@ -3448,7 +3842,7 @@ function App() {
     if (route === "photos") return <PhotoPoolPage onDone={load} startSession={startSession} />;
     if (route === "add") return <ManualCardPage onDone={load} module={module} />;
     if (route === "import") return <CardImportPage onDone={load} module={module} />;
-    return <Home data={data} startSession={startSession} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
+    return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
   }, [data, session, route, module]);
 
   if (isLogin) return <Login />;
@@ -3465,6 +3859,7 @@ function App() {
       <nav className="tabs">
         <button className={route === "home" ? "active" : ""} onClick={() => setRoute("home")}><BookOpenCheck size={16} /> Trainer</button>
         <button className={route === "dashboard" ? "active" : ""} onClick={() => setRoute("dashboard")}><BarChart3 size={16} /> Dashboard</button>
+        <button className={route === "knowledge" ? "active" : ""} onClick={() => setRoute("knowledge")}><Tag size={16} /> Landkarte</button>
         <button className={route === "exam" ? "active" : ""} onClick={() => setRoute("exam")}><Target size={16} /> Pruefung</button>
         <button className={route === "quality-center" ? "active" : ""} onClick={() => setRoute("quality-center")}><ClipboardList size={16} /> Qualitaet</button>
         <button className={route === "workshop" ? "active" : ""} onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>

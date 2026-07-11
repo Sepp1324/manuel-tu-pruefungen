@@ -23,11 +23,15 @@ import db
 from fsrs import Scheduler
 
 
-app = FastAPI(title="Organische Chemie SR-Trainer")
+app = FastAPI(title="TU Chemie SR-Trainer")
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 sched = Scheduler()
 
 EXAM_DATE = date.fromisoformat(os.environ.get("EXAM_DATE", "2026-09-21"))
+MODULE_EXAM_DATE_DEFAULTS = {
+    "organic": "2026-09-21",
+    "inorganic": "2026-09-29",
+}
 SEED_PATH = Path(__file__).parent / "seed_data.json"
 SPA_DIR = Path(os.environ.get("SPA_DIR", Path(__file__).parent / "spa"))
 if not SPA_DIR.exists() and (Path(__file__).parent.parent / "dist").exists():
@@ -124,15 +128,19 @@ def _module_catalog() -> dict:
     except (OSError, json.JSONDecodeError):
         return fallback
     if "modules" in payload:
-        return {
-            key: {"key": key, **value}
-            for key, value in payload["modules"].items()
-        }
+        default_exam_date = payload.get("exam_date", EXAM_DATE.isoformat())
+        modules = {}
+        for key, value in payload["modules"].items():
+            item = {"key": key, **value}
+            item.setdefault("exam_date", MODULE_EXAM_DATE_DEFAULTS.get(key, default_exam_date))
+            modules[key] = item
+        return modules
     return {
         "organic": {
             "key": "organic",
             "title": "Organische Chemie",
             "full_title": payload.get("title", "Chemische Technologien Organischer Stoffe"),
+            "exam_date": payload.get("exam_date", EXAM_DATE.isoformat()),
             "chapters": payload.get("chapters", {}),
         }
     }
@@ -212,13 +220,24 @@ def _performance_summary() -> dict:
     }
 
 
-def _days_left() -> int:
-    return max((EXAM_DATE - date.today()).days, 0)
+def _exam_date(module: str = "organic") -> date:
+    env_value = os.environ.get(f"{module.upper()}_EXAM_DATE")
+    catalog_value = _module_catalog().get(module, {}).get("exam_date")
+    fallback = MODULE_EXAM_DATE_DEFAULTS.get(module, EXAM_DATE.isoformat())
+    raw = env_value or catalog_value or os.environ.get("EXAM_DATE") or fallback
+    try:
+        return date.fromisoformat(str(raw))
+    except ValueError:
+        return date.fromisoformat(fallback)
 
 
-def _max_fsrs_interval_days(now: datetime | None = None) -> int:
+def _days_left(module: str = "organic") -> int:
+    return max((_exam_date(module) - date.today()).days, 0)
+
+
+def _max_fsrs_interval_days(now: datetime | None = None, module: str = "organic") -> int:
     now = now or datetime.now(timezone.utc)
-    return max((EXAM_DATE - now.date()).days, 0)
+    return max((_exam_date(module) - now.date()).days, 0)
 
 
 def _seed_admin(conn) -> None:
@@ -342,6 +361,9 @@ class OpenExamResultIn(BaseModel):
     confidence: str = ""
     error_types: list[str] = Field(default_factory=list)
     answer_note: str = ""
+    auto_score: int | None = Field(default=None, ge=0, le=100)
+    auto_missing_terms: list[str] = Field(default_factory=list)
+    auto_checklist: list[str] = Field(default_factory=list)
 
 
 class OpenExamSubmitIn(BaseModel):
@@ -372,6 +394,7 @@ class ArchiveCorrectionSubmitIn(BaseModel):
 WORKSHOP_CATEGORIES = [
     ("english", "Englisch", "Englische Folienreste oder Begriffe"),
     ("long", "Zu lang", "Frage oder Antwort ist schwer scanbar"),
+    ("source", "Quelle schwach", "Skriptanker, Quelle oder Herleitung ist nicht belastbar"),
     ("missing_context", "Kein Kontext", "Quelle, VO oder fachlicher Rahmen fehlt"),
     ("photo", "Foto empfohlen", "Struktur, Formel, Schema oder Mechanismus braucht ein Bild"),
     ("sketch", "Skizze erforderlich", "Formel- oder Strukturkarte aktiv skizzieren"),
@@ -384,9 +407,29 @@ WORKSHOP_CATEGORIES = [
 ]
 WORKSHOP_CATEGORY_LABELS = {key: label for key, label, _ in WORKSHOP_CATEGORIES}
 
+KNOWLEDGE_DEPENDENCIES = {
+    "organic": [
+        ("Fossile Rohstoffe", "Raffinerie", "Rohstoffbasis fuer Raffinerieprozesse"),
+        ("Raffinerie", "Polymere", "Olefine und Aromaten als Polymerbausteine"),
+        ("Nachwachsende Rohstoffe", "Kohlenhydrate", "Biogene Rohstoffe fuer Zucker/Staerke"),
+        ("Kohlenhydrate", "Cellulose", "Polysaccharid-Strukturen vergleichen"),
+        ("Cellulose", "Farbstoffe", "Faser, Papier und Farbstoffanwendungen"),
+        ("Polymere", "Kunststoffrecycling", "Polymerstruktur bestimmt Recyclingweg"),
+    ],
+    "inorganic": [
+        ("Rohstoffe", "Metallurgie", "Erzaufbereitung als Vorstufe"),
+        ("Metallurgie", "Eisen/Stahl", "Reduktion und Schlackenbildung anwenden"),
+        ("Metallurgie", "Kupfer/Aluminium", "Pyro-/Hydrometallurgie vergleichen"),
+        ("Rohstoffe", "Glas/Keramik", "Mineralische Rohstoffe als Basis"),
+        ("Schwefel", "Chloralkali/Soda", "Grosschemische Stoffkreislaeufe vergleichen"),
+        ("Stickstoff", "Schwefel", "Grosschemische Prozessparameter vergleichen"),
+        ("Bindemittel", "Glas/Keramik", "Anorganische Werkstoffe und Sinter-/Abbindeprozesse"),
+    ],
+}
 
-def _daily_goal(stats: dict, chapters: list[dict]) -> dict:
-    days = max(_days_left(), 1)
+
+def _daily_goal(stats: dict, chapters: list[dict], module: str) -> dict:
+    days = max(_days_left(module), 1)
     open_cards = (stats["new"] or 0) + (stats["due"] or 0)
     base = -(-open_cards // days) if open_cards else 0
     due_pressure = min(stats["due"], 80)
@@ -411,7 +454,7 @@ def _daily_goal(stats: dict, chapters: list[dict]) -> dict:
         status = "active"
     return {
         "date": date.today().isoformat(),
-        "days_left": _days_left(),
+        "days_left": _days_left(module),
         "target": target,
         "completed": completed,
         "remaining": max(target - completed, 0),
@@ -423,8 +466,8 @@ def _daily_goal(stats: dict, chapters: list[dict]) -> dict:
     }
 
 
-def _forecast(stats: dict, chapters: list[dict]) -> dict:
-    days = max(_days_left(), 1)
+def _forecast(stats: dict, chapters: list[dict], module: str) -> dict:
+    days = max(_days_left(module), 1)
     total = max(stats["total"], 1)
     progress = stats["seen"] / total
     hit = (stats["hit_rate"] if stats["hit_rate"] is not None else 55) / 100
@@ -446,8 +489,8 @@ def _forecast(stats: dict, chapters: list[dict]) -> dict:
     }
 
 
-def _study_plan(stats: dict, chapters: list[dict]) -> dict:
-    days = _days_left()
+def _study_plan(stats: dict, chapters: list[dict], module: str) -> dict:
+    days = _days_left(module)
     open_cards = (stats.get("new") or 0) + (stats.get("due") or 0)
     if days <= 0:
         phase = "exam_day"
@@ -760,6 +803,7 @@ def _workshop_card(card: dict, issues: list[str] | None = None) -> dict:
         "photo_recommended": card.get("photo_recommended"),
         "sketch_required": card.get("sketch_required"),
         "formula_repair_available": card.get("formula_repair_available"),
+        "source_anchor": card.get("source_anchor"),
         "issues": issues or [],
     }
 
@@ -799,6 +843,8 @@ def _card_issues(card: dict) -> list[str]:
         issues.append("long")
     if not q.startswith("Kontext:") or "Quelle:" not in f"{q} {a}":
         issues.append("missing_context")
+    if (card.get("source_anchor") or {}).get("score", 100) < 60:
+        issues.append("source")
     if card.get("photo_recommended") or db.photo_recommended(card):
         issues.append("photo")
     if card.get("sketch_required") or db.sketch_required(card):
@@ -910,6 +956,42 @@ def _quality_audit(conn, module: str, limit: int = 12) -> dict:
     }
 
 
+def _source_audit(conn, module: str, limit: int = 12) -> dict:
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+           ORDER BY kap ASC, ord ASC
+           LIMIT 1800""",
+        (module,),
+    ).fetchall()
+    cards = [db.row_to_card(row) for row in rows]
+    anchors = [(card, card.get("source_anchor") or {}) for card in cards]
+    weak = [(card, anchor) for card, anchor in anchors if anchor.get("score", 0) < 60]
+    medium = [(card, anchor) for card, anchor in anchors if 60 <= anchor.get("score", 0) < 78]
+    strong = [(card, anchor) for card, anchor in anchors if anchor.get("score", 0) >= 78]
+    issue_counts: dict[str, int] = {}
+    for _, anchor in anchors:
+        for issue in anchor.get("issues") or []:
+            issue_counts[issue] = issue_counts.get(issue, 0) + 1
+    weak.sort(key=lambda item: (item[1].get("score", 0), item[0].get("kap") or 99, item[0].get("ord") or 0))
+    return {
+        "module": module,
+        "total": len(cards),
+        "strong": len(strong),
+        "medium": len(medium),
+        "weak": len(weak),
+        "avg_score": round(sum(anchor.get("score", 0) for _, anchor in anchors) / max(len(anchors), 1)),
+        "issue_counts": [{"issue": key, "count": count} for key, count in sorted(issue_counts.items(), key=lambda item: (-item[1], item[0]))],
+        "items": [
+            {
+                "card": _workshop_card(card, _card_issues(card)),
+                "anchor": anchor,
+            }
+            for card, anchor in weak[:limit]
+        ],
+    }
+
+
 def _improved_card_payload(card: dict) -> dict:
     title = _question_title(card)
     title = (
@@ -995,18 +1077,35 @@ def _summarized_card_payload(card: dict) -> dict:
     return payload
 
 
-def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quality: dict) -> dict:
+def _mission_band(score: int) -> tuple[str, str, str]:
+    if score >= 82:
+        return ("ready", "pruefungsbereit", "Absichern und Tempo halten")
+    if score >= 68:
+        return ("steady", "stabilisieren", "Schwache Knoten gezielt schliessen")
+    if score >= 50:
+        return ("build", "aufbauen", "Taeglich Reviews plus eine offene Pruefungsfrage")
+    return ("rescue", "aufholen", "Heute nur die groessten Blocker angreifen")
+
+
+def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quality: dict,
+                     exam_score: dict | None = None) -> dict:
     due = stats.get("due") or 0
     new = stats.get("new") or 0
-    days = max(_days_left(), 1)
+    exam_score = exam_score or _exam_score_projection(stats, chapters, module, quality)
+    exam_date = _exam_date(module)
+    days = max(_days_left(module), 1)
     focus = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c.get("kap") or 99))[:3]
     formula = _formula_checklist(conn, module)
+    knowledge = _knowledge_map(conn, module)
+    knowledge_route = knowledge.get("route", [])
     workshop_open = min((quality.get("needs_review") or 0) + (quality.get("photo_recommended") or 0), 40)
     daily_new = 0 if days <= 7 else min(25, max(0, -(-new // max(days - 7, 1)))) if new else 0
     daily_reviews = min(100, max(20, due + daily_new))
     repair_cards = min(12, max(0, quality.get("needs_review") or 0))
     photo_cards = min(10, max(0, quality.get("photo_recommended") or 0))
     mini_exam = 1 if days <= 21 or due < 30 else 0
+    score = int(exam_score.get("overall") or 0)
+    band, band_label, band_action = _mission_band(score)
     tasks = [
         {"key": "due", "label": "Faellige Karten", "amount": daily_reviews, "route": "home", "detail": "Erst faellige Karten abarbeiten."},
         {"key": "weak", "label": "Schwaechen-VO", "amount": len(focus), "route": "dashboard", "detail": "Die staerksten Luecken gezielt wiederholen."},
@@ -1017,10 +1116,156 @@ def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quali
     ]
     if daily_new:
         tasks.insert(1, {"key": "new", "label": "Neue Karten", "amount": daily_new, "route": "home", "detail": "Nur dosiert neue Karten aufnehmen."})
+
+    missions = []
+
+    def add_mission(key: str, title: str, detail: str, amount: int, unit: str,
+                    minutes: int, route: str, cta: str, priority: str = "mittel",
+                    kap: int | None = None, deck: str | None = None,
+                    done_when: str = "") -> None:
+        if amount <= 0:
+            return
+        missions.append({
+            "key": key,
+            "title": title,
+            "detail": detail,
+            "amount": amount,
+            "unit": unit,
+            "minutes": minutes,
+            "route": route,
+            "cta": cta,
+            "priority": priority,
+            "kap": kap,
+            "deck": deck,
+            "done_when": done_when,
+        })
+
+    add_mission(
+        "review_block",
+        "Review-Block",
+        "Faellige Karten zuerst, damit die Vergessenskurve heute nicht weiter auflaeuft.",
+        daily_reviews,
+        "Karten",
+        25 if daily_reviews <= 40 else 40,
+        "home",
+        "Session starten",
+        "hoch" if due else "mittel",
+        deck="anki",
+        done_when=f"{min(daily_reviews, max(due, 20))} Karten bewertet",
+    )
+    if focus:
+        weak = focus[0]
+        add_mission(
+            "weak_chapter",
+            f"Blocker-VO: VO{weak['kap']}",
+            f"{weak['name']} ist aktuell der wichtigste Hebel fuer die Pruefungsreife.",
+            max(8, min(18, weak.get("due", 0) + 6)),
+            "Karten",
+            18,
+            "home",
+            "VO lernen",
+            "hoch",
+            kap=weak.get("kap"),
+            deck="anki",
+            done_when="mindestens eine Karte mit Gut/Leicht abgeschlossen",
+        )
+    if knowledge_route:
+        step = knowledge_route[0]
+        add_mission(
+            "knowledge_node",
+            f"Landkarten-Knoten: {step['topic']}",
+            step.get("action") or "Querverbindungen pruefen",
+            1,
+            "Knoten",
+            12,
+            "knowledge",
+            "Landkarte oeffnen",
+            "hoch" if step.get("status") == "critical" else "mittel",
+            kap=step.get("kap"),
+            done_when=step.get("detail", "Knoten einmal aktiv erklaert"),
+        )
+    add_mission(
+        "exam_question",
+        "Offene Pruefungsfrage",
+        "Eine kurze Antwort im Beispielpruefungs-Stil schreiben und danach ehrlich bewerten.",
+        1 if mini_exam else 2,
+        "Frage",
+        16,
+        "exam",
+        "Pruefungsmodus",
+        "hoch" if score < 70 else "mittel",
+        done_when="Antwort mit Definition, Prozess, Bedingungen und Beispiel gecheckt",
+    )
+    if repair_cards:
+        add_mission(
+            "repair_cards",
+            "Qualitaets-Sprint",
+            "Holprige Karten stoeren die Reifeprognose staerker als neue Karten helfen.",
+            repair_cards,
+            "Karten",
+            14,
+            "workshop",
+            "Werkstatt",
+            "mittel",
+            done_when="schlechte Karten verbessert oder deaktiviert",
+        )
+    elif photo_cards:
+        add_mission(
+            "photo_queue",
+            "Foto-/Skizzen-Sprint",
+            "Strukturen, Formeln oder Schemata sichtbar machen statt im Text zu verstecken.",
+            photo_cards,
+            "Karten",
+            14,
+            "photos",
+            "Fotopool",
+            "mittel",
+            done_when="mindestens ein Bild oder eine Skizze ergaenzt",
+        )
+    elif formula.get("draw"):
+        add_mission(
+            "formula_sprint",
+            "Formel-Sprint",
+            "Eine Formel, Struktur oder Reaktionsgleichung aktiv aus dem Kopf zeichnen.",
+            min(6, len(formula.get("draw", []))),
+            "Skizzen",
+            10,
+            "exam",
+            "Formeltrainer",
+            "mittel",
+            done_when="Skizze aus dem Kopf geschafft",
+        )
+
+    missions = missions[:5]
+    total_minutes = sum(m["minutes"] for m in missions)
+    blockers = exam_score.get("blockers", [])[:5]
+    if blockers:
+        message = f"Heute: {blockers[0]['label']} zuerst, dann eine offene Pruefungsfrage."
+    else:
+        message = "Heute: Reife halten, eine kurze Pruefungsfrage und gezielte Wiederholung."
     return {
         "date": date.today().isoformat(),
-        "exam_date": EXAM_DATE.isoformat(),
-        "days_left": _days_left(),
+        "exam_date": exam_date.isoformat(),
+        "days_left": _days_left(module),
+        "title": f"Tagesmission: {band_label}",
+        "band": band,
+        "readiness": {
+            "score": score,
+            "label": exam_score.get("label"),
+            "band": band,
+            "band_label": band_label,
+            "action": band_action,
+            "gap_to_ready": max(0, 80 - score),
+        },
+        "mission": {
+            "minutes": total_minutes,
+            "count": len(missions),
+            "summary": f"{total_minutes} Minuten, {len(missions)} klare Schritte",
+            "primary": missions[0]["title"] if missions else "Freie Wiederholung",
+        },
+        "missions": missions,
+        "blockers": blockers,
+        "knowledge_route": knowledge_route[:3],
         "workload": {
             "daily_cards": daily_reviews,
             "daily_new": daily_new,
@@ -1037,7 +1282,7 @@ def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quali
             "photo_recommended": quality.get("photo_recommended", 0),
             "workshop_open": workshop_open,
         },
-        "message": "Heute: faellige Karten, eine echte Schwachstelle, dann Werkstatt oder Mini-Pruefung.",
+        "message": message,
     }
 
 
@@ -1133,6 +1378,7 @@ def _exam_question(card: dict, idx: int, module: str, formula: bool = False) -> 
         "kap": card.get("kap"),
         "block": _exam_block(module, card.get("kap")),
         "source": card.get("source"),
+        "source_anchor": card.get("source_anchor"),
         "title": title,
         "question": question,
         "subquestions": subquestions,
@@ -1200,13 +1446,100 @@ def _exam_score_projection(stats: dict, chapters: list[dict], module: str) -> di
             "label": f"{max(score - 8, 0)}-{min(score + 8, 99)}%",
             "chapters": [i.get("kap") for i in items],
             "detail": f"{seen}/{total} Karten gesehen, Trefferquote {round(hit * 100)}%",
+            "status": "ready" if score >= 80 else "steady" if score >= 65 else "risk",
         })
-    overall = round(sum(b["score"] for b in out) / len(out)) if out else 0
+    total_cards = max(stats.get("total") or 0, 1)
+    seen = stats.get("seen") or 0
+    due = stats.get("due") or 0
+    new = stats.get("new") or 0
+    hit_rate = stats.get("hit_rate")
+    avg_stability = sum(ch.get("avg_stability") or 0 for ch in chapters) / max(len(chapters), 1)
+    weakest = sorted(chapters, key=lambda ch: (-ch.get("weak_score", 0), ch.get("kap") or 99))[:3]
+    weak_pressure = sum(ch.get("weak_score") or 0 for ch in weakest) / max(len(weakest), 1) if weakest else 0
+    coverage_score = seen / total_cards * 100
+    retention_score = hit_rate if hit_rate is not None else 45
+    due_score = 100 - min(80, due / total_cards * 140)
+    new_score = 100 - min(80, new / total_cards * 100)
+    stability_score = min(100, avg_stability / 28 * 100)
+    weakness_score = 100 - min(80, weak_pressure)
+    quality_penalty = min(35, (quality.get("needs_review") or 0) * 2 + (quality.get("photo_recommended") or 0) * .8)
+    block_balance = min((b["score"] for b in out), default=0)
+    components = [
+        _component("Abdeckung", coverage_score, 28, f"{seen}/{stats.get('total') or 0} Karten gesehen"),
+        _component("Trefferquote", retention_score, 22, f"{hit_rate if hit_rate is not None else 45}% aus bisherigen Reviews"),
+        _component("Wiederholungsdruck", due_score, 18, f"{due} faellige Karten"),
+        _component("Neue Karten", new_score, 12, f"{new} Karten noch ungesehen"),
+        _component("Stabilitaet", stability_score, 10, f"Durchschnitt {round(avg_stability, 1)} Tage"),
+        _component("Schwaechen", weakness_score, 10, f"Top-Blocker-Score {round(weak_pressure)}"),
+    ]
+    weighted = sum(c["score"] * c["weight"] for c in components) / max(sum(c["weight"] for c in components), 1)
+    block_penalty = max(0, 70 - block_balance) * .18 if out else 0
+    overall = round(max(5, min(98, weighted - quality_penalty - block_penalty)))
+    band, band_label, band_action = _mission_band(overall)
+    blockers = []
+    if due:
+        blockers.append({
+            "key": "due",
+            "label": "Faellige Karten",
+            "impact": min(100, round(due / total_cards * 140)),
+            "detail": f"{due} Karten laufen gegen die Stabilitaet.",
+            "route": "home",
+        })
+    if new:
+        blockers.append({
+            "key": "new",
+            "label": "Ungesehener Stoff",
+            "impact": min(100, round(new / total_cards * 100)),
+            "detail": f"{new} Karten sind noch nicht aktiv abrufbar.",
+            "route": "home",
+        })
+    for ch in weakest:
+        if ch.get("weak_score", 0) <= 0:
+            continue
+        blockers.append({
+            "key": f"kap-{ch.get('kap')}",
+            "label": f"VO{ch.get('kap')} {ch.get('name')}",
+            "impact": min(100, round(ch.get("weak_score", 0))),
+            "detail": f"{ch.get('progress')}% gesehen, {ch.get('due')} faellig, Quote {ch.get('hit_rate') if ch.get('hit_rate') is not None else '-'}%",
+            "route": "home",
+            "kap": ch.get("kap"),
+        })
+    for b in out:
+        if b["score"] < 65:
+            blockers.append({
+                "key": f"block-{b['block']}",
+                "label": b["block"],
+                "impact": 65 - b["score"],
+                "detail": b["detail"],
+                "route": "exam",
+            })
+    if quality.get("needs_review"):
+        blockers.append({
+            "key": "quality",
+            "label": "Kartenqualitaet",
+            "impact": min(100, (quality.get("needs_review") or 0) * 5),
+            "detail": f"{quality.get('needs_review')} Karten brauchen Review.",
+            "route": "workshop",
+        })
+    blockers.sort(key=lambda item: (-item.get("impact", 0), item["label"]))
+    if blockers:
+        next_step = f"{blockers[0]['label']} zuerst angehen, danach eine offene Pruefungsfrage."
+    else:
+        next_step = "Eine kurze Simulation starten und die Reifeprognose gegen echte Antworten pruefen."
     return {
         "overall": overall,
         "label": f"{max(overall - 8, 0)}-{min(overall + 8, 99)}%",
+        "band": band,
+        "band_label": band_label,
+        "status": band_label,
+        "action": band_action,
+        "gap_to_ready": max(0, 80 - overall),
+        "exam_date": _exam_date(module).isoformat(),
+        "days_left": _days_left(module),
+        "components": components,
+        "blockers": blockers[:8],
         "blocks": sorted(out, key=lambda b: b["block"]),
-        "next_step": "Starte eine Schwächen-Mini-Pruefung und bewerte jeden Unterpunkt ehrlich.",
+        "next_step": next_step,
     }
 
 
@@ -1336,7 +1669,8 @@ def _formula_checklist(conn, module: str) -> dict:
 
 
 def _final_plan(conn, module: str) -> dict:
-    start = EXAM_DATE - timedelta(days=6)
+    exam_date = _exam_date(module)
+    start = exam_date - timedelta(days=6)
     weaknesses = db.weakness_heatmap(conn, _now_iso(), module)[:4]
     focus = [f"VO{w['kap']} {w['name']}" for w in weaknesses]
     templates = [
@@ -1358,7 +1692,7 @@ def _final_plan(conn, module: str) -> dict:
             "focus": focus[:2] if i in {1, 4} else focus[2:] if i == 3 else focus[:1],
         })
     return {
-        "exam_date": EXAM_DATE.isoformat(),
+        "exam_date": exam_date.isoformat(),
         "starts_on": start.isoformat(),
         "days": days,
         "rule": "In den letzten 7 Tagen keine neuen Karten: nur alte Pruefungen, Schwachstellen und Formeln.",
@@ -1424,17 +1758,196 @@ def _attempt_dashboard(conn, module: str) -> dict:
     }
 
 
+def _knowledge_status(score: int, due: int, needs_review: int, total: int) -> str:
+    if total <= 0:
+        return "unknown"
+    if score < 45 or needs_review >= max(2, total * .3):
+        return "critical"
+    if score < 70 or due >= max(3, total * .25):
+        return "shaky"
+    if score >= 85 and due == 0 and needs_review == 0:
+        return "secure"
+    return "building"
+
+
+def _card_due(card: dict, now_iso: str) -> bool:
+    due = str(card.get("due") or "")
+    return bool(due and due <= now_iso)
+
+
+def _knowledge_map(conn, module: str) -> dict:
+    now = _now_iso()
+    chapters = db.chapter_stats(conn, now, module)
+    chapter_names = {int(ch["kap"]): ch["name"] for ch in chapters if ch.get("kap") is not None}
+    rows = conn.execute(
+        """SELECT * FROM cards
+           WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
+           ORDER BY lapses DESC, reps ASC, kap ASC, ord ASC
+           LIMIT 1800""",
+        (module,),
+    ).fetchall()
+    cards = [db.row_to_card(row) for row in rows]
+    topics: dict[str, dict] = {}
+    edge_counts: dict[tuple[str, str], dict] = {}
+
+    def topic_bucket(name: str) -> dict:
+        return topics.setdefault(name, {
+            "id": re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "topic",
+            "topic": name,
+            "total": 0,
+            "seen": 0,
+            "due": 0,
+            "needs_review": 0,
+            "lapses": 0,
+            "reps": 0,
+            "chapters": set(),
+            "cards": [],
+        })
+
+    for card in cards:
+        tags = list(dict.fromkeys(str(tag).strip() for tag in (card.get("tags") or []) if str(tag).strip()))
+        chapter_tag = db.CHAPTER_TAGS.get(module, {}).get(card.get("kap"))
+        if chapter_tag and chapter_tag not in tags:
+            tags.insert(0, chapter_tag)
+        tags = tags[:5] or [chapter_names.get(card.get("kap"), f"VO{card.get('kap') or '?'}")]
+        due = _card_due(card, now)
+        compact_card = {
+            "id": card["id"],
+            "kap": card.get("kap"),
+            "title": _question_title(card),
+            "source": card.get("source") or card.get("subname") or "",
+            "status": card.get("status", "active"),
+            "due": due,
+            "lapses": card.get("lapses", 0),
+            "reps": card.get("reps", 0),
+        }
+        for tag in tags:
+            bucket = topic_bucket(tag)
+            bucket["total"] += 1
+            bucket["seen"] += 1 if (card.get("reps") or 0) > 0 else 0
+            bucket["due"] += 1 if due else 0
+            bucket["needs_review"] += 1 if card.get("status") == "needs_review" else 0
+            bucket["lapses"] += card.get("lapses", 0) or 0
+            bucket["reps"] += card.get("reps", 0) or 0
+            if card.get("kap") is not None:
+                bucket["chapters"].add(int(card.get("kap")))
+            if len(bucket["cards"]) < 8:
+                bucket["cards"].append(compact_card)
+        for i, source in enumerate(tags):
+            for target in tags[i + 1:]:
+                if source == target:
+                    continue
+                key = tuple(sorted((source, target)))
+                edge = edge_counts.setdefault(key, {"source": key[0], "target": key[1], "weight": 0, "cards": []})
+                edge["weight"] += 1
+                if len(edge["cards"]) < 4:
+                    edge["cards"].append(compact_card)
+
+    nodes = []
+    for topic, bucket in topics.items():
+        total = max(bucket["total"], 1)
+        exposure = bucket["seen"] / total * 100
+        pressure = min(80, (bucket["due"] * 10 + bucket["needs_review"] * 16 + bucket["lapses"] * 4) / total)
+        score = round(max(0, min(100, exposure * .72 + 28 - pressure)))
+        status = _knowledge_status(score, bucket["due"], bucket["needs_review"], bucket["total"])
+        chapters_list = sorted(bucket["chapters"])
+        nodes.append({
+            "id": bucket["id"],
+            "topic": topic,
+            "status": status,
+            "score": score,
+            "total": bucket["total"],
+            "seen": bucket["seen"],
+            "due": bucket["due"],
+            "needs_review": bucket["needs_review"],
+            "lapses": bucket["lapses"],
+            "chapters": chapters_list,
+            "chapter_label": ", ".join(f"VO{kap}" for kap in chapters_list[:4]) or "ohne VO",
+            "cards": sorted(bucket["cards"], key=lambda c: (-int(c["due"]), -int(c["lapses"] or 0), int(c["reps"] or 0)))[:5],
+        })
+    nodes.sort(key=lambda item: (
+        {"critical": 0, "shaky": 1, "building": 2, "secure": 3, "unknown": 4}.get(item["status"], 5),
+        item["score"],
+        -item["due"],
+        item["topic"],
+    ))
+
+    node_topics = {node["topic"] for node in nodes}
+    edges = [
+        {
+            **edge,
+            "kind": "cooccurrence",
+            "label": f"{edge['weight']} gemeinsame Karte(n)",
+        }
+        for edge in edge_counts.values()
+        if edge["weight"] >= 2
+    ]
+    for source, target, label in KNOWLEDGE_DEPENDENCIES.get(module, []):
+        if source in node_topics and target in node_topics:
+            edges.append({
+                "source": source,
+                "target": target,
+                "weight": 3,
+                "kind": "dependency",
+                "label": label,
+                "cards": [],
+            })
+    edges.sort(key=lambda item: (item["kind"] != "dependency", -item["weight"], item["source"], item["target"]))
+
+    route = []
+    for idx, node in enumerate(nodes[:8], start=1):
+        if node["status"] == "secure":
+            continue
+        action = "Grundlagen klaeren" if node["score"] < 45 else "Pruefungsnah festigen" if node["due"] or node["needs_review"] else "Querverbindungen pruefen"
+        route.append({
+            "step": idx,
+            "topic": node["topic"],
+            "status": node["status"],
+            "score": node["score"],
+            "action": action,
+            "detail": f"{node['due']} faellig, {node['needs_review']} im Review, {node['total']} Karten",
+            "kap": node["chapters"][0] if node["chapters"] else None,
+        })
+    if not route and nodes:
+        route.append({
+            "step": 1,
+            "topic": nodes[0]["topic"],
+            "status": nodes[0]["status"],
+            "score": nodes[0]["score"],
+            "action": "Generalprobe",
+            "detail": "Alle grossen Knoten wirken stabil; mit offener Pruefung absichern.",
+            "kap": nodes[0]["chapters"][0] if nodes[0]["chapters"] else None,
+        })
+
+    return {
+        "module": module,
+        "exam_date": _exam_date(module).isoformat(),
+        "generated_at": now,
+        "nodes": nodes[:24],
+        "edges": edges[:36],
+        "route": route[:6],
+        "summary": {
+            "critical": sum(1 for node in nodes if node["status"] == "critical"),
+            "shaky": sum(1 for node in nodes if node["status"] == "shaky"),
+            "secure": sum(1 for node in nodes if node["status"] == "secure"),
+            "topics": len(nodes),
+            "edges": len(edges),
+        },
+    }
+
+
 def _weekly_plan(conn, module: str) -> dict:
     today = date.today()
-    start = today if today <= EXAM_DATE else EXAM_DATE
+    exam_date = _exam_date(module)
+    start = today if today <= exam_date else exam_date
     weaknesses = db.weakness_heatmap(conn, _now_iso(), module)
     focus = [f"VO{w['kap']} {w['name']}" for w in weaknesses[:8]]
     weeks = []
     current = start
     idx = 0
-    while current <= EXAM_DATE and len(weeks) < 14:
-        end = min(current + timedelta(days=6), EXAM_DATE)
-        days_to_exam = max((EXAM_DATE - end).days, 0)
+    while current <= exam_date and len(weeks) < 14:
+        end = min(current + timedelta(days=6), exam_date)
+        days_to_exam = max((exam_date - end).days, 0)
         if days_to_exam <= 7:
             phase = "Endspurt"
             tasks = ["2 Archiv- oder offene Pruefungen", "keine neuen Karten", "Formelcheckliste abschliessen"]
@@ -1455,7 +1968,7 @@ def _weekly_plan(conn, module: str) -> dict:
         idx += 2
     return {
         "module": module,
-        "exam_date": EXAM_DATE.isoformat(),
+        "exam_date": exam_date.isoformat(),
         "weeks": weeks,
         "rule": "Wochenziele sind Sollwerte; nach jeder offenen Pruefung zieht die Nachlern-Queue die echten Luecken nach.",
     }
@@ -1537,22 +2050,23 @@ def stats(module: str = "organic"):
     tags = db.tag_stats(conn, module)
     auto_quality = _auto_quality_sweep_cached(conn, module, now)
     quality = db.quality_summary(conn, module)
-    today = _today_work_plan(conn, module, st, chapters, quality)
+    exam_score = _exam_score_projection(st, chapters, module, quality)
+    today = _today_work_plan(conn, module, st, chapters, quality, exam_score)
     xp = db.xp_summary(conn)
     streak = db.streak(conn)
-    exam_score = _exam_score_projection(st, chapters, module)
+    exam_date = _exam_date(module)
     conn.close()
     return {
         "title": modules[module].get("full_title", modules[module].get("title", module)),
         "module": module,
         "modules": modules,
-        "exam_date": EXAM_DATE.isoformat(),
-        "days_until_exam": _days_left(),
+        "exam_date": exam_date.isoformat(),
+        "days_until_exam": _days_left(module),
         "anki": st,
         "chapters": chapters,
-        "daily_goal": _daily_goal(st, chapters),
-        "forecast": _forecast(st, chapters),
-        "study_plan": _study_plan(st, chapters),
+        "daily_goal": _daily_goal(st, chapters, module),
+        "forecast": _forecast(st, chapters, module),
+        "study_plan": _study_plan(st, chapters, module),
         "weaknesses": weaknesses,
         "tags": tags,
         "quality": quality,
@@ -1572,21 +2086,31 @@ def dashboard(module: str = "organic"):
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
     auto_quality = _auto_quality_sweep_cached(conn, module, now)
+    quality = db.quality_summary(conn, module)
     out = {
         "module": module,
         "stats": st,
         "chapters": chapters,
         "timeline": db.reviews_timeline(conn, 21, module),
-        "forecast": _forecast(st, chapters),
-        "study_plan": _study_plan(st, chapters),
+        "forecast": _forecast(st, chapters, module),
+        "study_plan": _study_plan(st, chapters, module),
         "weaknesses": db.weakness_heatmap(conn, now, module, chapters),
         "tags": db.tag_stats(conn, module),
-        "quality": db.quality_summary(conn, module),
+        "quality": quality,
         "auto_quality": {"moved": auto_quality},
-        "exam_score": _exam_score_projection(st, chapters, module),
+        "exam_score": _exam_score_projection(st, chapters, module, quality),
         "xp": db.xp_summary(conn),
         "streak": db.streak(conn),
     }
+    conn.close()
+    return out
+
+
+@app.get("/api/knowledge-map")
+def knowledge_map(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _knowledge_map(conn, module)
     conn.close()
     return out
 
@@ -1724,7 +2248,8 @@ def exam_prognosis(module: str = "organic"):
     now = _now_iso()
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
-    out = _exam_score_projection(st, chapters, module)
+    quality = db.quality_summary(conn, module)
+    out = _exam_score_projection(st, chapters, module, quality)
     conn.close()
     return out
 
@@ -1791,7 +2316,8 @@ def today_plan(module: str = "organic"):
     st = db.deck_stats(conn, now, module)
     chapters = db.chapter_stats(conn, now, module)
     quality = db.quality_summary(conn, module)
-    out = _today_work_plan(conn, module, st, chapters, quality)
+    exam_score = _exam_score_projection(st, chapters, module, quality)
+    out = _today_work_plan(conn, module, st, chapters, quality, exam_score)
     conn.close()
     return {"module": module, **out}
 
@@ -1895,6 +2421,15 @@ def quality_audit(module: str = "organic", limit: int = 12):
     return out
 
 
+@app.get("/api/source-audit")
+def source_audit(module: str = "organic", limit: int = 12):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    out = _source_audit(conn, module, max(3, min(limit, 30)))
+    conn.close()
+    return out
+
+
 @app.get("/api/workshop")
 def workshop(module: str = "organic", limit: int = 8):
     module = _valid_module(module)
@@ -1932,10 +2467,17 @@ def submit_open_exam(inp: OpenExamSubmitIn):
         elapsed = 0.0
         if card.get("last_review"):
             elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
-        updated = sched.review(card, rating, now, max_interval_days=_max_fsrs_interval_days(now))
+        updated = sched.review(card, rating, now, max_interval_days=_max_fsrs_interval_days(now, module))
         db.apply_review(conn, result.card_id, updated, rating, elapsed, deck="open_exam")
         if rating == 1:
             db.add_quality_event(conn, result.card_id, module, "open_exam", "pruefung_miss", "In offener Pruefung nicht beantwortet", updated["last_review"])
+        auto_missing = [str(term).strip() for term in result.auto_missing_terms if str(term).strip()][:12]
+        if result.auto_score is not None and result.auto_score < 65:
+            reason = "pruefung_miss" if result.auto_score < 40 else "archiv_partial"
+            note = f"Antwortpruefung 2.0: {result.auto_score}%"
+            if auto_missing:
+                note += f"; fehlt: {', '.join(auto_missing[:6])}"
+            db.add_quality_event(conn, result.card_id, module, "answer_review", reason, note, updated["last_review"])
         if ratio < .85:
             for err in error_types:
                 db.add_quality_event(conn, result.card_id, module, "exam_error", f"exam_{err}", EXAM_ERROR_TYPES[err], updated["last_review"])
@@ -1954,6 +2496,9 @@ def submit_open_exam(inp: OpenExamSubmitIn):
             "confidence": confidence,
             "error_types": error_types,
             "sub_scores": result.sub_scores,
+            "auto_score": result.auto_score,
+            "auto_missing_terms": auto_missing,
+            "auto_checklist": [str(item).strip() for item in result.auto_checklist if str(item).strip()][:8],
             "answer_note": result.answer_note[:4000],
             "repair": ratio < .85,
         })
@@ -2218,7 +2763,7 @@ def preview(card_id: str):
     conn.close()
     if not card:
         raise HTTPException(404, "Karte nicht gefunden")
-    return sched.preview(card, max_interval_days=_max_fsrs_interval_days())
+    return sched.preview(card, max_interval_days=_max_fsrs_interval_days(module=card.get("module", "organic")))
 
 
 @app.post("/api/review")
@@ -2232,7 +2777,7 @@ def review(inp: ReviewIn):
     elapsed = 0.0
     if card.get("last_review"):
         elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
-    updated = sched.review(card, inp.rating, now, max_interval_days=_max_fsrs_interval_days(now))
+    updated = sched.review(card, inp.rating, now, max_interval_days=_max_fsrs_interval_days(now, card.get("module", "organic")))
     db.apply_review(conn, inp.card_id, updated, inp.rating, elapsed, deck=inp.source if inp.source == "exam" else "anki")
     if inp.feedback_reason:
         note = f"Lernfeedback: {inp.feedback_reason}"

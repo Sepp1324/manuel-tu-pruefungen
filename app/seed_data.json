@@ -5,6 +5,7 @@
     "organic": {
       "title": "Organische Chemie",
       "full_title": "Chemische Technologien Organischer Stoffe",
+      "exam_date": "2026-09-21",
       "chapters": {
         "1": "VO1 Einfuehrung und fossile Rohstoffe",
         "2": "VO2 Raffinerieprozesse",
@@ -22,6 +23,7 @@
     "inorganic": {
       "title": "Anorganische Chemie",
       "full_title": "Chemische Technologien Anorganischer Stoffe",
+      "exam_date": "2026-09-29",
       "chapters": {
         "1": "Einheit 01 Einfuehrung",
         "2": "Einheit 02 Rohstoffe",
