@@ -39,9 +39,11 @@ if not SPA_DIR.exists() and (Path(__file__).parent.parent / "dist").exists():
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "/data/uploads"))
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(8 * 1024 * 1024)))
 AUTO_QUALITY_TTL_SECONDS = int(os.environ.get("AUTO_QUALITY_TTL_SECONDS", "300"))
+KNOWLEDGE_MAP_TTL_SECONDS = int(os.environ.get("KNOWLEDGE_MAP_TTL_SECONDS", "90"))
 PHOTO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|webp|gif)$", re.I)
 PHOTO_URL_RE = re.compile(r"/uploads/cards/([^\"'\s<>]+)", re.I)
 _AUTO_QUALITY_CACHE: dict[str, tuple[datetime, int]] = {}
+_KNOWLEDGE_MAP_CACHE: dict[str, tuple[datetime, dict]] = {}
 _REQUEST_METRICS: list[dict] = []
 MAX_REQUEST_METRICS = 300
 
@@ -166,7 +168,19 @@ def _auto_quality_sweep_cached(conn, module: str, now_iso: str) -> int:
         return 0
     moved = db.auto_quality_sweep(conn, module, now_iso)
     _AUTO_QUALITY_CACHE[module] = (now, moved)
+    if moved:
+        _KNOWLEDGE_MAP_CACHE.pop(module, None)
     return moved
+
+
+def _invalidate_module_caches(module: str) -> None:
+    _AUTO_QUALITY_CACHE.pop(module, None)
+    _KNOWLEDGE_MAP_CACHE.pop(module, None)
+
+
+def _invalidate_all_caches() -> None:
+    _AUTO_QUALITY_CACHE.clear()
+    _KNOWLEDGE_MAP_CACHE.clear()
 
 
 def _record_request_metric(request: Request, status_code: int, elapsed_ms: float) -> None:
@@ -837,7 +851,10 @@ def _card_issues(card: dict) -> list[str]:
     text = db.plain_card_text(card)
     lower = text.lower()
     issues: list[str] = []
-    if card.get("english_noise") or db.english_noise(card):
+    english = card.get("english_noise")
+    if english is None:
+        english = db.english_noise(card)
+    if english:
         issues.append("english")
     if len(q) > 260 or len(a) > 950:
         issues.append("long")
@@ -845,9 +862,15 @@ def _card_issues(card: dict) -> list[str]:
         issues.append("missing_context")
     if (card.get("source_anchor") or {}).get("score", 100) < 60:
         issues.append("source")
-    if card.get("photo_recommended") or db.photo_recommended(card):
+    recommended_photo = card.get("photo_recommended")
+    if recommended_photo is None:
+        recommended_photo = db.photo_recommended(card)
+    if recommended_photo:
         issues.append("photo")
-    if card.get("sketch_required") or db.sketch_required(card):
+    required_sketch = card.get("sketch_required")
+    if required_sketch is None:
+        required_sketch = db.sketch_required(card)
+    if required_sketch:
         issues.append("sketch")
     if card.get("formula_repair_available"):
         issues.append("formula")
@@ -964,7 +987,7 @@ def _source_audit(conn, module: str, limit: int = 12) -> dict:
            LIMIT 1800""",
         (module,),
     ).fetchall()
-    cards = [db.row_to_card(row) for row in rows]
+    cards = [db.row_to_card(row, include_quality=False) for row in rows]
     anchors = [(card, card.get("source_anchor") or {}) for card in cards]
     weak = [(card, anchor) for card, anchor in anchors if anchor.get("score", 0) < 60]
     medium = [(card, anchor) for card, anchor in anchors if 60 <= anchor.get("score", 0) < 78]
@@ -1096,7 +1119,7 @@ def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quali
     days = max(_days_left(module), 1)
     focus = sorted(chapters, key=lambda c: (-c.get("weak_score", 0), c.get("kap") or 99))[:3]
     formula = _formula_checklist(conn, module)
-    knowledge = _knowledge_map(conn, module)
+    knowledge = _knowledge_map_cached(conn, module)
     knowledge_route = knowledge.get("route", [])
     workshop_open = min((quality.get("needs_review") or 0) + (quality.get("photo_recommended") or 0), 40)
     daily_new = 0 if days <= 7 else min(25, max(0, -(-new // max(days - 7, 1)))) if new else 0
@@ -1786,7 +1809,10 @@ def _knowledge_map(conn, module: str) -> dict:
            LIMIT 1800""",
         (module,),
     ).fetchall()
-    cards = [db.row_to_card(row) for row in rows]
+    cards = [
+        db.row_to_card(row, include_source_anchor=False, include_quality=False)
+        for row in rows
+    ]
     topics: dict[str, dict] = {}
     edge_counts: dict[tuple[str, str], dict] = {}
 
@@ -1934,6 +1960,18 @@ def _knowledge_map(conn, module: str) -> dict:
             "edges": len(edges),
         },
     }
+
+
+def _knowledge_map_cached(conn, module: str) -> dict:
+    if KNOWLEDGE_MAP_TTL_SECONDS <= 0:
+        return _knowledge_map(conn, module)
+    now = datetime.now(timezone.utc)
+    cached = _KNOWLEDGE_MAP_CACHE.get(module)
+    if cached and (now - cached[0]).total_seconds() < KNOWLEDGE_MAP_TTL_SECONDS:
+        return cached[1]
+    out = _knowledge_map(conn, module)
+    _KNOWLEDGE_MAP_CACHE[module] = (now, out)
+    return out
 
 
 def _weekly_plan(conn, module: str) -> dict:
@@ -2110,7 +2148,7 @@ def dashboard(module: str = "organic"):
 def knowledge_map(module: str = "organic"):
     module = _valid_module(module)
     conn = db.get_conn()
-    out = _knowledge_map(conn, module)
+    out = _knowledge_map_cached(conn, module)
     conn.close()
     return out
 
@@ -2399,6 +2437,7 @@ def submit_archive_correction(inp: ArchiveCorrectionSubmitIn):
     )
     xp = db.add_xp_event(conn, max(8, round(earned * 3)), "archive_exam", f"Archiv-Korrektur: {pct_score}%", inp.exam_id, now)
     conn.close()
+    _invalidate_module_caches(module)
     return {"ok": True, "attempt_id": attempt_id, "earned": round(earned, 1), "total": round(total, 1), "pct": pct_score, "touched": touched, "xp": xp}
 
 
@@ -2409,6 +2448,8 @@ def quality_autoprune(module: str = "organic"):
     moved = db.auto_quality_sweep(conn, module, _now_iso())
     summary = db.quality_summary(conn, module)
     conn.close()
+    if moved:
+        _invalidate_module_caches(module)
     return {"ok": True, "moved": moved, "quality": summary}
 
 
@@ -2434,9 +2475,11 @@ def source_audit(module: str = "organic", limit: int = 12):
 def workshop(module: str = "organic", limit: int = 8):
     module = _valid_module(module)
     conn = db.get_conn()
-    db.auto_quality_sweep(conn, module, _now_iso())
+    moved = db.auto_quality_sweep(conn, module, _now_iso())
     out = _workshop_data(conn, module, max(3, min(limit, 20)))
     conn.close()
+    if moved:
+        _invalidate_module_caches(module)
     return out
 
 
@@ -2523,6 +2566,7 @@ def submit_open_exam(inp: OpenExamSubmitIn):
     xp_label = "Pruefermodus" if inp.mode == "oral" else "Offene Pruefung"
     xp = db.add_xp_event(conn, max(10, round(earned * 4)), "open_exam", f"{xp_label}: {pct_score}%", inp.mode, _now_iso())
     conn.close()
+    _invalidate_module_caches(module)
     return {
         "ok": True,
         "attempt_id": attempt_id,
@@ -2595,6 +2639,7 @@ def edit_card(card_id: str, inp: CardEditIn):
     conn.close()
     if not card:
         raise HTTPException(404, "Karte nicht gefunden")
+    _invalidate_module_caches(card.get("module", "organic"))
     return {"ok": True, "card": card}
 
 
@@ -2609,6 +2654,7 @@ def improve_card(card_id: str):
     updated = db.update_card(conn, card_id, improved["q"], improved["a"], "active", "", _now_iso())
     db.add_quality_event(conn, card_id, card.get("module", "organic"), "workshop", "auto_improved", "Karte automatisch pruefungsnah geglaettet", _now_iso())
     conn.close()
+    _invalidate_module_caches(card.get("module", "organic"))
     return {"ok": True, "card": updated}
 
 
@@ -2631,6 +2677,7 @@ def summarize_card(card_id: str):
     )
     db.add_quality_event(conn, card_id, card.get("module", "organic"), "workshop", "summarized", "Karte automatisch gekuerzt", _now_iso())
     conn.close()
+    _invalidate_module_caches(card.get("module", "organic"))
     return {"ok": True, "card": updated}
 
 
@@ -2653,6 +2700,7 @@ def repair_card_formulas(card_id: str):
     )
     db.add_quality_event(conn, card_id, card.get("module", "organic"), "workshop", "formula_repaired", "Chemische Formelindizes repariert", _now_iso())
     conn.close()
+    _invalidate_module_caches(card.get("module", "organic"))
     return {"ok": True, "card": updated}
 
 
@@ -2686,6 +2734,8 @@ def repair_formula_batch(module: str = "organic", limit: int = 120):
         db.add_quality_event(conn, card["id"], module, "workshop", "formula_repaired", "Chemische Formelindizes im Batch repariert", now)
         fixed += 1
     conn.close()
+    if fixed:
+        _invalidate_module_caches(module)
     return {"ok": True, "fixed": fixed}
 
 
@@ -2700,6 +2750,7 @@ def triage_card(card_id: str, inp: CardTriageIn):
     conn.close()
     if not card:
         raise HTTPException(404, "Karte nicht gefunden")
+    _invalidate_module_caches(card.get("module", "organic"))
     return {"ok": True, "card": card}
 
 
@@ -2736,6 +2787,7 @@ def import_cards(inp: CardImportIn):
     ids = db.add_imported_cards(conn, cards, _now_iso(), module)
     xp = db.add_xp_event(conn, min(500, max(20, len(ids) * 8)), "card_import", f"{len(ids)} Karten importiert", module, _now_iso())
     conn.close()
+    _invalidate_module_caches(module)
     return {
         "ok": True,
         "imported": len(ids),
@@ -2753,6 +2805,7 @@ def add_manual_card(inp: ManualCardIn):
     card = db.add_manual_card(conn, inp.kap, inp.q, inp.a, inp.source, _now_iso(), module)
     xp = db.add_xp_event(conn, 15, "manual_card", "Manuelle Karte ergaenzt", card["id"], _now_iso())
     conn.close()
+    _invalidate_module_caches(module)
     return {"ok": True, "card": card, "xp": xp}
 
 
@@ -2789,6 +2842,7 @@ def review(inp: ReviewIn):
     xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
     xp = db.add_xp_event(conn, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
     conn.close()
+    _invalidate_module_caches(card.get("module", "organic"))
     return {"ok": True, "xp": xp, **updated}
 
 
@@ -2797,6 +2851,7 @@ def reset():
     conn = db.get_conn()
     db.reset_progress(conn)
     conn.close()
+    _invalidate_all_caches()
     return {"ok": True}
 
 
