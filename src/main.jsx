@@ -10,12 +10,16 @@ import {
   Flame,
   ImagePlus,
   LogOut,
+  Mic,
+  MicOff,
   Plus,
   RefreshCw,
   Search,
   Tag,
   Target,
   Trophy,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import "./styles.css";
@@ -462,93 +466,125 @@ function answerComparison(answer = "", question = {}) {
   };
 }
 
-function normalizedAnswerText(value = "") {
-  return stripHtmlText(value).toLowerCase()
-    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
-}
+function VoiceExamControls({ readText = "", value = "", onValue }) {
+  const recognitionRef = useRef(null);
+  const latestValueRef = useRef(value || "");
+  const [listening, setListening] = useState(false);
+  const [liveText, setLiveText] = useState("");
+  const [msg, setMsg] = useState("");
+  const SpeechRecognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+  const canListen = Boolean(SpeechRecognition);
+  const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
 
-function rubricTerms(item = {}, question = {}) {
-  const category = `${item.category || ""} ${item.prompt || ""}`.toLowerCase();
-  const source = [
-    item.category || "",
-    item.prompt || "",
-    ...(question.scaffold || []).filter((s) => {
-      const text = String(s || "").toLowerCase();
-      if (category.includes("definition") && /defin|prinzip|ist|begriff/.test(text)) return true;
-      if (category.includes("beding") && /temperatur|druck|katalys|beding|parameter/.test(text)) return true;
-      if (category.includes("formel") && /formel|gleichung|reaktion|struktur/.test(text)) return true;
-      if (category.includes("beispiel") && /beispiel|zweck|anwendung|produkt/.test(text)) return true;
-      return false;
-    }),
-    question.answer || "",
-  ].join(" ");
-  return importantTerms(source, 10);
-}
+  useEffect(() => {
+    latestValueRef.current = value || "";
+  }, [value]);
 
-function answerRubricReview(answer = "", question = {}) {
-  const answerText = normalizedAnswerText(answer);
-  const words = answerText.match(/[a-z0-9]{4,}/g) || [];
-  const rubric = question.rubric?.length ? question.rubric : question.subquestions || [];
-  const comparison = answerComparison(answer, question);
-  const categories = [];
-  const suggestedScores = {};
-  const subScores = {};
-  let earned = 0;
-  let total = 0;
-  rubric.forEach((item) => {
-    const terms = rubricTerms(item, question);
-    const hits = terms.filter((term) => answerText.includes(term));
-    const missing = terms.filter((term) => !answerText.includes(term));
-    const coverage = terms.length ? hits.length / terms.length : comparison.score / 100;
-    const score = coverage >= .58 ? "full" : coverage >= .25 || (words.length >= 18 && hits.length >= 1) ? "partial" : "miss";
-    const points = Number(item.points || 0);
-    total += points;
-    earned += points * (score === "full" ? 1 : score === "partial" ? .5 : 0);
-    suggestedScores[item.id] = score;
-    categories.push({
-      ...item,
-      terms,
-      hits,
-      missing,
-      score,
-      coverage: Math.round(coverage * 100),
-    });
-  });
-  (question.subquestions || []).forEach((item) => {
-    const terms = rubricTerms(item, question);
-    const hits = terms.filter((term) => answerText.includes(term));
-    const coverage = terms.length ? hits.length / terms.length : comparison.score / 100;
-    subScores[item.id] = coverage >= .58 ? "full" : coverage >= .25 || (words.length >= 18 && hits.length >= 1) ? "partial" : "miss";
-  });
-  const checklist = [];
-  if (/defin|prinzip|bedeutet|ist ein|ist eine|nennt man/.test(answerText)) checklist.push("definition");
-  if (/prozess|verfahren|schritt|ablauf|zuerst|danach|anschliessend|reaktion|redukt|oxid/.test(answerText)) checklist.push("process");
-  if (/temperatur|druck|katalys|ph|beding|konzentr|parameter|hoch|niedrig/.test(answerText)) checklist.push("conditions");
-  if (/[A-Z][a-z]?\d|->|→|<=>|reaktionsgleichung|struktur|formel|skizz/.test(stripHtmlText(answer))) checklist.push("formula");
-  if (/beispiel|anwendung|zweck|produkt|verwendung|dient|wichtig|industrie/.test(answerText)) checklist.push("example");
-  const missingChecklist = EXAM_CHECKLIST.filter(([key]) => !checklist.includes(key)).map(([key, label]) => ({ key, label }));
-  const errorTypes = [];
-  if (!checklist.includes("definition")) errorTypes.push("definition");
-  if (!checklist.includes("process")) errorTypes.push("process");
-  if (!checklist.includes("conditions")) errorTypes.push("conditions");
-  if (question.sketch_required && !checklist.includes("formula")) errorTypes.push("formula");
-  if (!checklist.includes("example")) errorTypes.push("example");
-  const pctScore = total ? Math.round((earned / total) * 100) : comparison.score;
-  return {
-    score: Math.max(0, Math.min(100, pctScore)),
-    earned: Number(earned.toFixed(1)),
-    total: Number((total || 4).toFixed(1)),
-    label: `${Number(earned.toFixed(1))}/${Number((total || 4).toFixed(1))} P`,
-    categories,
-    suggestedScores,
-    subScores,
-    checklist,
-    missingChecklist,
-    errorTypes,
-    missingTerms: comparison.missing,
-    hits: comparison.hits,
-    confidenceHint: pctScore >= 78 ? "stark" : pctScore >= 48 ? "teilweise" : "lueckenhaft",
-  };
+  useEffect(() => () => {
+    recognitionRef.current?.abort?.();
+    if (canSpeak) window.speechSynthesis.cancel();
+  }, [canSpeak]);
+
+  function speak() {
+    if (!canSpeak) {
+      setMsg("Vorlesen wird von diesem Browser nicht unterstuetzt.");
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(stripHtmlText(readText));
+    utterance.lang = "de-AT";
+    utterance.rate = .94;
+    utterance.pitch = 1;
+    const voice = window.speechSynthesis.getVoices().find((item) => /^de[-_]/i.test(item.lang));
+    if (voice) utterance.voice = voice;
+    utterance.onend = () => setMsg("");
+    utterance.onerror = () => setMsg("Vorlesen fehlgeschlagen.");
+    setMsg("Pruefer liest vor...");
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function stopSpeaking() {
+    if (!canSpeak) return;
+    window.speechSynthesis.cancel();
+    setMsg("Vorlesen gestoppt.");
+  }
+
+  function startListening() {
+    if (!canListen) {
+      setMsg("Mikro-Diktat wird von diesem Browser nicht unterstuetzt.");
+      return;
+    }
+    recognitionRef.current?.abort?.();
+    const recognition = new SpeechRecognition();
+    recognition.lang = "de-AT";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onstart = () => {
+      setListening(true);
+      setLiveText("");
+      setMsg("Mikro hoert zu...");
+    };
+    recognition.onerror = (event) => {
+      setMsg(event.error === "not-allowed" ? "Mikrofonzugriff blockiert." : "Diktat abgebrochen.");
+      setListening(false);
+    };
+    recognition.onend = () => {
+      setListening(false);
+      setLiveText("");
+      setMsg((old) => old === "Mikro hoert zu..." ? "Diktat beendet." : old);
+    };
+    recognition.onresult = (event) => {
+      let finalText = "";
+      let interimText = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const transcript = event.results[i][0]?.transcript || "";
+        if (event.results[i].isFinal) finalText += transcript;
+        else interimText += transcript;
+      }
+      if (finalText.trim()) {
+        const next = appendInline(latestValueRef.current, finalText.trim());
+        latestValueRef.current = next;
+        onValue?.(next);
+      }
+      setLiveText(interimText.trim());
+    };
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch {
+      setMsg("Mikro konnte nicht gestartet werden.");
+      setListening(false);
+    }
+  }
+
+  function stopListening() {
+    recognitionRef.current?.stop?.();
+    setListening(false);
+  }
+
+  return (
+    <div className="voice-exam-controls">
+      <div>
+        <b>Voice-Pruefung</b>
+        <span>{canListen || canSpeak ? "Vorlesen lassen und Antwort diktieren." : "Dieser Browser bietet keine Web-Speech-Funktionen."}</span>
+      </div>
+      <div className="voice-actions">
+        <button type="button" onClick={speak} disabled={!readText.trim()}><Volume2 size={16} /> Vorlesen</button>
+        <button type="button" onClick={stopSpeaking}><VolumeX size={16} /> Stop</button>
+        {listening ? (
+          <button type="button" className="active" onClick={stopListening}><MicOff size={16} /> Mikro stoppen</button>
+        ) : (
+          <button type="button" onClick={startListening}><Mic size={16} /> Mikro starten</button>
+        )}
+      </div>
+      {(liveText || msg) && (
+        <p>
+          {liveText ? <strong>{liveText}</strong> : null}
+          {msg ? <span>{msg}</span> : null}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function reasonLabel(reason) {
@@ -2160,6 +2196,232 @@ function OpenExamRunner({ exam, module, onClose }) {
   );
 }
 
+function OralExamRunner({ exam, module, onClose }) {
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [scores, setScores] = useState({});
+  const [promptDepth, setPromptDepth] = useState({});
+  const [revealed, setRevealed] = useState({});
+  const [confidence, setConfidence] = useState({});
+  const [errorTypes, setErrorTypes] = useState({});
+  const [startedAt, setStartedAt] = useState(Date.now());
+  const [secondsLeft, setSecondsLeft] = useState((exam.minutes || 0) * 60);
+  const [result, setResult] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const question = exam.questions[idx];
+  const currentKey = question?.card_id || "";
+  const prompts = question?.oral_prompts || [];
+  const shownPrompts = prompts.slice(0, Math.max(1, promptDepth[currentKey] || 1));
+  const currentAnswer = answers[currentKey] || "";
+  const currentScores = scores[currentKey] || {};
+  const currentErrors = errorTypes[currentKey] || [];
+  const voiceText = [
+    `Frage ${idx + 1}: ${stripHtmlText(question?.question || "")}`,
+    ...shownPrompts.map((prompt) => `${prompt.label}: ${prompt.prompt}`),
+  ].join(" ");
+  const comparison = question ? answerComparison(currentAnswer, question) : { terms: [], hits: [], missing: [], score: 0 };
+  const earned = (exam.questions || []).reduce((sum, q) => sum + scoreForQuestion(scores[q.card_id] || {}, q), 0);
+
+  useEffect(() => {
+    setAnswers({});
+    setScores({});
+    setPromptDepth({});
+    setRevealed({});
+    setConfidence({});
+    setErrorTypes({});
+    setResult(null);
+    setSubmitting(false);
+    setIdx(0);
+    setSecondsLeft((exam.minutes || 0) * 60);
+    setStartedAt(Date.now());
+  }, [exam.id]);
+
+  useEffect(() => {
+    if (result) return undefined;
+    const timer = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [result]);
+
+  useEffect(() => {
+    if (result || submitting || secondsLeft > 0) return;
+    finish();
+  }, [secondsLeft, result, submitting]);
+
+  function mark(subId, value) {
+    setScores((old) => ({
+      ...old,
+      [currentKey]: { ...(old[currentKey] || {}), [subId]: value },
+    }));
+  }
+
+  function nextPrompt() {
+    setPromptDepth((old) => ({
+      ...old,
+      [currentKey]: Math.min(prompts.length, Math.max(1, old[currentKey] || 1) + 1),
+    }));
+  }
+
+  async function finish() {
+    if (submitting) return;
+    setSubmitting(true);
+    const payload = {
+      module,
+      mode: "oral",
+      exam_id: exam.id,
+      duration_seconds: Math.round((Date.now() - startedAt) / 1000),
+      results: (exam.questions || []).map((q) => ({
+        card_id: q.card_id,
+        sub_scores: (q.subquestions || []).map((sub) => (scores[q.card_id] || {})[sub.id] || "miss"),
+        confidence: confidence[q.card_id] || "",
+        error_types: errorTypes[q.card_id] || [],
+        answer_note: [
+          answers[q.card_id] || "",
+          `Nachfragen: ${(q.oral_prompts || []).slice(0, Math.max(1, promptDepth[q.card_id] || 1)).map((p) => p.label).join(", ")}`,
+        ].filter(Boolean).join("\n\n"),
+      })),
+    };
+    try {
+      const res = await api("/api/exam/open/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setResult(res);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (result) {
+    return (
+      <section className="done exam-result">
+        <Check size={32} />
+        <h2>Pruefermodus ausgewertet</h2>
+        <p>{result.earned} von {result.total} Punkten, {result.pct}% geschaetzt.</p>
+        <div className="result-grid">
+          {(exam.questions || []).map((q) => (
+            <span key={q.card_id}><b>Frage {q.idx}</b>{scoreForQuestion(scores[q.card_id] || {}, q).toFixed(1)}/4</span>
+          ))}
+        </div>
+        <p className="muted">Versuch gespeichert: {result.attempt_id}. Schwache Themen sind in der Nachlern-Queue.</p>
+        <button className="primary" onClick={onClose}>Zurueck</button>
+      </section>
+    );
+  }
+
+  if (!question) return null;
+  return (
+    <section className="oral-exam">
+      <div className="exam-toolbar">
+        <button onClick={onClose}><ArrowLeft size={16} /> Zurueck</button>
+        <div className="timer">{formatSeconds(secondsLeft)}</div>
+        <div className="progress"><span style={{ width: `${pct(idx + 1, exam.questions.length || 1)}%` }} /></div>
+        <b>{earned.toFixed(1)}/{exam.total_points}</b>
+      </div>
+      <div className="exam-nav">
+        {(exam.questions || []).map((q, i) => (
+          <button key={q.card_id} className={i === idx ? "active" : ""} onClick={() => setIdx(i)}>
+            {q.idx}
+          </button>
+        ))}
+      </div>
+      <article className="panel oral-card">
+        <div className="study-meta">
+          <span className="deck-pill">Pruefer</span>
+          <span>VO{question.kap}</span>
+          <span>{question.block}</span>
+          <span>{question.source}</span>
+        </div>
+        <div className="oral-stage">
+          <span>Muendliche Frage</span>
+          <h2 dangerouslySetInnerHTML={{ __html: question.question }} />
+          <div className="oral-prompts">
+            {shownPrompts.map((prompt) => (
+              <article key={prompt.id}>
+                <b>{prompt.label}</b>
+                <p>{prompt.prompt}</p>
+                <em>{prompt.focus}</em>
+              </article>
+            ))}
+          </div>
+          <button type="button" disabled={shownPrompts.length >= prompts.length} onClick={nextPrompt}>
+            Nachfrage stellen
+          </button>
+        </div>
+        <VoiceExamControls
+          readText={voiceText}
+          value={currentAnswer}
+          onValue={(next) => setAnswers((old) => ({ ...old, [currentKey]: next }))}
+        />
+        <label className="exam-answer-editor">
+          Antwortnotiz
+          <PhotoTextarea
+            rows={7}
+            value={currentAnswer}
+            onValue={(next) => setAnswers((old) => ({ ...old, [currentKey]: next }))}
+            placeholder="Frei erklaeren, dann Stichworte hier notieren. Nachfragen erst aufdecken, wenn die erste Antwort sitzt."
+          />
+        </label>
+        <FormulaToolbar value={currentAnswer} onValue={(next) => setAnswers((old) => ({ ...old, [currentKey]: next }))} />
+        <PhotoButton label="Skizze/Foto zur Antwort" onInsert={(html) => setAnswers((old) => ({ ...old, [currentKey]: appendHtml(old[currentKey] || "", html) }))} />
+        {!!currentAnswer.trim() && !!comparison.terms.length && (
+          <div className="answer-coverage oral-coverage">
+            <div>
+              <b>Antwortabdeckung</b>
+              <span>{comparison.score}% · {comparison.hits.length}/{comparison.terms.length} Begriffe getroffen</span>
+            </div>
+            <div className="coverage-chip-row">
+              {comparison.hits.slice(0, 8).map((term) => <span key={term} className="hit">{term}</span>)}
+              {comparison.missing.slice(0, 8).map((term) => <span key={term} className="miss">{term}</span>)}
+            </div>
+          </div>
+        )}
+        <div className="oral-score-grid">
+          {(question.subquestions || []).map((sub) => (
+            <article key={sub.id}>
+              <div>
+                <b>{sub.category}</b>
+                <p>{sub.prompt}</p>
+              </div>
+              <span>{sub.points} P</span>
+              <em>
+                {EXAM_EVALS.map(([key, label]) => (
+                  <button key={key} className={currentScores[sub.id] === key ? "active" : ""} onClick={() => mark(sub.id, key)}>
+                    {label}
+                  </button>
+                ))}
+              </em>
+            </article>
+          ))}
+        </div>
+        <ExamMetaControls
+          confidence={confidence[currentKey] || ""}
+          onConfidence={(value) => setConfidence((old) => ({ ...old, [currentKey]: value }))}
+          errorTypes={currentErrors}
+          onErrorTypes={(values) => setErrorTypes((old) => ({ ...old, [currentKey]: values }))}
+        />
+        <div className="button-row-inline">
+          <button onClick={() => setRevealed((old) => ({ ...old, [currentKey]: !old[currentKey] }))}>
+            {revealed[currentKey] ? "Loesung ausblenden" : "Musterantwort zeigen"}
+          </button>
+          <button disabled={idx === 0} onClick={() => setIdx(idx - 1)}>Zurueck</button>
+          <button disabled={idx + 1 >= exam.questions.length} onClick={() => setIdx(idx + 1)}>Weiter</button>
+          <button className="primary" disabled={submitting} onClick={finish}>{submitting ? "Wertet aus..." : "Pruefermodus abschliessen"}</button>
+        </div>
+        {revealed[currentKey] && (
+          <div className="exam-solution">
+            <h3>Musterantwort und Geruest</h3>
+            <div className="scaffold-list">
+              {(question.scaffold || []).map((item) => <span key={item}>{item}</span>)}
+            </div>
+            <AnswerContent html={question.answer} />
+          </div>
+        )}
+      </article>
+    </section>
+  );
+}
+
 function ArchiveCorrectionRunner({ exam, module, onClose }) {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -2428,6 +2690,12 @@ function ExamPage({ startExam, startSession, module }) {
     setExam(res);
   }
 
+  async function startOral() {
+    const res = await api(`/api/exam/oral?module=${encodeURIComponent(module)}&n=5`);
+    setCorrection(null);
+    setExam(res);
+  }
+
   async function closeRunner() {
     setExam(null);
     setCorrection(null);
@@ -2435,6 +2703,7 @@ function ExamPage({ startExam, startSession, module }) {
   }
 
   if (correction) return <ArchiveCorrectionRunner exam={correction} module={module} onClose={closeRunner} />;
+  if (exam?.mode === "oral") return <OralExamRunner exam={exam} module={module} onClose={closeRunner} />;
   if (exam) return <OpenExamRunner exam={exam} module={module} onClose={closeRunner} />;
 
   return (
@@ -2448,8 +2717,9 @@ function ExamPage({ startExam, startSession, module }) {
           <Target size={26} />
         </div>
         <div className="exam-actions-grid">
-          <button className="primary" onClick={() => startOpen("full")}>Antwortpruefung 2.0</button>
-          <button onClick={() => startOpen("mini")}>Schwaechen-Check</button>
+          <button className="primary" onClick={startOral}>V2 Pruefermodus</button>
+          <button className="primary" onClick={() => startOpen("full")}>2h-Pruefung starten</button>
+          <button onClick={() => startOpen("mini")}>Schwaechen-Mini-Pruefung</button>
           <button onClick={() => startOpen("explain")}>Kann ich erklaeren?</button>
           <button onClick={startFormula}>Skizzen-/Formelmodus</button>
         </div>
