@@ -1446,7 +1446,18 @@ def _oral_prompts_for(card: dict, question: dict) -> list[dict]:
     return prompts[:6]
 
 
-def _exam_score_projection(stats: dict, chapters: list[dict], module: str) -> dict:
+def _component(label: str, score: float, weight: int, detail: str) -> dict:
+    return {
+        "label": label,
+        "score": round(max(0, min(100, score))),
+        "weight": weight,
+        "detail": detail,
+    }
+
+
+def _exam_score_projection(stats: dict, chapters: list[dict], module: str,
+                           quality: dict | None = None) -> dict:
+    quality = quality or {}
     blocks: dict[str, list[dict]] = {}
     for ch in chapters:
         blocks.setdefault(_exam_block(module, ch.get("kap")), []).append(ch)
