@@ -3099,3 +3099,6 @@ textarea {
   .chapter-row em, .chapter-row i { grid-column: 2; }
   .authbar { position: static; justify-content: flex-end; margin-bottom: 8px; }
 }
+
+.card-change-date { color: var(--muted); font-weight: 400; }
+p.card-change-date { font-size: 12px; margin: 0 0 8px; }
