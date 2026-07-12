@@ -2602,14 +2602,17 @@ def submit_open_exam(inp: OpenExamSubmitIn):
 
 @app.get("/api/cards")
 def cards(status: str = "needs_review", limit: int = 80, kap: int | None = None,
-          q: str = "", module: str = "organic", tag: str = "", media: str = "all"):
+          q: str = "", module: str = "organic", tag: str = "", media: str = "all",
+          sort: str = "default"):
     module = _valid_module(module)
     if status not in ("all", "active", "needs_review", "suspended"):
         raise HTTPException(400, "ungueltiger Status")
     if media not in ("all", "with_photo", "without_photo", "photo_recommended"):
         raise HTTPException(400, "ungueltiger Medienfilter")
+    if sort not in ("default", "updated", "updated_asc"):
+        raise HTTPException(400, "ungueltige Sortierung")
     conn = db.get_conn()
-    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip(), module, tag.strip(), media)
+    out = db.list_cards(conn, status, max(1, min(limit, 200)), kap, q.strip(), module, tag.strip(), media, sort)
     conn.close()
     return out
 

@@ -1402,7 +1402,7 @@ def tag_stats(conn: sqlite3.Connection, module: str = "organic") -> list[dict]:
 
 def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: int = 80,
                kap: int | None = None, q: str = "", module: str = "organic",
-               tag: str = "", media: str = "all") -> dict:
+               tag: str = "", media: str = "all", sort: str = "default") -> dict:
     clauses = ["module=?", "deck='anki'"]
     params: list[object] = [module]
     if status != "all":
@@ -1422,11 +1422,19 @@ def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: in
     elif media in {"without_photo", "photo_recommended"}:
         clauses.append("payload NOT LIKE '%<img%' AND payload NOT LIKE '%/uploads/cards/%'")
     where = " AND ".join(clauses)
+    order_by = {
+        "updated": "updated_at IS NULL, updated_at DESC, kap ASC, ord ASC",
+        "updated_asc": "updated_at IS NULL, updated_at ASC, kap ASC, ord ASC",
+        "default": ("CASE status WHEN 'needs_review' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, "
+                    "lapses DESC, reps ASC, kap ASC, ord ASC"),
+    }.get(sort, None) or (
+        "CASE status WHEN 'needs_review' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, "
+        "lapses DESC, reps ASC, kap ASC, ord ASC"
+    )
     fetch_limit = limit if not tag and media != "photo_recommended" else max(limit * 8, 300)
     rows = conn.execute(
         f"""SELECT * FROM cards WHERE {where}
-            ORDER BY CASE status WHEN 'needs_review' THEN 0 WHEN 'active' THEN 1 ELSE 2 END,
-                     lapses DESC, reps ASC, kap ASC, ord ASC
+            ORDER BY {order_by}
             LIMIT ?""",
         (*params, fetch_limit),
     ).fetchall()

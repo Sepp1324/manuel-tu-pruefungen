@@ -2976,18 +2976,26 @@ function CardImportPage({ onDone, module }) {
   );
 }
 
+function fmtChangeDate(iso) {
+  if (!iso) return "unbearbeitet";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "unbearbeitet";
+  return d.toLocaleDateString("de-AT", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 function CardReviewPage({ onDone, module }) {
   const [status, setStatus] = useState("needs_review");
   const [kap, setKap] = useState("");
   const [tag, setTag] = useState("");
   const [media, setMedia] = useState("all");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("default");
   const [data, setData] = useState({ cards: [], summary: {} });
   const [selected, setSelected] = useState(null);
   const [msg, setMsg] = useState("");
 
   async function load() {
-    const qs = new URLSearchParams({ status, limit: "80", module });
+    const qs = new URLSearchParams({ status, limit: "80", module, sort });
     if (kap) qs.set("kap", kap);
     if (tag) qs.set("tag", tag);
     if (media !== "all") qs.set("media", media);
@@ -2996,7 +3004,7 @@ function CardReviewPage({ onDone, module }) {
     setData(res);
     setSelected(res.cards?.[0] || null);
   }
-  useEffect(() => { load().catch(() => {}); }, [status, kap, tag, media, module]);
+  useEffect(() => { load().catch(() => {}); }, [status, kap, tag, media, sort, module]);
 
   function select(card) {
     setSelected({ ...card });
@@ -3046,6 +3054,11 @@ function CardReviewPage({ onDone, module }) {
             <option value="without_photo">Ohne Foto</option>
             <option value="photo_recommended">Foto empfohlen</option>
           </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="default">Sortierung: Standard</option>
+            <option value="updated">Zuletzt geaendert</option>
+            <option value="updated_asc">Aeltest geaendert</option>
+          </select>
           <input placeholder="Tag" value={tag} onChange={(e) => setTag(e.target.value)} />
           <input placeholder="Suchen" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
           <button onClick={load}>Filtern</button>
@@ -3058,7 +3071,7 @@ function CardReviewPage({ onDone, module }) {
         <div className="quality-items">
           {(data.cards || []).map((card) => (
             <button key={card.id} className={selected?.id === card.id ? "active" : ""} onClick={() => select(card)}>
-              <b>VO{card.kap} · {card.status}</b>
+              <b>VO{card.kap} · {card.status} · <span className="card-change-date">geaendert {fmtChangeDate(card.updated_at)}</span></b>
               <em>{[(card.tags || []).join(" · "), card.has_photo ? "Foto" : "", card.photo_recommended ? "Foto empfohlen" : "", card.sketch_required ? "Skizze" : ""].filter(Boolean).join(" · ")}</em>
               <span dangerouslySetInnerHTML={{ __html: card.q }} />
             </button>
@@ -3068,6 +3081,7 @@ function CardReviewPage({ onDone, module }) {
       <div className="panel quality-editor">
         {selected ? (
           <>
+            <p className="muted card-change-date">Zuletzt geaendert: {fmtChangeDate(selected.updated_at)}</p>
             <SourceAnchorPanel anchor={selected.source_anchor} />
             <EditableCardPreview
               question={selected.q || ""}
