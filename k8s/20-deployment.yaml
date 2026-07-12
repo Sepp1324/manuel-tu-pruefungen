@@ -8,9 +8,10 @@ metadata:
   labels:
     app: organicsr
 spec:
-  replicas: 1                 # SQLite -> genau EIN Writer. Nicht hochskalieren.
+  replicas: 1                 # Ein Nutzer -> eine Replica reicht. Seeding laeuft
+                              # ohne Startup-Lock, daher nicht ohne Weiteres hochskalieren.
   strategy:
-    type: Recreate           # alten Pod erst beenden, dann neuen -> nie zwei Writer auf der DB
+    type: Recreate           # alten Pod erst beenden, dann neuen
   selector:
     matchLabels:
       app: organicsr
@@ -27,6 +28,17 @@ spec:
             - name: http
               containerPort: 8000
           env:
+            # --- PostgreSQL + Redis ---
+            # DATABASE_URL leer lassen -> Fallback auf SQLite (SR_DB_PATH).
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: organicsr-secrets
+                  key: postgres-password
+            - name: DATABASE_URL
+              value: "postgresql://organicsr:$(POSTGRES_PASSWORD)@organicsr-db:5432/organicsr"
+            - name: REDIS_URL
+              value: "redis://organicsr-redis:6379/0"
             - name: SR_DB_PATH
               value: /data/organicsr.db
             - name: SR_JOURNAL_MODE

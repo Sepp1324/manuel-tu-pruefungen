@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import auth
+import cache
 import db
 from fsrs import Scheduler
 
@@ -181,14 +182,37 @@ def _auto_quality_sweep_cached(conn, module: str, now_iso: str) -> int:
     return moved
 
 
+RESPONSE_CACHE_TTL = int(os.environ.get("RESPONSE_CACHE_TTL", "10") or "10")
+
+
+def _redis_json_cache(key: str, builder, ttl: int | None = None):
+    """Full-response cache backed by Redis (with in-memory fallback).
+
+    Falls closed: on any cache problem the builder is called directly, so a
+    missing/broken Redis never breaks the endpoint.
+    """
+    cached = cache.get_json(key)
+    if cached is not None:
+        if isinstance(cached, dict):
+            cached.setdefault("_cache", {})["hit"] = True
+        return cached
+    payload = builder()
+    cache.set_json(key, payload, ttl or RESPONSE_CACHE_TTL)
+    if isinstance(payload, dict):
+        payload.setdefault("_cache", {})["hit"] = False
+    return payload
+
+
 def _invalidate_module_caches(module: str) -> None:
     _AUTO_QUALITY_CACHE.pop(module, None)
     _KNOWLEDGE_MAP_CACHE.pop(module, None)
+    cache.delete_pattern(f"chem:*:{module}")
 
 
 def _invalidate_all_caches() -> None:
     _AUTO_QUALITY_CACHE.clear()
     _KNOWLEDGE_MAP_CACHE.clear()
+    cache.delete_pattern("chem:*")
 
 
 def _record_request_metric(request: Request, status_code: int, elapsed_ms: float) -> None:
@@ -2098,69 +2122,86 @@ def performance():
 @app.get("/api/stats")
 def stats(module: str = "organic"):
     module = _valid_module(module)
-    modules = _module_catalog()
-    conn = db.get_conn()
-    now = _now_iso()
-    st = db.deck_stats(conn, now, module)
-    chapters = db.chapter_stats(conn, now, module)
-    weaknesses = db.weakness_heatmap(conn, now, module, chapters)
-    tags = db.tag_stats(conn, module)
-    auto_quality = _auto_quality_sweep_cached(conn, module, now)
-    quality = db.quality_summary(conn, module)
-    exam_score = _exam_score_projection(st, chapters, module, quality)
-    today = _today_work_plan(conn, module, st, chapters, quality, exam_score)
-    xp = db.xp_summary(conn)
-    streak = db.streak(conn)
-    exam_date = _exam_date(module)
-    conn.close()
-    return {
-        "title": modules[module].get("full_title", modules[module].get("title", module)),
-        "module": module,
-        "modules": modules,
-        "exam_date": exam_date.isoformat(),
-        "days_until_exam": _days_left(module),
-        "anki": st,
-        "chapters": chapters,
-        "daily_goal": _daily_goal(st, chapters, module),
-        "forecast": _forecast(st, chapters, module),
-        "study_plan": _study_plan(st, chapters, module),
-        "weaknesses": weaknesses,
-        "tags": tags,
-        "quality": quality,
-        "today_plan": today,
-        "auto_quality": {"moved": auto_quality},
-        "exam_score": exam_score,
-        "xp": xp,
-        "streak": streak,
-    }
+
+    def build():
+        modules = _module_catalog()
+        conn = db.get_conn()
+        now = _now_iso()
+        st = db.deck_stats(conn, now, module)
+        chapters = db.chapter_stats(conn, now, module)
+        weaknesses = db.weakness_heatmap(conn, now, module, chapters)
+        tags = db.tag_stats(conn, module)
+        auto_quality = _auto_quality_sweep_cached(conn, module, now)
+        quality = db.quality_summary(conn, module)
+        exam_score = _exam_score_projection(st, chapters, module, quality)
+        today = _today_work_plan(conn, module, st, chapters, quality, exam_score)
+        xp = db.xp_summary(conn)
+        streak = db.streak(conn)
+        exam_date = _exam_date(module)
+        conn.close()
+        return {
+            "title": modules[module].get("full_title", modules[module].get("title", module)),
+            "module": module,
+            "modules": modules,
+            "exam_date": exam_date.isoformat(),
+            "days_until_exam": _days_left(module),
+            "anki": st,
+            "chapters": chapters,
+            "daily_goal": _daily_goal(st, chapters, module),
+            "forecast": _forecast(st, chapters, module),
+            "study_plan": _study_plan(st, chapters, module),
+            "weaknesses": weaknesses,
+            "tags": tags,
+            "quality": quality,
+            "today_plan": today,
+            "auto_quality": {"moved": auto_quality},
+            "exam_score": exam_score,
+            "xp": xp,
+            "streak": streak,
+        }
+
+    return _redis_json_cache(f"chem:stats:{module}", build)
 
 
 @app.get("/api/dashboard")
 def dashboard(module: str = "organic"):
     module = _valid_module(module)
-    conn = db.get_conn()
-    now = _now_iso()
-    st = db.deck_stats(conn, now, module)
-    chapters = db.chapter_stats(conn, now, module)
-    auto_quality = _auto_quality_sweep_cached(conn, module, now)
-    quality = db.quality_summary(conn, module)
-    out = {
-        "module": module,
-        "stats": st,
-        "chapters": chapters,
-        "timeline": db.reviews_timeline(conn, 21, module),
-        "forecast": _forecast(st, chapters, module),
-        "study_plan": _study_plan(st, chapters, module),
-        "weaknesses": db.weakness_heatmap(conn, now, module, chapters),
-        "tags": db.tag_stats(conn, module),
-        "quality": quality,
-        "auto_quality": {"moved": auto_quality},
-        "exam_score": _exam_score_projection(st, chapters, module, quality),
-        "xp": db.xp_summary(conn),
-        "streak": db.streak(conn),
+
+    def build():
+        conn = db.get_conn()
+        now = _now_iso()
+        st = db.deck_stats(conn, now, module)
+        chapters = db.chapter_stats(conn, now, module)
+        auto_quality = _auto_quality_sweep_cached(conn, module, now)
+        quality = db.quality_summary(conn, module)
+        out = {
+            "module": module,
+            "stats": st,
+            "chapters": chapters,
+            "timeline": db.reviews_timeline(conn, 21, module),
+            "forecast": _forecast(st, chapters, module),
+            "study_plan": _study_plan(st, chapters, module),
+            "weaknesses": db.weakness_heatmap(conn, now, module, chapters),
+            "tags": db.tag_stats(conn, module),
+            "quality": quality,
+            "auto_quality": {"moved": auto_quality},
+            "exam_score": _exam_score_projection(st, chapters, module, quality),
+            "xp": db.xp_summary(conn),
+            "streak": db.streak(conn),
+        }
+        conn.close()
+        return out
+
+    return _redis_json_cache(f"chem:dashboard:{module}", build)
+
+
+@app.get("/api/runtime/storage")
+def runtime_storage():
+    return {
+        "database": db.backend_name(),
+        "cache": cache.health_info(),
+        "response_cache_ttl": RESPONSE_CACHE_TTL,
     }
-    conn.close()
-    return out
 
 
 @app.get("/api/knowledge-map")
