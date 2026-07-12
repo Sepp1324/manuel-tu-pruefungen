@@ -1,13 +1,48 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: organicsr-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=organicsr
+      - POSTGRES_PASSWORD=change-me-locally
+      - POSTGRES_DB=organicsr
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U organicsr -d organicsr"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: organicsr-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   organicsr:
     build: .
     container_name: organicsr
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8080:8000"          # host 8080 -> container 8000; reverse-proxy via Caddy
     volumes:
-      - ./data:/data
+      - ./data:/data          # only used as SQLite fallback if DATABASE_URL is unset
     environment:
+      # PostgreSQL + Redis. Leave DATABASE_URL empty to fall back to SQLite.
+      - DATABASE_URL=postgresql://organicsr:change-me-locally@db:5432/organicsr
+      - REDIS_URL=redis://redis:6379/0
       - SR_DB_PATH=/data/organicsr.db
       - ADMIN_USER=manuel
       - ADMIN_PASSWORD=change-me-locally

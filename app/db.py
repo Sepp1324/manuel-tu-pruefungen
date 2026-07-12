@@ -8,11 +8,23 @@ import sqlite3
 from datetime import date, datetime, timedelta, timezone
 from html import unescape
 from pathlib import Path
+from urllib.parse import urlparse
+
+from postgres_compat import PostgresConnection
 
 
 DB_PATH = os.environ.get("SR_DB_PATH", "/data/organicsr.db")
 JOURNAL_MODE = os.environ.get("SR_JOURNAL_MODE", "WAL")
 SEED_PATH = Path(__file__).parent / "seed_data.json"
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
+
+def _postgres_enabled() -> bool:
+    return urlparse(DATABASE_URL).scheme in {"postgres", "postgresql"}
+
+
+def backend_name() -> str:
+    return "postgres" if _postgres_enabled() else "sqlite"
 
 ENGLISH_ARTIFACT_RE = re.compile(
     r"(?i)("
@@ -203,7 +215,9 @@ CREATE INDEX IF NOT EXISTS idx_sessions_exp ON sessions(expires_at);
 """
 
 
-def get_conn() -> sqlite3.Connection:
+def get_conn():
+    if _postgres_enabled():
+        return PostgresConnection(DATABASE_URL)
     path = Path(DB_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)

@@ -30,12 +30,27 @@ SR_DB_PATH=../data/organicsr.db ADMIN_USER=manuel ADMIN_PASSWORD=change-me AUTH_
 
 Dann im Browser `http://127.0.0.1:8000` oeffnen und mit `manuel` einloggen.
 
-Alternativ:
+Alternativ (inkl. PostgreSQL + Redis):
 
 ```bash
 cd organicsr
 docker compose up --build
 ```
+
+## Datenbank: SQLite oder PostgreSQL + Redis
+
+Standard ist SQLite. Fuer PostgreSQL + Redis einfach die Env-Variablen setzen –
+derselbe Code laeuft dann auf Postgres, ohne die Variablen bleibt es bei SQLite:
+
+- `DATABASE_URL=postgresql://user:pass@host:5432/dbname` – aktiviert PostgreSQL
+  (eine kleine Kompatibilitaetsschicht in `app/postgres_compat.py` uebersetzt die
+  sqlite3-Aufrufe). Ist die Variable leer, wird `SR_DB_PATH` (SQLite) genutzt.
+- `REDIS_URL=redis://host:6379/0` – aktiviert den Redis-Antwort-Cache fuer teure
+  Endpunkte (Stats/Dashboard). Ohne Redis faellt der Cache still auf In-Memory
+  zurueck; die App funktioniert immer, auch wenn Redis kurz ausfaellt.
+- `RESPONSE_CACHE_TTL` (Default 10 s) steuert die Cache-Lebensdauer.
+
+Der aktive Backend-Status ist unter `GET /api/runtime/storage` sichtbar.
 
 ## Karten neu generieren
 
