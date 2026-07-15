@@ -10,7 +10,7 @@
 # Caddyfile-Block auf dem Caddy-Host (kein manuelles 'redir' — Caddy leitet
 # http->https automatisch um):
 #
-#   chemie-manuel.stoegerer-home.at {
+#   chemie.stoegerer-home.cloud {
 #       reverse_proxy <TRAEFIK-LB-IP>:80
 #   }
 #
@@ -30,7 +30,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: chemie-manuel.stoegerer-home.at   # <-- ANPASSEN
+    - host: chemie.stoegerer-home.cloud
       http:
         paths:
           - path: /
