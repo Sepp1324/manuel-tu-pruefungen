@@ -25,6 +25,9 @@ jobs:
       - name: Image-Tag = Git-SHA
         run: echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
 
+      - name: Registry-Login
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "$REGISTRY" -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+
       - name: Image bauen
         run: docker build -t "$IMAGE:$TAG" .
 
