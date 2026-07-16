@@ -3971,6 +3971,32 @@ function ReadinessPage({ module, startExam, setRoute }) {
         <span><b>{d.unseen}</b> ungesehen</span>
         <span><b>{d.open_mistakes}</b> offene Fehler</span>
       </div>
+      {d.pass_prediction && (
+        <div style={{ marginTop: 16, padding: 12, borderRadius: 8,
+          background: d.pass_prediction.would_pass ? "#eafaf0" : "#fdecea",
+          border: `1px solid ${d.pass_prediction.would_pass ? "#27ae60" : "#c0392b"}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <b style={{ color: d.pass_prediction.would_pass ? "#1e8449" : "#c0392b" }}>
+              {d.pass_prediction.would_pass ? "✓ Aktuell auf Bestehenskurs" : "✗ Noch nicht bestehenssicher"}
+            </b>
+            <small className="muted">{d.pass_prediction.rule}</small>
+          </div>
+          <p style={{ margin: "6px 0 10px", fontSize: 14 }}>{d.pass_prediction.verdict}</p>
+          {(d.pass_prediction.parts || []).map((p) => (
+            <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
+              <span style={{ width: 18 }}>{p.pass ? "✓" : "✗"}</span>
+              <span style={{ flex: 1 }}>{p.name}</span>
+              <div style={{ flex: 1, background: "#e9edf1", borderRadius: 5, height: 8, position: "relative" }}>
+                <div style={{ width: `${Math.min(100, p.score)}%`, height: "100%", borderRadius: 5,
+                  background: p.pass ? "#27ae60" : "#c0392b" }} />
+                <div style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 1, background: "#888" }} title="50%" />
+              </div>
+              <span style={{ width: 42, textAlign: "right", color: p.pass ? "#1e8449" : "#c0392b" }}>{p.score}%</span>
+            </div>
+          ))}
+          <small className="muted">Gestrichelte Linie = 50-%-Bestehensgrenze je Teil.</small>
+        </div>
+      )}
       <h3 style={{ marginTop: 16 }}>Fokus-Blöcke</h3>
       {(d.milestones || []).map((m) => (
         <div key={m.block} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #eee" }}>
@@ -4068,6 +4094,97 @@ function QuestsPage({ module }) {
   );
 }
 
+function AntwortCheckPage({ module }) {
+  const [cards, setCards] = useState([]);
+  const [idx, setIdx] = useState(0);
+  const [answer, setAnswer] = useState("");
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [coach, setCoach] = useState(null);
+
+  async function loadCards() {
+    const res = await api(`/api/study/anki?module=${module}&limit=30`);
+    setCards(res.cards || []);
+    setIdx(0); setAnswer(""); setResult(null);
+  }
+  useEffect(() => { loadCards().catch(() => {}); }, [module]);
+  useEffect(() => { api("/api/coach/status").then(setCoach).catch(() => {}); }, []);
+
+  const card = cards[idx];
+  const question = card ? (card.q.split("\n\n").pop() || card.q) : "";
+
+  async function grade() {
+    if (!card || !answer.trim()) return;
+    setBusy(true); setResult(null);
+    try {
+      const res = await api("/api/coach/grade", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ card_id: card.id, answer }),
+      });
+      setResult(res);
+    } catch (err) {
+      setResult({ error: err.message });
+    } finally { setBusy(false); }
+  }
+  function next() {
+    setAnswer(""); setResult(null);
+    if (idx + 1 >= cards.length) loadCards().catch(() => {});
+    else setIdx(idx + 1);
+  }
+
+  if (!card) return <div className="loading">Antwort-Check laedt...</div>;
+  const label = result?.score_label;
+  const badge = { full: ["Voll", "#27ae60"], partial: ["Teilweise", "#e67e22"], miss: ["Verfehlt", "#c0392b"] }[label] || ["", "#888"];
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div><h2><Sparkles size={18} /> Antwort-Check</h2>
+          <p>Frei formulieren wie in der Pruefung – dann bewerten lassen.</p></div>
+      </div>
+      {coach && !coach.available && (
+        <div className="form-msg">Kein KI-Key aktiv – Bewertung erfolgt über Stichwort-Näherung. (ANTHROPIC_API_KEY setzen für echtes KI-Feedback.)</div>
+      )}
+      <div style={{ padding: 12, background: "var(--surface-2,#f4f6f8)", borderRadius: 8, marginBottom: 10 }}>
+        <small className="muted">VO{card.kap}</small>
+        <p style={{ margin: "4px 0 0", fontWeight: 600 }}>{question}</p>
+      </div>
+      <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={6}
+        placeholder="Deine Antwort..." style={{ width: "100%", padding: 10, borderRadius: 6, fontFamily: "inherit" }} />
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <button className="primary" onClick={grade} disabled={busy || !answer.trim()}>{busy ? "Bewerte..." : "Bewerten"}</button>
+        <button onClick={next}>Nächste Frage</button>
+      </div>
+      {result && !result.error && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ padding: "4px 12px", borderRadius: 16, color: "#fff", background: badge[1], fontWeight: 600 }}>
+              {badge[0]} · {result.score_pct}%
+            </span>
+            {result.offline && <small className="muted">(Stichwort-Näherung)</small>}
+            {typeof result.xp?.total_xp === "number" && <small className="muted">+XP</small>}
+          </div>
+          <p style={{ margin: "10px 0" }}>{result.feedback}</p>
+          {(result.missed_points || []).length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <b style={{ color: "#c0392b" }}>Noch offen:</b>
+              <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                {result.missed_points.map((p, i) => <li key={i}>{p}</li>)}
+              </ul>
+            </div>
+          )}
+          <details>
+            <summary style={{ cursor: "pointer" }}>Musterlösung anzeigen</summary>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              {(result.model_points || []).map((p, i) => <li key={i}>{p}</li>)}
+            </ul>
+          </details>
+        </div>
+      )}
+      {result?.error && <div className="form-msg">Fehler: {result.error}</div>}
+    </section>
+  );
+}
+
 function App() {
   const isLogin = window.location.pathname === "/login";
   const [route, setRoute] = useState("home");
@@ -4128,6 +4245,7 @@ function App() {
     if (route === "fehlerbuch") return <FehlerbuchPage module={module} startSession={startSession} />;
     if (route === "analytics") return <AnalyticsPage module={module} />;
     if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} />;
+    if (route === "antwortcheck") return <AntwortCheckPage module={module} />;
     if (route === "lastminute") return <LastMinutePage module={module} />;
     if (route === "quests") return <QuestsPage module={module} />;
     return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
@@ -4157,6 +4275,7 @@ function App() {
         <button className={route === "add" ? "active" : ""} onClick={() => setRoute("add")}><Plus size={16} /> Eigene Karte</button>
         <button className={route === "fehlerbuch" ? "active" : ""} onClick={() => setRoute("fehlerbuch")}><AlertTriangle size={16} /> Fehlerbuch</button>
         <button className={route === "readiness" ? "active" : ""} onClick={() => setRoute("readiness")}><CalendarClock size={16} /> Reifeplan</button>
+        <button className={route === "antwortcheck" ? "active" : ""} onClick={() => setRoute("antwortcheck")}><Sparkles size={16} /> Antwort-Check</button>
         <button className={route === "analytics" ? "active" : ""} onClick={() => setRoute("analytics")}><Gauge size={16} /> Analytics</button>
         <button className={route === "lastminute" ? "active" : ""} onClick={() => setRoute("lastminute")}><ListChecks size={16} /> Spickzettel</button>
         <button className={route === "quests" ? "active" : ""} onClick={() => setRoute("quests")}><Trophy size={16} /> Quests</button>

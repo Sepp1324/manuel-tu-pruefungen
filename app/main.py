@@ -30,6 +30,7 @@ except ImportError:  # httpx is optional; only needed for the LLM coach
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 COACH_MODEL = os.environ.get("COACH_MODEL", "claude-haiku-4-5-20251001")
+NOTIFY_TOKEN = os.environ.get("NOTIFY_TOKEN", "")
 
 
 app = FastAPI(title="TU Chemie SR-Trainer")
@@ -105,7 +106,7 @@ ARCHIVE_EXAMS = {
     ],
 }
 
-PUBLIC_EXACT = {"/healthz", "/login", "/api/auth/login"}
+PUBLIC_EXACT = {"/healthz", "/login", "/api/auth/login", "/api/notify/digest"}
 PUBLIC_PREFIXES = ("/assets/", "/static/")
 
 EXAM_ERROR_TYPES = {
@@ -2195,6 +2196,34 @@ def dashboard(module: str = "organic"):
     return _redis_json_cache(f"chem:dashboard:{module}", build)
 
 
+@app.get("/api/notify/digest")
+def notify_digest(request: Request, token: str = ""):
+    # Token-geschuetzt (oeffentlicher Pfad, damit ein CronJob ohne Login zugreifen kann).
+    header_token = request.headers.get("X-Token", "")
+    provided = token or header_token
+    if not NOTIFY_TOKEN or provided != NOTIFY_TOKEN:
+        raise HTTPException(403, "ungueltiger oder fehlender Token")
+    conn = db.get_conn()
+    now = _now_iso()
+    mods = _module_catalog()
+    lines = []
+    out_modules = []
+    for module in ("organic", "inorganic"):
+        st = db.deck_stats(conn, now, module)
+        fb = db.fehlerbuch_summary(conn, module)
+        days = _days_left(module)
+        due = st.get("due") or 0
+        new = (st.get("total") or 0) - (st.get("seen") or 0)
+        title = mods[module]["title"]
+        lines.append(f"{title}: noch {days} Tage · {due} faellig · {new} neu · {fb.get('open', 0)} Fehler offen")
+        out_modules.append({"module": module, "days_left": days, "due": due,
+                            "new": new, "open_mistakes": fb.get("open", 0)})
+    streak = db.streak(conn)
+    conn.close()
+    text = "\n".join(lines) + f"\nStreak: {streak.get('current', 0)} Tage – dranbleiben!"
+    return {"ok": True, "text": text, "modules": out_modules, "streak": streak.get("current", 0)}
+
+
 @app.get("/api/runtime/storage")
 def runtime_storage():
     return {
@@ -3043,6 +3072,35 @@ def readiness_plan(module: str = "organic"):
             "action": "Grundlagen sichern" if b.get("score", 0) < 55 else
                       "Prüfungsfragen üben" if b.get("score", 0) < 80 else "Halten & wiederholen",
         })
+    # Bestehens-Prognose nach der echten Pruefungsregel:
+    # mindestens 50 % in JEDEM Teil/Block UND insgesamt mindestens 50 %.
+    PASS = 50
+    parts = [{
+        "name": b.get("block"),
+        "score": int(b.get("score") or 0),
+        "pass": int(b.get("score") or 0) >= PASS,
+    } for b in sorted(blocks, key=lambda b: b.get("block") or "")]
+    overall_pass = overall >= PASS
+    all_parts_pass = bool(parts) and all(p["pass"] for p in parts)
+    would_pass = all_parts_pass and overall_pass
+    weakest_part = min(parts, key=lambda p: p["score"]) if parts else None
+    if would_pass:
+        verdict = "Aktuell auf Bestehenskurs – jeder Teil und die Gesamtquote liegen über 50 %."
+    elif not overall_pass:
+        verdict = "Gesamtquote noch unter 50 % – breit weiterlernen."
+    else:
+        failing = [p["name"] for p in parts if not p["pass"]]
+        verdict = f"Gesamt reicht, aber unter 50 % in: {', '.join(failing)} – hier ist die Bestehensgrenze der Knackpunkt."
+    pass_prediction = {
+        "threshold": PASS,
+        "parts": parts,
+        "overall": overall,
+        "overall_pass": overall_pass,
+        "would_pass": would_pass,
+        "weakest_part": weakest_part,
+        "verdict": verdict,
+        "rule": "≥50 % in jedem Teil und ≥50 % gesamt",
+    }
     return {
         "module": module,
         "days_left": _days_left(module),
@@ -3056,6 +3114,7 @@ def readiness_plan(module: str = "organic"):
         "focus_blocks": focus,
         "milestones": milestones,
         "components": exam_score.get("components", []),
+        "pass_prediction": pass_prediction,
     }
 
 
@@ -3218,6 +3277,108 @@ def coach_explain(inp: CoachExplainIn):
               f"typische Fehler):\n\nFRAGE: {q}\n\nERWARTETE ANTWORTPUNKTE: {a}")
     text = _call_anthropic(system, prompt)
     return {"ok": True, "card_id": inp.card_id, "explanation": text}
+
+
+_GRADE_STOP = {"eine", "einer", "eines", "einem", "einen", "oder", "und", "der", "die", "das",
+               "den", "dem", "des", "mit", "fuer", "für", "auf", "aus", "bei", "zum", "zur",
+               "wird", "werden", "sind", "kann", "durch", "sowie", "beim", "sich", "ihre",
+               "ihren", "als", "bzw", "z.b", "etwa"}
+
+
+def _offline_grade(answer: str, points: list[str]) -> dict:
+    ans = answer.lower()
+    hit, missed = [], []
+    for p in points:
+        words = {w for w in re.findall(r"[a-zA-Zäöüß0-9]{4,}", p.lower()) if w not in _GRADE_STOP}
+        key = list(words)[:8]
+        overlap = sum(1 for w in key if w in ans)
+        if key and overlap >= max(1, len(key) // 3):
+            hit.append(p)
+        else:
+            missed.append(p)
+    n = len(points) or 1
+    ratio = len(hit) / n
+    label = "full" if ratio >= 0.8 else "partial" if ratio >= 0.4 else "miss"
+    return {"score_label": label, "score_pct": round(ratio * 100),
+            "hit_points": hit, "missed_points": missed}
+
+
+def _extract_json(text: str) -> dict | None:
+    m = re.search(r"\{.*\}", text or "", flags=re.S)
+    if not m:
+        return None
+    try:
+        return json.loads(m.group(0))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+class CoachGradeIn(BaseModel):
+    card_id: str
+    answer: str
+
+
+@app.post("/api/coach/grade")
+def coach_grade(inp: CoachGradeIn):
+    conn = db.get_conn()
+    card = db.get_card(conn, inp.card_id)
+    if not card:
+        conn.close()
+        raise HTTPException(404, "Karte nicht gefunden")
+    module = card.get("module", "organic")
+    question = _question_title(card)
+    points = _answer_points(card.get("a", ""))
+    answer = (inp.answer or "").strip()
+    if not answer:
+        conn.close()
+        raise HTTPException(400, "Keine Antwort angegeben")
+
+    if not _coach_available():
+        result = _offline_grade(answer, points)
+        result["feedback"] = ("Naeherung ueber Stichwort-Abgleich (kein KI-Key konfiguriert). "
+                              "Vergleiche deine Antwort mit den erwarteten Punkten unten.")
+        offline = True
+    else:
+        system = ("Du bist Pruefer einer oesterreichischen TU-Chemie-Pruefung (offene Fragen). "
+                  "Bewerte die Studierenden-Antwort streng aber fair gegen die erwarteten "
+                  "Antwortpunkte. Beruecksichtige fachliche Korrektheit, nicht Formulierung. "
+                  "Antworte AUSSCHLIESSLICH mit JSON.")
+        prompt = (f"FRAGE: {question}\n\nERWARTETE ANTWORTPUNKTE:\n- "
+                  + "\n- ".join(points)
+                  + f"\n\nSTUDIERENDEN-ANTWORT:\n{answer}\n\n"
+                  "Gib JSON mit exakt diesen Feldern zurueck:\n"
+                  '{"score_label":"full|partial|miss","score_pct":<0-100>,'
+                  '"hit":["<abgedeckter Punkt>"],"missed":["<fehlender Punkt>"],'
+                  '"feedback":"<2-4 Saetze konkretes Feedback auf Deutsch>"}')
+        text = _call_anthropic(system, prompt, max_tokens=700)
+        parsed = _extract_json(text)
+        if not parsed:
+            # Modell hat kein sauberes JSON geliefert -> Offline-Naeherung + Rohtext
+            result = _offline_grade(answer, points)
+            result["feedback"] = text.strip()[:600] or "Keine Bewertung erhalten."
+        else:
+            label = parsed.get("score_label")
+            if label not in {"full", "partial", "miss"}:
+                label = "partial"
+            result = {
+                "score_label": label,
+                "score_pct": int(parsed.get("score_pct") or 0),
+                "hit_points": parsed.get("hit") or [],
+                "missed_points": parsed.get("missed") or [],
+                "feedback": parsed.get("feedback") or "",
+            }
+        offline = False
+
+    if result["score_label"] == "miss":
+        db.log_mistake(conn, inp.card_id, module, "grade", "Antwort-Check: verfehlt", _now_iso())
+    elif result["score_label"] == "full":
+        db.resolve_mistake(conn, inp.card_id, _now_iso())
+    xp = db.add_xp_event(conn, {"full": 12, "partial": 6, "miss": 3}.get(result["score_label"], 4),
+                         "grade", "Antwort-Check", inp.card_id, _now_iso())
+    conn.close()
+    _invalidate_module_caches(module)
+    return {"ok": True, "offline": offline, "card_id": inp.card_id, "question": question,
+            "model_points": points, "xp": xp, **result}
 
 
 class CoachDiagnosisIn(BaseModel):

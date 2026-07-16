@@ -1,0 +1,51 @@
+# Taeglicher ntfy-Push mit dem Lernpensum (Countdown, faellige Karten, Fehler,
+# Streak) fuer beide Module.
+#
+# ANPASSEN vor dem Deploy:
+#   - NTFY_URL: dein ntfy-Server + Topic
+#   - schedule/timeZone: Uhrzeit
+#   - Secret organicsr-secrets.notify-token setzen (siehe 15-secret.yaml),
+#     sonst liefert /api/notify/digest 403 und der Job schickt nichts.
+#
+# In-Cluster-Servicename der App: organicsr.organicsr.svc.cluster.local:80
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: organicsr-ntfy
+  namespace: organicsr
+spec:
+  schedule: "0 5 * * *"          # 05:00 UTC = 07:00 Europe/Vienna (Sommer)
+  timeZone: "Europe/Vienna"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: ntfy
+              image: alpine:3.20
+              env:
+                - name: NTFY_URL
+                  value: "https://ntfy.stoegerer-home.at/chemie"   # <-- ANPASSEN
+                - name: APP_URL
+                  value: "http://organicsr.organicsr.svc.cluster.local"
+                - name: NOTIFY_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: organicsr-secrets
+                      key: notify-token
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -e
+                  apk add --no-cache curl jq >/dev/null 2>&1
+                  BODY=$(curl -fsS -H "X-Token: ${NOTIFY_TOKEN}" "$APP_URL/api/notify/digest" | jq -r '.text')
+                  curl -fsS \
+                    -H "Title: Chemie-Lernplan" \
+                    -H "Tags: books,alarm_clock" \
+                    -d "$BODY" \
+                    "$NTFY_URL"

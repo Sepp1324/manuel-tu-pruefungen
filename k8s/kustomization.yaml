@@ -8,6 +8,7 @@ resources:
   - 15-secret.yaml
   - 20-deployment.yaml
   - 30-ingress.yaml
+  - 50-cronjob-ntfy.yaml
 
 # Zentral das Image überschreiben, ohne die Deployment-Datei zu editieren:
 #   kubectl kustomize k8s/ | kubectl apply -f -
