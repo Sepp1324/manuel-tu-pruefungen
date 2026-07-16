@@ -9,8 +9,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  REGISTRY: registry.stoegerer-home.at
-  IMAGE: registry.stoegerer-home.at/organicsr
+  REGISTRY: registry.stoegerer-home.cloud
+  IMAGE: registry.stoegerer-home.cloud/organicsr
   KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   NAMESPACE: organicsr
 
