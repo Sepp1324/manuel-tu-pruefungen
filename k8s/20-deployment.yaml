@@ -47,6 +47,21 @@ spec:
             # Öffentlich hinter HTTPS -> Session-Cookie nur über TLS senden.
             - name: AUTH_COOKIE_SECURE
               value: "1"
+            # Optional: Token fuer /api/notify/digest (taegliche ntfy-Erinnerung).
+            # Leer lassen -> Digest-Endpunkt bleibt gesperrt (Feature aus).
+            - name: NOTIFY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: organicsr-secrets
+                  key: notify-token
+                  optional: true
+            # Optional: KI-Antwortbewertung + Coach. Ohne Key -> Stichwort-Naeherung.
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: organicsr-secrets
+                  key: anthropic-api-key
+                  optional: true
           readinessProbe:
             httpGet:
               path: /healthz
