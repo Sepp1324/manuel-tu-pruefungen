@@ -19,6 +19,10 @@ spec:
       labels:
         app: organicsr
     spec:
+      # Zugangsdaten zum Pullen aus der privaten Registry. Das Secret 'regcred'
+      # wird vom CI-Workflow aus den GitHub-Secrets erzeugt (siehe deploy-k3s.yml).
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: organicsr
           image: registry.stoegerer-home.cloud/organicsr:1.0.0   # <-- ANPASSEN

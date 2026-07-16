@@ -37,6 +37,14 @@ jobs:
       - name: Namespace sicherstellen
         run: kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Pull-Secret sicherstellen
+        run: |
+          kubectl -n "$NAMESPACE" create secret docker-registry regcred \
+            --docker-server="$REGISTRY" \
+            --docker-username="${{ secrets.REGISTRY_USERNAME }}" \
+            --docker-password="${{ secrets.REGISTRY_PASSWORD }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Manifeste anwenden
         run: |
           kubectl -n "$NAMESPACE" apply -k k8s
