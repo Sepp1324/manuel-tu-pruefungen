@@ -1859,7 +1859,13 @@ def item_analytics(conn: sqlite3.Connection, module: str = "organic", limit: int
     for r in rows:
         n = r["n_rev"] or 0
         hit_rate = round((r["hits"] or 0) / n * 100) if n else None
-        card = row_to_card(r)
+        # Nur die Frage wird gebraucht (Titel) - die volle Kartenaufbereitung
+        # (Formeln in "a", quality_score, source_anchor, Tags) waere hier verworfene Arbeit.
+        try:
+            question = json.loads(r["payload"] or "{}").get("q", "")
+        except json.JSONDecodeError:
+            question = ""
+        title = _plain_title(normalize_chemical_formulas(question))
         # difficulty score: FSRS difficulty + penalty for low hit-rate + lapses
         pain = (r["difficulty"] or 0) * 8 + (r["lapses"] or 0) * 12
         if hit_rate is not None:
@@ -1868,7 +1874,7 @@ def item_analytics(conn: sqlite3.Connection, module: str = "organic", limit: int
             "card_id": r["id"],
             "kap": r["kap"],
             "subname": r["subname"],
-            "title": _plain_title(card.get("q", "")),
+            "title": title,
             "reps": r["reps"] or 0,
             "reviews": n,
             "hit_rate": hit_rate,
