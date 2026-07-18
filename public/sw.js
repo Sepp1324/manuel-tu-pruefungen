@@ -1,4 +1,7 @@
-const CACHE_NAME = "manuel-tu-chemie-v1";
+// Cache-Version bei Bedarf erhoehen -> der neue SW loescht beim activate ALLE
+// alten Caches. Das holt Clients aus einem veralteten/vergifteten Cache heraus
+// (z.B. nachdem waehrend eines kaputten Deploys eine defekte Version gecacht wurde).
+const CACHE_NAME = "manuel-tu-chemie-v2";
 const SHELL = ["/", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -21,6 +24,7 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/uploads/")) return;
 
   if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/icons/")) {
+    // Gehashte, immutable Assets: cache-first ist sicher (neue Deploys = neue Dateinamen).
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
         const cached = await cache.match(request);
@@ -34,6 +38,16 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match("/")));
+    // Network-first und bei Erfolg die Shell aktualisieren, damit der Offline-Fallback
+    // nicht auf eine veraltete index.html mit alten Asset-Hashes zeigt.
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put("/", copy)).catch(() => {});
+          return response;
+        })
+        .catch(() => caches.match("/"))
+    );
   }
 });
