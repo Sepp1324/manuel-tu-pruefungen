@@ -13,6 +13,7 @@ env:
   IMAGE: registry.stoegerer-home.cloud/organicsr
   KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   NAMESPACE: organicsr
+  PUBLIC_URL: https://chemie.stoegerer-home.cloud
 
 jobs:
   deploy:
@@ -30,6 +31,34 @@ jobs:
 
       - name: Image bauen
         run: docker build -t "$IMAGE:$TAG" .
+
+      # Startet das FRISCH gebaute Image und prueft, ob es ueberhaupt hochkommt und
+      # der Login funktioniert. Faengt Import-/Boot-Crashes ab (z.B. fehlendes tzdata,
+      # das die App beim Import killte) BEVOR ein kaputtes Image gepusht/deployt wird.
+      - name: Smoke-Test (Image startet & Login funktioniert)
+        run: |
+          set -euo pipefail
+          CID=$(docker run -d \
+            -e SR_DB_PATH=/tmp/smoke.db \
+            -e ADMIN_USER=smoke -e ADMIN_PASSWORD=smoke-pass-123 \
+            -e AUTH_COOKIE_SECURE=0 \
+            -p 18080:8000 "$IMAGE:$TAG")
+          cleanup() { echo "--- Container-Logs ---"; docker logs "$CID" 2>&1 | tail -50 || true; docker rm -f "$CID" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          # Auf /healthz warten: antwortet der Import crasht, kommt uvicorn nie hoch -> Timeout -> Fehler.
+          up=""
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/healthz >/dev/null 2>&1; then up=1; break; fi
+            sleep 2
+          done
+          [ -n "$up" ] || { echo "FEHLER: App wurde nicht gesund (Boot-Crash?)"; exit 1; }
+          # Login + TZ-/DB-/Kartenpipeline-abhaengiger Endpoint muessen 200 liefern.
+          curl -fsS -c /tmp/ck.txt -X POST http://127.0.0.1:18080/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"smoke","password":"smoke-pass-123"}' >/dev/null
+          code=$(curl -s -b /tmp/ck.txt -o /dev/null -w '%{http_code}' 'http://127.0.0.1:18080/api/stats?module=organic')
+          [ "$code" = "200" ] || { echo "FEHLER: /api/stats lieferte $code statt 200"; exit 1; }
+          echo "Smoke-Test OK"
 
       - name: Image pushen
         run: docker push "$IMAGE:$TAG"
@@ -52,3 +81,17 @@ jobs:
 
       - name: Rollout abwarten
         run: kubectl -n "$NAMESPACE" rollout status deployment/organicsr --timeout=180s
+
+      # Prueft die OEFFENTLICHE URL ueber HTTPS - OHNE -k, damit ein ungueltiges
+      # Zertifikat (Traefik-Default-Cert) fehlschlaegt. Faengt Ingress-/TLS-Regressionen
+      # ab, die den Login unbrauchbar machen (der Container-Smoke-Test allein sieht das nicht).
+      - name: Live-Check (oeffentliches HTTPS + gueltiges Zertifikat)
+        run: |
+          set -euo pipefail
+          ok=""
+          for i in $(seq 1 10); do
+            if curl -fsS "$PUBLIC_URL/healthz" >/dev/null 2>&1; then ok=1; break; fi
+            sleep 6
+          done
+          [ -n "$ok" ] || { echo "FEHLER: $PUBLIC_URL/healthz nicht erreichbar oder Zertifikat ungueltig"; exit 1; }
+          echo "Live-Check OK: $PUBLIC_URL erreichbar mit gueltigem Zertifikat"
