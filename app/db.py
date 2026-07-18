@@ -22,7 +22,17 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 # Timestamps werden als UTC gespeichert (datetime.now(timezone.utc)). Tagesstatistiken
 # (XP heute, Streak, Tagesquests, Review-Zahlen) muessen die Tagesgrenze aber in Wiener
 # Ortszeit ziehen - sonst wechselt der Tag im Sommer erst um 02:00 Uhr.
-APP_TZ = ZoneInfo(os.environ.get("APP_TZ", "Europe/Vienna"))
+def _load_app_tz():
+    name = os.environ.get("APP_TZ", "Europe/Vienna")
+    try:
+        return ZoneInfo(name)
+    except Exception:  # noqa: BLE001
+        # Fehlt die Zeitzonendatenbank (z.B. slim-Image ohne tzdata), NIE die ganze App
+        # beim Import killen - lieber auf UTC degradieren als Login & alles ausfallen lassen.
+        return timezone.utc
+
+
+APP_TZ = _load_app_tz()
 
 
 def app_now() -> datetime:
