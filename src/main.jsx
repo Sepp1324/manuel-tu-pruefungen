@@ -3850,11 +3850,14 @@ function FehlerbuchPage({ module, startSession }) {
   const [diagnosis, setDiagnosis] = useState(null);
   const [busy, setBusy] = useState("");
   const [coach, setCoach] = useState(false);
+  const [error, setError] = useState(false);
 
   async function load() {
-    setData(await api(`/api/fehlerbuch?module=${module}&include_resolved=${showResolved}`));
+    setError(false);
+    try { setData(await api(`/api/fehlerbuch?module=${module}&include_resolved=${showResolved}`)); }
+    catch (err) { setError(true); }
   }
-  useEffect(() => { load().catch(() => {}); }, [module, showResolved]);
+  useEffect(() => { setData(null); load(); }, [module, showResolved]);
   useEffect(() => { api("/api/coach/status").then((s) => setCoach(!!s.available)).catch(() => {}); }, []);
 
   async function resolve(cardId) {
@@ -3886,7 +3889,9 @@ function FehlerbuchPage({ module, startSession }) {
     } finally { setBusy(""); }
   }
 
-  if (!data) return <div className="loading">Fehlerbuch laedt...</div>;
+  if (!data) return error
+    ? <LoadError onRetry={load} label="Fehlerbuch konnte nicht geladen werden." />
+    : <div className="loading">Fehlerbuch laedt...</div>;
   const s = data.summary || {};
   const entries = data.entries || [];
   return (
@@ -3996,8 +4001,12 @@ function AnalyticsPage({ module }) {
 
 function ReadinessPage({ module, startExam, setRoute }) {
   const [d, setD] = useState(null);
-  useEffect(() => { api(`/api/readiness-plan?module=${module}`).then(setD).catch(() => {}); }, [module]);
-  if (!d) return <div className="loading">Reifeplan laedt...</div>;
+  const [error, setError] = useState(false);
+  function load() { setError(false); api(`/api/readiness-plan?module=${module}`).then(setD).catch(() => setError(true)); }
+  useEffect(() => { setD(null); load(); }, [module]);
+  if (!d) return error
+    ? <LoadError onRetry={load} label="Reifeplan konnte nicht geladen werden." />
+    : <div className="loading">Reifeplan laedt...</div>;
   const bandColor = { ready: "#27ae60", steady: "#e67e22", risk: "#c0392b" }[d.band] || "#888";
   return (
     <section className="panel">
@@ -4058,8 +4067,12 @@ function ReadinessPage({ module, startExam, setRoute }) {
 
 function LastMinutePage({ module }) {
   const [d, setD] = useState(null);
-  useEffect(() => { api(`/api/last-minute-sheet?module=${module}`).then(setD).catch(() => {}); }, [module]);
-  if (!d) return <div className="loading">Spickzettel laedt...</div>;
+  const [error, setError] = useState(false);
+  function load() { setError(false); api(`/api/last-minute-sheet?module=${module}`).then(setD).catch(() => setError(true)); }
+  useEffect(() => { setD(null); load(); }, [module]);
+  if (!d) return error
+    ? <LoadError onRetry={load} label="Spickzettel konnte nicht geladen werden." />
+    : <div className="loading">Spickzettel laedt...</div>;
   return (
     <section className="panel">
       <div className="section-head">
@@ -4083,8 +4096,13 @@ function LastMinutePage({ module }) {
 function QuestsPage({ module }) {
   const [d, setD] = useState(null);
   const [msg, setMsg] = useState("");
-  async function load() { setD(await api(`/api/gamification?module=${module}`)); }
-  useEffect(() => { load().catch(() => {}); }, [module]);
+  const [error, setError] = useState(false);
+  async function load() {
+    setError(false);
+    try { setD(await api(`/api/gamification?module=${module}`)); }
+    catch (err) { setError(true); }
+  }
+  useEffect(() => { setD(null); load(); }, [module]);
   async function claim(key) {
     setMsg("");
     try {
@@ -4096,7 +4114,9 @@ function QuestsPage({ module }) {
       load().catch(() => {});
     } catch (err) { setMsg(err.message); }
   }
-  if (!d) return <div className="loading">Quests laden...</div>;
+  if (!d) return error
+    ? <LoadError onRetry={load} label="Quests konnten nicht geladen werden." />
+    : <div className="loading">Quests laden...</div>;
   const xp = d.xp || {};
   return (
     <section className="panel">
@@ -4145,13 +4165,17 @@ function AntwortCheckPage({ module }) {
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
   const [coach, setCoach] = useState(null);
+  const [error, setError] = useState(false);
 
   async function loadCards() {
-    const res = await api(`/api/study/anki?module=${module}&limit=30`);
-    setCards(res.cards || []);
-    setIdx(0); setAnswer(""); setResult(null);
+    setError(false);
+    try {
+      const res = await api(`/api/study/anki?module=${module}&limit=30`);
+      setCards(res.cards || []);
+      setIdx(0); setAnswer(""); setResult(null);
+    } catch (err) { setError(true); }
   }
-  useEffect(() => { loadCards().catch(() => {}); }, [module]);
+  useEffect(() => { loadCards(); }, [module]);
   useEffect(() => { api("/api/coach/status").then(setCoach).catch(() => {}); }, []);
 
   const card = cards[idx];
@@ -4176,7 +4200,9 @@ function AntwortCheckPage({ module }) {
     else setIdx(idx + 1);
   }
 
-  if (!card) return <div className="loading">Antwort-Check laedt...</div>;
+  if (!card) return error
+    ? <LoadError onRetry={loadCards} label="Antwort-Check konnte nicht geladen werden." />
+    : <div className="loading">Antwort-Check laedt...</div>;
   const label = result?.score_label;
   const badge = { full: ["Voll", "#27ae60"], partial: ["Teilweise", "#e67e22"], miss: ["Verfehlt", "#c0392b"] }[label] || ["", "#888"];
   return (
@@ -4354,7 +4380,13 @@ function App() {
     }
   }
   useEffect(() => {
-    if (!isLogin) load();
+    if (isLogin) return;
+    // Beim Modulwechsel die alten Daten verwerfen: sonst bleibt bei einem fehlgeschlagenen
+    // load() das vorige Modul (Titel, Pruefungstermin) sichtbar, obwohl der andere
+    // Schalter aktiv ist. Mit data===null greift dann der LoadError-Zustand.
+    setData(null);
+    setLoadError(false);
+    load();
   }, [isLogin, module]);
 
   async function startSession(deck = "anki", kap = null) {
