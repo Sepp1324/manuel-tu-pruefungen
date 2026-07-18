@@ -5,6 +5,7 @@ import os
 import re
 import secrets
 import sqlite3
+from functools import lru_cache
 from datetime import date, datetime, time, timedelta, timezone
 from html import unescape
 from pathlib import Path
@@ -575,17 +576,25 @@ def infer_tags(card: dict) -> list[str]:
     return sorted(tags)
 
 
-def normalize_chemical_formulas(value: str) -> str:
-    text = str(value or "")
-    if not text:
-        return text
+@lru_cache(maxsize=8192)
+def _normalize_chemical_formulas_cached(text: str) -> str:
     for pattern, replacement in CHEM_FORMULA_REPAIRS:
         text = re.sub(pattern, replacement, text)
     return text
 
 
-def plain_card_text(card: dict) -> str:
-    raw = f"{card.get('q', '')} {card.get('a', '')} {card.get('source', '')} {card.get('subname', '')}"
+def normalize_chemical_formulas(value: str) -> str:
+    # Reine Funktion der Karten-Textfelder - Ergebnis aendert sich nur beim Editieren.
+    # Ohne Memoisierung liefen 24 Regexe je Feld bei JEDEM Kartenlesen; der stats-Build
+    # (bei jeder Bewertung neu) jagte so alle Karten mehrfach durch ~78k re.sub-Aufrufe.
+    text = str(value or "")
+    if not text:
+        return text
+    return _normalize_chemical_formulas_cached(text)
+
+
+@lru_cache(maxsize=8192)
+def _plain_from_raw(raw: str) -> str:
     raw = re.sub(r"<span[^>]*class=['\"]source['\"][^>]*>.*?</span>", " ", raw, flags=re.I | re.S)
     raw = re.sub(r"<br\s*/?>", " ", raw, flags=re.I)
     raw = re.sub(r"<[^>]+>", " ", raw)
@@ -593,8 +602,14 @@ def plain_card_text(card: dict) -> str:
     return re.sub(r"\s+", " ", raw).strip()
 
 
-def english_noise(card: dict) -> bool:
-    text = plain_card_text(card)
+def plain_card_text(card: dict) -> str:
+    # HTML-Strip ist rein bzgl. der Textfelder -> auf der Rohkonkatenation memoisieren.
+    raw = f"{card.get('q', '')} {card.get('a', '')} {card.get('source', '')} {card.get('subname', '')}"
+    return _plain_from_raw(raw)
+
+
+@lru_cache(maxsize=8192)
+def _english_noise_from_text(text: str) -> bool:
     if not text:
         return False
     if ENGLISH_ARTIFACT_RE.search(text):
@@ -608,6 +623,10 @@ def english_noise(card: dict) -> bool:
     if english >= 5 and german <= 1 and not has_german_chars:
         return True
     return False
+
+
+def english_noise(card: dict) -> bool:
+    return _english_noise_from_text(plain_card_text(card))
 
 
 def depolymerisation_repair(card: dict) -> dict | None:
