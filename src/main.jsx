@@ -4029,7 +4029,12 @@ function ReadinessPage({ module, startExam, setRoute }) {
           {(d.pass_prediction.parts || []).map((p) => (
             <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
               <span style={{ width: 18 }}>{p.pass ? "✓" : "✗"}</span>
-              <span style={{ flex: 1 }}>{p.name}</span>
+              <span style={{ flex: 1 }}>
+                {p.name}
+                {p.accuracy_blocks && (
+                  <em style={{ color: "#c0392b", fontStyle: "normal", fontSize: 12 }}> · nur {p.accuracy}% richtig beantwortet</em>
+                )}
+              </span>
               <div style={{ flex: 1, background: "#e9edf1", borderRadius: 5, height: 8, position: "relative" }}>
                 <div style={{ width: `${Math.min(100, p.score)}%`, height: "100%", borderRadius: 5,
                   background: p.pass ? "#27ae60" : "#c0392b" }} />
