@@ -1409,10 +1409,15 @@ function Study({ session, setSession, finish }) {
 
 function Dashboard({ startSession, module }) {
   const [data, setData] = useState(null);
-  useEffect(() => {
-    api(`/api/dashboard?module=${encodeURIComponent(module)}`).then(setData).catch(() => {});
-  }, [module]);
-  if (!data) return <div className="loading">Dashboard laedt...</div>;
+  const [error, setError] = useState(false);
+  function load() {
+    setError(false);
+    api(`/api/dashboard?module=${encodeURIComponent(module)}`).then(setData).catch(() => setError(true));
+  }
+  useEffect(() => { setData(null); load(); }, [module]);
+  if (!data) return error
+    ? <LoadError onRetry={load} label="Dashboard konnte nicht geladen werden." />
+    : <div className="loading">Dashboard laedt...</div>;
   const maxReviews = Math.max(1, ...data.timeline.map((d) => d.reviews || 0));
   return (
     <>
@@ -1480,20 +1485,25 @@ const KNOWLEDGE_STATUS_LABELS = {
 
 function KnowledgeMapPage({ module, startSession, setRoute }) {
   const [data, setData] = useState(null);
+  const [error, setError] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState("");
 
-  useEffect(() => {
+  function load() {
     setData(null);
+    setError(false);
     setSelectedTopic("");
     api(`/api/knowledge-map?module=${encodeURIComponent(module)}`)
       .then((res) => {
         setData(res);
         setSelectedTopic(res.nodes?.[0]?.topic || "");
       })
-      .catch(() => {});
-  }, [module]);
+      .catch(() => setError(true));
+  }
+  useEffect(() => { load(); }, [module]);
 
-  if (!data) return <div className="loading">Wissenslandkarte laedt...</div>;
+  if (!data) return error
+    ? <LoadError onRetry={load} label="Wissenslandkarte konnte nicht geladen werden." />
+    : <div className="loading">Wissenslandkarte laedt...</div>;
   const nodes = data.nodes || [];
   const edges = data.edges || [];
   const route = data.route || [];
@@ -3801,7 +3811,8 @@ function PhotoPoolPage({ onDone, startSession }) {
         {(pool.photos || []).map((photo) => (
           <article className="photo-pool-item" key={photo.filename}>
             <button className="photo-thumb" type="button">
-              <img src={photo.url} alt={photo.filename} />
+              {/* class card-photo: der globale Lightbox-Handler auf .wrap reagiert darauf */}
+              <img className="card-photo" src={photo.url} alt={photo.filename} />
             </button>
             <div className="photo-pool-meta">
               <b>{photo.filename}</b>
@@ -3929,11 +3940,18 @@ function FehlerbuchPage({ module, startSession }) {
 function AnalyticsPage({ module }) {
   const [items, setItems] = useState(null);
   const [insights, setInsights] = useState(null);
-  useEffect(() => {
-    api(`/api/item-analytics?module=${module}`).then(setItems).catch(() => {});
-    api(`/api/fsrs-insights?module=${module}`).then(setInsights).catch(() => {});
-  }, [module]);
-  if (!items || !insights) return <div className="loading">Analytics laedt...</div>;
+  const [error, setError] = useState(false);
+  function load() {
+    setError(false);
+    Promise.all([
+      api(`/api/item-analytics?module=${module}`).then(setItems),
+      api(`/api/fsrs-insights?module=${module}`).then(setInsights),
+    ]).catch(() => setError(true));
+  }
+  useEffect(() => { setItems(null); setInsights(null); load(); }, [module]);
+  if (!items || !insights) return error
+    ? <LoadError onRetry={load} label="Analytics konnte nicht geladen werden." />
+    : <div className="loading">Analytics laedt...</div>;
   const maxF = Math.max(1, ...insights.forecast.map((f) => f.count));
   return (
     <section className="panel">
@@ -4210,19 +4228,36 @@ function AntwortCheckPage({ module }) {
   );
 }
 
+function LoadError({ onRetry, label = "Konnte nicht geladen werden." }) {
+  return (
+    <div className="loading load-error">
+      <p>{label}</p>
+      <p className="muted">Pruefe die Verbindung und versuche es erneut.</p>
+      <button className="primary" onClick={onRetry}>Erneut versuchen</button>
+    </div>
+  );
+}
+
 function App() {
   const isLogin = window.location.pathname === "/login";
   const [route, setRoute] = useState("home");
   const [module, setModule] = useState("organic");
   const [data, setData] = useState(null);
+  const [loadError, setLoadError] = useState(false);
   const [session, setSession] = useState(null);
   const [lightbox, setLightbox] = useState(null);
 
   async function load() {
-    setData(await api(`/api/stats?module=${encodeURIComponent(module)}`));
+    setLoadError(false);
+    try {
+      setData(await api(`/api/stats?module=${encodeURIComponent(module)}`));
+    } catch (err) {
+      // Ohne Fehlerzustand bliebe data null und die App haengt dauerhaft bei "Laedt...".
+      setLoadError(true);
+    }
   }
   useEffect(() => {
-    if (!isLogin) load().catch(() => {});
+    if (!isLogin) load();
   }, [isLogin, module]);
 
   async function startSession(deck = "anki", kap = null) {
@@ -4255,7 +4290,9 @@ function App() {
   }
 
   const content = useMemo(() => {
-    if (!data) return <div className="loading">Laedt...</div>;
+    if (!data) return loadError
+      ? <LoadError onRetry={load} label="Die App konnte nicht geladen werden." />
+      : <div className="loading">Laedt...</div>;
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
     if (route === "knowledge") return <KnowledgeMapPage module={module} startSession={startSession} setRoute={setRoute} />;
@@ -4274,7 +4311,7 @@ function App() {
     if (route === "lastminute") return <LastMinutePage module={module} />;
     if (route === "quests") return <QuestsPage module={module} />;
     return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
-  }, [data, session, route, module]);
+  }, [data, loadError, session, route, module]);
 
   if (isLogin) return <Login />;
   return (

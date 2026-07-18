@@ -1317,11 +1317,11 @@ def deck_stats(conn: sqlite3.Connection, now_iso: str, module: str = "organic") 
            FROM cards WHERE module=? AND deck='anki' AND status='active'""",
         (now_iso, module),
     ).fetchone()
-    today = now_iso[:10]
+    today = app_today().isoformat()  # Wiener Kalendertag, nicht UTC-Datum des Timestamps
     review_row = conn.execute(
         """SELECT COUNT(*) total_reviews,
                   SUM(CASE WHEN rv.rating>=3 THEN 1 ELSE 0 END) ok,
-                  SUM(CASE WHEN substr(rv.reviewed_at,1,10)=? THEN 1 ELSE 0 END) reviews_today
+                  SUM(CASE WHEN local_date(rv.reviewed_at)=? THEN 1 ELSE 0 END) reviews_today
            FROM reviews rv
            JOIN cards c ON c.id=rv.card_id
            WHERE c.module=?""",
@@ -1976,19 +1976,21 @@ def _plain_title(q: str) -> str:
 # ---------------------------------------------------------------------------
 
 def fsrs_insights(conn: sqlite3.Connection, module: str = "organic", days: int = 14) -> dict:
-    today = date.today()
+    today = app_today()
     rows = conn.execute(
         """SELECT status, state, stability, due FROM cards
            WHERE module=? AND deck='anki'""",
         (module,),
     ).fetchall()
     active = [r for r in rows if r["status"] == "active"]
+    # due ist ein UTC-Timestamp; faellig "heute" heisst am Wiener Kalendertag.
+    due_local = [_local_date_sql(r["due"]) for r in active]
     forecast = []
     for i in range(days):
         d = (today + timedelta(days=i)).isoformat()
-        n = sum(1 for r in active if (r["due"] or "")[:10] == d)
+        n = sum(1 for dl in due_local if dl == d)
         forecast.append({"date": d, "count": n})
-    overdue = sum(1 for r in active if r["due"] and r["due"][:10] < today.isoformat())
+    overdue = sum(1 for dl in due_local if dl and dl < today.isoformat())
     new = sum(1 for r in active if not r["due"])
     buckets = {"jung (<7d)": 0, "reifend (7-30d)": 0, "stabil (>30d)": 0}
     for r in active:
