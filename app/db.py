@@ -5,10 +5,11 @@ import os
 import re
 import secrets
 import sqlite3
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from html import unescape
 from pathlib import Path
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 from postgres_compat import PostgresConnection
 
@@ -17,6 +18,37 @@ DB_PATH = os.environ.get("SR_DB_PATH", "/data/organicsr.db")
 JOURNAL_MODE = os.environ.get("SR_JOURNAL_MODE", "WAL")
 SEED_PATH = Path(__file__).parent / "seed_data.json"
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
+# Timestamps werden als UTC gespeichert (datetime.now(timezone.utc)). Tagesstatistiken
+# (XP heute, Streak, Tagesquests, Review-Zahlen) muessen die Tagesgrenze aber in Wiener
+# Ortszeit ziehen - sonst wechselt der Tag im Sommer erst um 02:00 Uhr.
+APP_TZ = ZoneInfo(os.environ.get("APP_TZ", "Europe/Vienna"))
+
+
+def app_now() -> datetime:
+    return datetime.now(APP_TZ)
+
+
+def app_today() -> date:
+    return app_now().date()
+
+
+def day_start_utc(day: date) -> str:
+    """Beginn eines Wiener Kalendertags als UTC-ISO-String (fuer >= Bereichsfilter)."""
+    return datetime.combine(day, time.min, APP_TZ).astimezone(timezone.utc).isoformat()
+
+
+def _local_date_sql(ts):
+    """SQLite-Funktion local_date(): gespeicherter UTC-Timestamp -> Datum in APP_TZ (ISO)."""
+    if not ts:
+        return None
+    try:
+        dt = datetime.fromisoformat(ts)
+    except (ValueError, TypeError):
+        return str(ts)[:10]
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(APP_TZ).date().isoformat()
 
 
 def _postgres_enabled() -> bool:
@@ -222,6 +254,7 @@ def get_conn():
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
+    conn.create_function("local_date", 1, _local_date_sql, deterministic=True)
     return conn
 
 
@@ -237,6 +270,33 @@ def init_db() -> None:
     seed(conn)
     conn.commit()
     conn.close()
+
+
+def _migrate_quest_claims_module(conn: sqlite3.Connection) -> None:
+    """Alte quest_claims hatten PK (quest_key, period_start) ohne Modul - dadurch galt
+    ein organischer Claim auch fuer die anorganische Quest. Da SQLite den PK nicht per
+    ALTER aendern kann, wird die Tabelle einmalig neu aufgebaut. Bestehende Claims werden
+    dem Default-Modul 'organic' zugeordnet (Manuels erste Pruefung; Woche setzt ohnehin zurueck)."""
+    info = conn.execute("PRAGMA table_info(quest_claims)").fetchall()
+    if not info:  # Tabelle existiert noch nicht -> Schema legt sie korrekt an
+        return
+    if any(r["name"] == "module" for r in info):
+        return
+    conn.executescript("""
+        CREATE TABLE quest_claims_new (
+            quest_key    TEXT NOT NULL,
+            period_start TEXT NOT NULL,
+            module       TEXT NOT NULL DEFAULT 'organic',
+            claimed_at   TEXT NOT NULL,
+            amount       INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY(quest_key, period_start, module)
+        );
+        INSERT INTO quest_claims_new(quest_key, period_start, module, claimed_at, amount)
+            SELECT quest_key, period_start, 'organic', claimed_at, amount FROM quest_claims;
+        DROP TABLE quest_claims;
+        ALTER TABLE quest_claims_new RENAME TO quest_claims;
+    """)
+    conn.commit()
 
 
 def migrate(conn: sqlite3.Connection) -> None:
@@ -256,6 +316,7 @@ def migrate(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module_deck_status_kap ON cards(module, deck, status, kap)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_reviews_card ON reviews(card_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_reviews_card_rating ON reviews(card_id, rating)")
+    _migrate_quest_claims_module(conn)
     conn.executescript("""
     CREATE TABLE IF NOT EXISTS quality_events (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -297,9 +358,10 @@ def migrate(conn: sqlite3.Connection) -> None:
     CREATE TABLE IF NOT EXISTS quest_claims (
         quest_key    TEXT NOT NULL,
         period_start TEXT NOT NULL,
+        module       TEXT NOT NULL DEFAULT 'organic',
         claimed_at   TEXT NOT NULL,
         amount       INTEGER NOT NULL DEFAULT 0,
-        PRIMARY KEY(quest_key, period_start)
+        PRIMARY KEY(quest_key, period_start, module)
     );
     """)
     conn.commit()
@@ -1636,20 +1698,23 @@ def add_imported_cards(conn: sqlite3.Connection, cards: list[dict],
 
 
 def reviews_timeline(conn: sqlite3.Connection, days: int = 21, module: str = "organic") -> list[dict]:
-    start = (date.today() - timedelta(days=days - 1)).isoformat()
+    today = app_today()
+    # UTC-Bound um einen Tag weiter zurueck als der erste Wiener Anzeigetag, damit der
+    # Index auf reviewed_at greift und kein Randtag durch die TZ-Verschiebung fehlt.
+    start_bound = day_start_utc(today - timedelta(days=days))
     rows = conn.execute(
-        """SELECT substr(rv.reviewed_at,1,10) d, COUNT(*) reviews,
+        """SELECT local_date(rv.reviewed_at) d, COUNT(*) reviews,
                   SUM(CASE WHEN rv.rating>=3 THEN 1 ELSE 0 END) correct
            FROM reviews rv
            JOIN cards c ON c.id=rv.card_id
            WHERE c.module=? AND rv.reviewed_at>=?
            GROUP BY d""",
-        (module, start),
+        (module, start_bound),
     ).fetchall()
     by_day = {r["d"]: dict(r) for r in rows}
     out = []
     for i in range(days):
-        d = (date.today() - timedelta(days=days - 1 - i)).isoformat()
+        d = (today - timedelta(days=days - 1 - i)).isoformat()
         row = by_day.get(d, {"reviews": 0, "correct": 0})
         reviews = row["reviews"] or 0
         correct = row["correct"] or 0
@@ -1714,9 +1779,9 @@ def xp_level(total_xp: int) -> dict:
 
 def xp_summary(conn: sqlite3.Connection, limit: int = 8) -> dict:
     total = conn.execute("SELECT COALESCE(SUM(amount),0) xp FROM xp_events").fetchone()["xp"] or 0
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = app_today().isoformat()
     today_xp = conn.execute(
-        "SELECT COALESCE(SUM(amount),0) xp FROM xp_events WHERE substr(created_at,1,10)=?",
+        "SELECT COALESCE(SUM(amount),0) xp FROM xp_events WHERE local_date(created_at)=?",
         (today,),
     ).fetchone()["xp"] or 0
     events = conn.execute(
@@ -1731,11 +1796,11 @@ def xp_summary(conn: sqlite3.Connection, limit: int = 8) -> dict:
 
 def streak(conn: sqlite3.Connection) -> dict:
     rows = conn.execute(
-        "SELECT DISTINCT substr(reviewed_at,1,10) d FROM reviews ORDER BY d DESC"
+        "SELECT DISTINCT local_date(reviewed_at) d FROM reviews ORDER BY d DESC"
     ).fetchall()
     days = {r["d"] for r in rows}
     cur = 0
-    day = date.today()
+    day = app_today()
     while day.isoformat() in days:
         cur += 1
         day -= timedelta(days=1)
@@ -1750,7 +1815,7 @@ def streak(conn: sqlite3.Connection) -> dict:
             run = 1
         best = max(best, run)
         prev = current
-    return {"current": cur, "best": best, "active_today": date.today().isoformat() in days}
+    return {"current": cur, "best": best, "active_today": app_today().isoformat() in days}
 
 
 # ---------------------------------------------------------------------------
@@ -1958,28 +2023,29 @@ def fsrs_insights(conn: sqlite3.Connection, module: str = "organic", days: int =
 # ---------------------------------------------------------------------------
 
 def claim_quest(conn: sqlite3.Connection, quest_key: str, period_start: str,
-                amount: int, created_at: str) -> bool:
+                module: str, amount: int, created_at: str) -> bool:
     exists = conn.execute(
-        "SELECT 1 FROM quest_claims WHERE quest_key=? AND period_start=?",
-        (quest_key, period_start),
+        "SELECT 1 FROM quest_claims WHERE quest_key=? AND period_start=? AND module=?",
+        (quest_key, period_start, module),
     ).fetchone()
     if exists:
         return False
     conn.execute(
-        "INSERT INTO quest_claims(quest_key, period_start, claimed_at, amount) VALUES(?,?,?,?)",
-        (quest_key, period_start, created_at, amount),
+        "INSERT INTO quest_claims(quest_key, period_start, module, claimed_at, amount) VALUES(?,?,?,?,?)",
+        (quest_key, period_start, module, created_at, amount),
     )
     conn.commit()
     return True
 
 
-def claimed_quests(conn: sqlite3.Connection, period_starts: list[str]) -> set[str]:
+def claimed_quests(conn: sqlite3.Connection, period_starts: list[str], module: str) -> set[str]:
     if not period_starts:
         return set()
     marks = ",".join("?" for _ in period_starts)
     rows = conn.execute(
-        f"SELECT quest_key, period_start FROM quest_claims WHERE period_start IN ({marks})",
-        period_starts,
+        f"SELECT quest_key, period_start FROM quest_claims "
+        f"WHERE module=? AND period_start IN ({marks})",
+        (module, *period_starts),
     ).fetchall()
     return {f"{r['quest_key']}|{r['period_start']}" for r in rows}
 

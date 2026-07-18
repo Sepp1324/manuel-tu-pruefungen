@@ -1075,6 +1075,8 @@ function Study({ session, setSession, finish }) {
   const [editMsg, setEditMsg] = useState("");
   const [reportMsg, setReportMsg] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [secondsLeft, setSecondsLeft] = useState((session.minutes || 0) * 60);
   const progress = pct(session.idx, Math.max(cards.length, 1));
   const isExam = session.deck === "exam";
@@ -1088,6 +1090,8 @@ function Study({ session, setSession, finish }) {
     setEditMsg("");
     setReportMsg("");
     setSavingEdit(false);
+    submittingRef.current = false;
+    setSubmitting(false);
     setDraft({ q: card?.q || "", a: card?.a || "", review_note: card?.review_note || "" });
   }, [card?.id]);
 
@@ -1119,17 +1123,29 @@ function Study({ session, setSession, finish }) {
   }, [isTimedExam, session.done, setSession]);
 
   async function rate(rating) {
+    // Synchroner Guard: zwei schnelle Klicks passieren sonst beide den State-Check,
+    // bevor React neu rendert - das verbuchte Review/XP doppelt und uebersprang eine Karte.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
     const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
-    await api("/api/review", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        card_id: card.id,
-        rating,
-        source: isExam ? "exam" : "review",
-        feedback_reason: reviewReason,
-      }),
-    });
+    try {
+      await api("/api/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          card_id: card.id,
+          rating,
+          source: isExam ? "exam" : "review",
+          feedback_reason: reviewReason,
+        }),
+      });
+    } catch (err) {
+      submittingRef.current = false;
+      setSubmitting(false);
+      setEditMsg(err.message || "Bewertung fehlgeschlagen");
+      return;
+    }
     const nextResult = { card_id: card.id, rating, kap: card.kap, subname: card.subname, feedback_reason: reviewReason };
     if (session.idx + 1 >= cards.length) {
       const elapsedSeconds = isTimedExam ? Math.max(0, (session.minutes || 0) * 60 - secondsLeft) : undefined;
@@ -1137,6 +1153,7 @@ function Study({ session, setSession, finish }) {
     } else {
       setSession((old) => ({ ...old, idx: old.idx + 1, results: [...(old.results || []), nextResult] }));
     }
+    // Guard wird beim Kartenwechsel im Reset-Effekt geloest (siehe useEffect auf card?.id).
   }
 
   function startEdit() {
@@ -1374,7 +1391,7 @@ function Study({ session, setSession, finish }) {
             </div>
             <div className="ratings">
               {[1, 2, 3, 4].map((r) => (
-                <button key={r} className={`rating r${r}`} onClick={() => rate(r)}>
+                <button key={r} className={`rating r${r}`} disabled={submitting} onClick={() => rate(r)}>
                   <b>{RATING_LABELS[r]}</b>
                   <span>{preview[r] || ""}</span>
                 </button>
@@ -2845,6 +2862,14 @@ function CardImportPage({ onDone, module }) {
     dedupe,
   };
 
+  // Jede Aenderung an den Importoptionen verwirft die Vorschau, sonst wuerde beim Import
+  // das aktuelle payload verwendet und koennte von der gezeigten Vorschau abweichen.
+  // Der Import-Button ist an preview?.valid gebunden und wird dadurch bis zur
+  // Neuberechnung gesperrt.
+  useEffect(() => {
+    setPreview(null);
+  }, [format, source, defaultKap, dedupe, text, module]);
+
   async function readFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -2934,7 +2959,7 @@ function CardImportPage({ onDone, module }) {
             <input type="file" accept=".csv,.tsv,.json,.txt,text/csv,application/json" onChange={readFile} />
           </label>
           <label className="import-textarea">Importdaten
-            <textarea value={text} onChange={(e) => { setText(e.target.value); setPreview(null); }} rows={14} />
+            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={14} />
           </label>
           <div className="button-row-inline">
             <button className="primary" disabled={!!busy || !text.trim()}><Search size={16} /> Vorschau</button>

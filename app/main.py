@@ -279,7 +279,7 @@ def _exam_date(module: str = "organic") -> date:
 
 
 def _days_left(module: str = "organic") -> int:
-    return max((_exam_date(module) - date.today()).days, 0)
+    return max((_exam_date(module) - db.app_today()).days, 0)
 
 
 def _max_fsrs_interval_days(now: datetime | None = None, module: str = "organic") -> int:
@@ -500,7 +500,7 @@ def _daily_goal(stats: dict, chapters: list[dict], module: str) -> dict:
         message = "Eine konzentrierte Session bringt den Plan heute sauber weiter."
         status = "active"
     return {
-        "date": date.today().isoformat(),
+        "date": db.app_today().isoformat(),
         "days_left": _days_left(module),
         "target": target,
         "completed": completed,
@@ -1300,7 +1300,7 @@ def _today_work_plan(conn, module: str, stats: dict, chapters: list[dict], quali
     else:
         message = "Heute: Reife halten, eine kurze Pruefungsfrage und gezielte Wiederholung."
     return {
-        "date": date.today().isoformat(),
+        "date": db.app_today().isoformat(),
         "exam_date": exam_date.isoformat(),
         "days_left": _days_left(module),
         "title": f"Tagesmission: {band_label}",
@@ -2019,7 +2019,7 @@ def _knowledge_map_cached(conn, module: str) -> dict:
 
 
 def _weekly_plan(conn, module: str) -> dict:
-    today = date.today()
+    today = db.app_today()
     exam_date = _exam_date(module)
     start = today if today <= exam_date else exam_date
     weaknesses = db.weakness_heatmap(conn, _now_iso(), module)
@@ -3123,19 +3123,23 @@ def readiness_plan(module: str = "organic"):
 # ---------------------------------------------------------------------------
 
 def _week_start_iso() -> str:
-    today = date.today()
+    today = db.app_today()
     return (today - timedelta(days=today.weekday())).isoformat()
 
 
 def _quest_defs(conn, module: str) -> list[dict]:
-    today = date.today().isoformat()
+    today = db.app_today()
     week = _week_start_iso()
-    day_reviews = db.reviews_count_since(conn, today + "T00:00:00", None)
-    week_reviews = db.reviews_count_since(conn, week + "T00:00:00", None)
+    # Tagesgrenzen in Wiener Zeit (Timestamps sind UTC): Wiener Mitternacht als UTC-Bound.
+    # Pro Modul zaehlen: sonst wuerde ein modul-spezifischer Claim (siehe claim_quest)
+    # dieselben modul-uebergreifenden Reviews in beiden Modulen als XP auszahlbar machen.
+    day_reviews = db.reviews_count_since(conn, db.day_start_utc(today), module)
+    week_reviews = db.reviews_count_since(conn, db.day_start_utc(date.fromisoformat(week)), module)
     week_exams = conn.execute(
-        "SELECT COUNT(*) n FROM exam_attempts WHERE module=? AND substr(created_at,1,10)>=?",
+        "SELECT COUNT(*) n FROM exam_attempts WHERE module=? AND local_date(created_at)>=?",
         (module, week),
     ).fetchone()["n"] or 0
+    today = today.isoformat()
     fb = db.fehlerbuch_summary(conn, module)
     return [
         {"key": "daily_reviews", "period": "daily", "period_start": today,
@@ -3176,7 +3180,7 @@ def gamification(module: str = "organic"):
     st = db.deck_stats(conn, now, module)
     fb = db.fehlerbuch_summary(conn, module)
     quests = _quest_defs(conn, module)
-    claimed = db.claimed_quests(conn, [q["period_start"] for q in quests])
+    claimed = db.claimed_quests(conn, [q["period_start"] for q in quests], module)
     for q in quests:
         q["done"] = q["progress"] >= q["goal"]
         q["claimed"] = f"{q['key']}|{q['period_start']}" in claimed
@@ -3207,7 +3211,7 @@ def claim_quest(inp: QuestClaimIn):
     if quest["progress"] < quest["goal"]:
         conn.close()
         raise HTTPException(400, "Quest noch nicht abgeschlossen")
-    ok = db.claim_quest(conn, quest["key"], quest["period_start"], quest["xp"], _now_iso())
+    ok = db.claim_quest(conn, quest["key"], quest["period_start"], module, quest["xp"], _now_iso())
     xp = db.xp_summary(conn)
     if ok:
         xp = db.add_xp_event(conn, quest["xp"], "quest", f"Quest: {quest['title']}", quest["key"], _now_iso())
@@ -3289,8 +3293,10 @@ def _offline_grade(answer: str, points: list[str]) -> dict:
     ans = answer.lower()
     hit, missed = [], []
     for p in points:
-        words = {w for w in re.findall(r"[a-zA-Zäöüß0-9]{4,}", p.lower()) if w not in _GRADE_STOP}
-        key = list(words)[:8]
+        # dict.fromkeys behaelt die Fundreihenfolge und dedupliziert. Ein set waere
+        # PYTHONHASHSEED-abhaengig geordnet -> nach Neustart andere 8 Keywords, andere Note.
+        words = [w for w in re.findall(r"[a-zA-Zäöüß0-9]{4,}", p.lower()) if w not in _GRADE_STOP]
+        key = list(dict.fromkeys(words))[:8]
         overlap = sum(1 for w in key if w in ans)
         if key and overlap >= max(1, len(key) // 3):
             hit.append(p)
@@ -3301,6 +3307,33 @@ def _offline_grade(answer: str, points: list[str]) -> dict:
     label = "full" if ratio >= 0.8 else "partial" if ratio >= 0.4 else "miss"
     return {"score_label": label, "score_pct": round(ratio * 100),
             "hit_points": hit, "missed_points": missed}
+
+
+def _coerce_pct(value) -> int:
+    """Modell liefert score_pct mal als 85, "85", "85%", "85 %" oder 0.85 - alles robust auf 0-100."""
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, (int, float)):
+        num = float(value)
+    else:
+        m = re.search(r"-?\d+(?:[.,]\d+)?", str(value or ""))
+        if not m:
+            return 0
+        num = float(m.group(0).replace(",", "."))
+    if 0 < num < 1:  # Anteil (z.B. 0.85) statt Prozent; 1 bleibt 1%
+        num *= 100
+    return max(0, min(100, round(num)))
+
+
+def _coerce_str_list(value) -> list[str]:
+    """hit/missed koennen String, None oder Liste mit Nicht-Strings sein."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, (list, tuple)):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
 
 
 def _extract_json(text: str) -> dict | None:
@@ -3362,10 +3395,10 @@ def coach_grade(inp: CoachGradeIn):
                 label = "partial"
             result = {
                 "score_label": label,
-                "score_pct": int(parsed.get("score_pct") or 0),
-                "hit_points": parsed.get("hit") or [],
-                "missed_points": parsed.get("missed") or [],
-                "feedback": parsed.get("feedback") or "",
+                "score_pct": _coerce_pct(parsed.get("score_pct")),
+                "hit_points": _coerce_str_list(parsed.get("hit")),
+                "missed_points": _coerce_str_list(parsed.get("missed")),
+                "feedback": str(parsed.get("feedback") or ""),
             }
         offline = False
 
