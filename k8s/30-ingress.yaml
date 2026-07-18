@@ -5,9 +5,10 @@
 # der websecure-Entrypoint (443) mit dem Traefik-Default-Zertifikat und 404, und
 # HTTPS (und damit der Login, der ein Secure-Cookie setzt) ist komplett kaputt.
 #
-# Das TLS-Zertifikat liefert cert-manager im Secret `organicsr-tls` (eigene
-# Certificate-Ressource im Cluster). Hier wird es nur referenziert - die
-# Erneuerung laeuft ueber cert-manager, nicht ueber dieses Manifest.
+# Das TLS-Zertifikat liefert cert-manager im Secret `organicsr-tls`. Die dafuer
+# noetigen Ressourcen (ClusterIssuer + Certificate) liegen in k8s/bootstrap/ und
+# werden pro Cluster einmalig angewandt (siehe k8s/README.md). Hier wird das
+# Secret nur referenziert - die Erneuerung laeuft ueber cert-manager.
 #
 # WICHTIG: Diese Datei NICHT auf die reine web-only-Variante zuruecksetzen -
 # ein `apply -k` wuerde sonst erneut die TLS-Sektion aus dem Live-Ingress
