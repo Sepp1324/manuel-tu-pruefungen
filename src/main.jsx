@@ -28,6 +28,7 @@ import {
   Award,
   Brain,
   CalendarClock,
+  ChevronDown,
 } from "lucide-react";
 import "./styles.css";
 
@@ -4210,6 +4211,102 @@ function AntwortCheckPage({ module }) {
   );
 }
 
+const NAV_GROUPS = [
+  {
+    label: "Lernen", icon: Target,
+    items: [
+      { route: "exam", label: "Pruefung", icon: Target },
+      { route: "antwortcheck", label: "Antwort-Check", icon: Sparkles },
+      { route: "fehlerbuch", label: "Fehlerbuch", icon: AlertTriangle },
+      { route: "lastminute", label: "Spickzettel", icon: ListChecks },
+    ],
+  },
+  {
+    label: "Fortschritt", icon: BarChart3,
+    items: [
+      { route: "dashboard", label: "Dashboard", icon: BarChart3 },
+      { route: "analytics", label: "Analytics", icon: Gauge },
+      { route: "readiness", label: "Reifeplan", icon: CalendarClock },
+      { route: "knowledge", label: "Landkarte", icon: Tag },
+      { route: "quests", label: "Quests", icon: Trophy },
+    ],
+  },
+  {
+    label: "Karten", icon: Edit3,
+    items: [
+      { route: "quality-center", label: "Qualitaet", icon: ClipboardList },
+      { route: "workshop", label: "Werkstatt", icon: Edit3 },
+      { route: "triage", label: "Triage", icon: ClipboardList },
+      { route: "quality", label: "Kartenqualitaet", icon: ClipboardList },
+      { route: "photos", label: "Fotopool", icon: ImagePlus },
+      { route: "add", label: "Eigene Karte", icon: Plus },
+      { route: "import", label: "Import", icon: ClipboardList },
+    ],
+  },
+];
+
+function NavBar({ route, setRoute }) {
+  const [open, setOpen] = useState(null);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(null); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(null); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const go = (r) => { setRoute(r); setOpen(null); };
+
+  return (
+    <nav className="tabs" ref={ref}>
+      <button className={route === "home" ? "active" : ""} onClick={() => go("home")}>
+        <BookOpenCheck size={16} /> Trainer
+      </button>
+      {NAV_GROUPS.map((group) => {
+        const GroupIcon = group.icon;
+        const activeInGroup = group.items.some((it) => it.route === route);
+        const isOpen = open === group.label;
+        return (
+          <div className="nav-group" key={group.label}>
+            <button
+              className={`nav-group-btn${activeInGroup ? " active" : ""}${isOpen ? " open" : ""}`}
+              onClick={() => setOpen(isOpen ? null : group.label)}
+              aria-expanded={isOpen}
+              aria-haspopup="true"
+            >
+              <GroupIcon size={16} /> {group.label}
+              <ChevronDown size={14} className="nav-chevron" />
+            </button>
+            {isOpen && (
+              <div className="nav-dropdown" role="menu">
+                {group.items.map((it) => {
+                  const ItemIcon = it.icon;
+                  return (
+                    <button
+                      key={it.route}
+                      role="menuitem"
+                      className={route === it.route ? "active" : ""}
+                      onClick={() => go(it.route)}
+                    >
+                      <ItemIcon size={16} /> {it.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
 function App() {
   const isLogin = window.location.pathname === "/login";
   const [route, setRoute] = useState("home");
@@ -4287,25 +4384,7 @@ function App() {
       }}
     >
       <AuthBar />
-      <nav className="tabs">
-        <button className={route === "home" ? "active" : ""} onClick={() => setRoute("home")}><BookOpenCheck size={16} /> Trainer</button>
-        <button className={route === "dashboard" ? "active" : ""} onClick={() => setRoute("dashboard")}><BarChart3 size={16} /> Dashboard</button>
-        <button className={route === "knowledge" ? "active" : ""} onClick={() => setRoute("knowledge")}><Tag size={16} /> Landkarte</button>
-        <button className={route === "exam" ? "active" : ""} onClick={() => setRoute("exam")}><Target size={16} /> Pruefung</button>
-        <button className={route === "quality-center" ? "active" : ""} onClick={() => setRoute("quality-center")}><ClipboardList size={16} /> Qualitaet</button>
-        <button className={route === "workshop" ? "active" : ""} onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
-        <button className={route === "triage" ? "active" : ""} onClick={() => setRoute("triage")}><ClipboardList size={16} /> Triage</button>
-        <button className={route === "quality" ? "active" : ""} onClick={() => setRoute("quality")}><ClipboardList size={16} /> Kartenqualitaet</button>
-        <button className={route === "photos" ? "active" : ""} onClick={() => setRoute("photos")}><ImagePlus size={16} /> Fotopool</button>
-        <button className={route === "add" ? "active" : ""} onClick={() => setRoute("add")}><Plus size={16} /> Eigene Karte</button>
-        <button className={route === "fehlerbuch" ? "active" : ""} onClick={() => setRoute("fehlerbuch")}><AlertTriangle size={16} /> Fehlerbuch</button>
-        <button className={route === "readiness" ? "active" : ""} onClick={() => setRoute("readiness")}><CalendarClock size={16} /> Reifeplan</button>
-        <button className={route === "antwortcheck" ? "active" : ""} onClick={() => setRoute("antwortcheck")}><Sparkles size={16} /> Antwort-Check</button>
-        <button className={route === "analytics" ? "active" : ""} onClick={() => setRoute("analytics")}><Gauge size={16} /> Analytics</button>
-        <button className={route === "lastminute" ? "active" : ""} onClick={() => setRoute("lastminute")}><ListChecks size={16} /> Spickzettel</button>
-        <button className={route === "quests" ? "active" : ""} onClick={() => setRoute("quests")}><Trophy size={16} /> Quests</button>
-        <button className={route === "import" ? "active" : ""} onClick={() => setRoute("import")}><ClipboardList size={16} /> Import</button>
-      </nav>
+      <NavBar route={route} setRoute={setRoute} />
       {content}
       <PhotoLightbox photo={lightbox} onClose={() => setLightbox(null)} />
     </main>
