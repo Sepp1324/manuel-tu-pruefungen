@@ -1,0 +1,16 @@
+# Zertifikat fuer die oeffentliche Domain. cert-manager legt daraus das Secret
+# `organicsr-tls` an, das der Ingress (k8s/30-ingress.yaml) fuer TLS referenziert,
+# und erneuert es automatisch. Das Secret ist genau das, was bisher manuell
+# vorhanden sein musste - damit ist ein frischer Cluster reproduzierbar.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: organicsr-tls
+  namespace: organicsr
+spec:
+  secretName: organicsr-tls
+  dnsNames:
+    - chemie.stoegerer-home.cloud
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
