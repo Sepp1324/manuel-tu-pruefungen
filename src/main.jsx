@@ -708,32 +708,6 @@ function XpCard({ xp, streak }) {
   );
 }
 
-function StudyPlan({ plan, startSession }) {
-  if (!plan) return null;
-  return (
-    <section className="panel plan-panel">
-      <div>
-        <h2>{plan.title}</h2>
-        <p>{plan.message}</p>
-      </div>
-      <div className="plan-metrics">
-        <span><b>{plan.daily_cards || 0}</b> Karten/Tag</span>
-        <span><b>{plan.new_cards_today}</b> neue Karten</span>
-        <span><b>{plan.reviews_today}</b> Wiederholungen</span>
-        <span><b>{plan.mini_exams_per_week || 0}</b> Mini-Pruefungen/Woche</span>
-        <span><b>{plan.open_cards}</b> offen</span>
-      </div>
-      <div className="focus-strip">
-        {(plan.focus || []).map((ch) => (
-          <button key={ch.kap} onClick={() => startSession?.("anki", ch.kap)}>
-            VO{ch.kap} · Score {ch.weak_score}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function ReadinessCoach({ score, setRoute, startExam, startSession }) {
   if (!score) return null;
   const components = score.components || [];
@@ -776,74 +750,6 @@ function ReadinessCoach({ score, setRoute, startExam, startSession }) {
           </div>
         </div>
       </div>
-    </section>
-  );
-}
-
-function TodayPlan({ plan, setRoute, startSession }) {
-  if (!plan) return null;
-  const workload = plan.workload || {};
-  const missions = plan.missions || [];
-  function runTask(task) {
-    if (task.deck === "anki" || task.key === "due" || task.key === "new" || task.key === "weak_chapter") {
-      startSession?.("anki", task.kap || null);
-    } else {
-      setRoute?.(task.route || "home");
-    }
-  }
-  return (
-    <section className={`panel today-plan ${plan.band || ""}`}>
-      <div className="section-head">
-        <div>
-          <h2>{plan.title || "Heute solltest du machen"}</h2>
-          <p>{plan.message}</p>
-        </div>
-        <span className="deck-pill">{plan.mission?.summary || `${plan.days_left} Tage`}</span>
-      </div>
-      <div className="plan-metrics">
-        <span><b>{plan.readiness?.score || 0}%</b> Reife</span>
-        <span><b>{workload.daily_cards || 0}</b> Karten heute</span>
-        <span><b>{workload.backlog_per_day || 0}</b> pro Tag offen</span>
-        <span><b>{workload.repair_cards || 0}</b> Werkstattkarten</span>
-        <span><b>{workload.photo_cards || 0}</b> Foto-Queue</span>
-      </div>
-      {!!missions.length && (
-        <div className="mission-grid">
-          {missions.map((task, idx) => (
-            <article key={task.key} className={`mission-card ${task.priority || ""}`}>
-              <div className="mission-index">{idx + 1}</div>
-              <div>
-                <span>{task.priority || "mittel"} · {task.minutes} min</span>
-                <h3>{task.title}</h3>
-                <p>{task.detail}</p>
-                <em>Ziel: {task.done_when}</em>
-              </div>
-              <button onClick={() => runTask(task)}>{task.cta || "Start"}</button>
-            </article>
-          ))}
-        </div>
-      )}
-      <div className={`today-task-grid ${missions.length ? "compact" : ""}`}>
-        {(plan.tasks || []).filter((task) => task.amount !== 0).map((task) => (
-          <button
-            key={task.key}
-            onClick={() => runTask(task)}
-          >
-            <b>{task.amount}</b>
-            <span>{task.label}</span>
-            <em>{task.detail}</em>
-          </button>
-        ))}
-      </div>
-      {!!plan.focus?.length && (
-        <div className="focus-strip">
-          {plan.focus.map((ch) => (
-            <button key={ch.kap} onClick={() => startSession?.("anki", ch.kap)}>
-              VO{ch.kap} · {ch.name}
-            </button>
-          ))}
-        </div>
-      )}
     </section>
   );
 }
@@ -970,6 +876,53 @@ function ModuleSwitch({ modules = {}, active, onChange }) {
   );
 }
 
+function HomePlanCard({ module, startSession, startExam, setRoute }) {
+  const [d, setD] = useState(null);
+  const [error, setError] = useState(false);
+  function load() { setError(false); api(`/api/study-plan?module=${module}`).then(setD).catch(() => setError(true)); }
+  useEffect(() => { setD(null); load(); }, [module]);
+  if (error) return null;  // Home nicht blockieren; die Lernplan-Seite zeigt den Fehler mit Retry
+  if (!d) return <section className="panel"><div className="loading">Plan laedt...</div></section>;
+
+  const runTask = (t) => {
+    if (t.kind === "review") startSession?.("anki");
+    else if (t.kind === "new") startSession?.("anki", t.kap || null);
+    else if (t.kind === "exam") startExam?.(t.count || 10, "weak");
+    else if (t.kind === "mock") startExam?.(t.count || 20, "mixed");
+    else if (t.kind === "fehlerbuch") setRoute?.("fehlerbuch");
+  };
+  const phaseColor = { aufbau: "#2980b9", festigen: "#e67e22", pruefung: "#c0392b" }[d.phase?.key] || "#888";
+
+  return (
+    <section className="panel home-plan">
+      <div className="section-head">
+        <div>
+          <h2>Dein Plan heute</h2>
+          <p>
+            <span className="plan-phase" style={{ background: phaseColor }}>{d.phase?.label}</span>
+            {" "}· {d.days_left} Tage bis zur Prüfung · {d.capacity?.new_per_day} neu / {d.capacity?.reviews_per_day} Wdh pro Tag
+          </p>
+        </div>
+        <button onClick={() => setRoute?.("studyplan")}><CalendarDays size={16} /> Ganzer Plan</button>
+      </div>
+      <div className="plan-today">
+        {(d.today || []).slice(0, 3).map((t) => (
+          <button key={t.key} className="plan-task" onClick={() => runTask(t)}>
+            <div>
+              <b>{t.title}</b>
+              {t.detail && <span className="muted">{t.detail}</span>}
+            </div>
+            <span className="plan-task-go">Start →</span>
+          </button>
+        ))}
+        {(d.today || []).length === 0 && (
+          <p className="muted">Heute nichts Dringendes – halte deine Wiederholungen am Laufen.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Home({ data, startSession, startExam, setRoute, refresh, module, setModule }) {
   const st = data.anki || {};
   const goal = data.daily_goal || {};
@@ -994,9 +947,8 @@ function Home({ data, startSession, startExam, setRoute, refresh, module, setMod
       </section>
 
       <XpCard xp={data.xp} streak={data.streak} />
+      <HomePlanCard module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />
       <ReadinessCoach score={data.exam_score} setRoute={setRoute} startExam={startExam} startSession={startSession} />
-      <StudyPlan plan={data.study_plan} startSession={startSession} />
-      <TodayPlan plan={data.today_plan} setRoute={setRoute} startSession={startSession} />
 
       <section className={`day-card ${goal.status || ""}`}>
         <div>
