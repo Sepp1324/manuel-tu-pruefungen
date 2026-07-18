@@ -14,7 +14,7 @@ metadata:
   name: organicsr-ntfy
   namespace: organicsr
 spec:
-  schedule: "0 5 * * *"          # 05:00 UTC = 07:00 Europe/Vienna (Sommer)
+  schedule: "0 7 * * *"          # 07:00 Europe/Vienna (schedule wird in timeZone unten interpretiert)
   timeZone: "Europe/Vienna"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 2
@@ -38,10 +38,15 @@ spec:
                     secretKeyRef:
                       name: organicsr-secrets
                       key: notify-token
+                      optional: true   # sonst startet der Pod nicht, wenn der Token (Opt-in) fehlt
               command: ["/bin/sh", "-c"]
               args:
                 - |
                   set -e
+                  if [ -z "${NOTIFY_TOKEN}" ]; then
+                    echo "NOTIFY_TOKEN nicht gesetzt (Feature deaktiviert) - ueberspringe Push."
+                    exit 0
+                  fi
                   apk add --no-cache curl jq >/dev/null 2>&1
                   BODY=$(curl -fsS -H "X-Token: ${NOTIFY_TOKEN}" "$APP_URL/api/notify/digest" | jq -r '.text')
                   curl -fsS \
