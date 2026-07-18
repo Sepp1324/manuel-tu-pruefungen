@@ -1,34 +1,31 @@
-
-# Topologie: Caddy (öffentlich, terminiert TLS) -> Traefik (HTTP, web) -> App.
+# Topologie (IST-Zustand): DNS chemie.stoegerer-home.cloud -> Traefik (LB-IP) -> App.
 #
-# Da Caddy TLS terminiert und per HTTP an Traefik weitergibt, DARF Traefik KEINEN
-# http->https-Redirect machen — sonst Endlosschleife ("Load cannot follow more
-# than 20 redirections"). TLS und der http->https-Redirect gehören zu Caddy.
+# Der oeffentliche DNS-Eintrag zeigt DIREKT auf Traefik, nicht auf einen davor
+# liegenden Caddy. Deshalb MUSS Traefik selbst TLS terminieren - sonst antwortet
+# der websecure-Entrypoint (443) mit dem Traefik-Default-Zertifikat und 404, und
+# HTTPS (und damit der Login, der ein Secure-Cookie setzt) ist komplett kaputt.
 #
-# Deshalb: EINE Ingress, nur web-Entrypoint, KEIN TLS, KEIN Redirect.
+# Das TLS-Zertifikat liefert cert-manager im Secret `organicsr-tls` (eigene
+# Certificate-Ressource im Cluster). Hier wird es nur referenziert - die
+# Erneuerung laeuft ueber cert-manager, nicht ueber dieses Manifest.
 #
-# Caddyfile-Block auf dem Caddy-Host (kein manuelles 'redir' — Caddy leitet
-# http->https automatisch um):
-#
-#   chemie.stoegerer-home.cloud {
-#       reverse_proxy <TRAEFIK-LB-IP>:80
-#   }
-#
-# <TRAEFIK-LB-IP> = kubectl -n kube-system get svc traefik  (EXTERNAL-IP)
-#
-# Hinweis: In dieser Variante wird cert-manager/05-cluster-issuer.yaml NICHT
-# benötigt (Caddy stellt das Zertifikat). Ist cert-manager nicht installiert,
-# 05-cluster-issuer.yaml aus kustomization.yaml entfernen.
----
+# WICHTIG: Diese Datei NICHT auf die reine web-only-Variante zuruecksetzen -
+# ein `apply -k` wuerde sonst erneut die TLS-Sektion aus dem Live-Ingress
+# entfernen und HTTPS wieder abschiessen.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: organicsr
   namespace: organicsr
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # web = Port 80 (u.a. cert-manager HTTP-01 Renewal), websecure = Port 443 (TLS)
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - chemie.stoegerer-home.cloud
+      secretName: organicsr-tls
   rules:
     - host: chemie.stoegerer-home.cloud
       http:
