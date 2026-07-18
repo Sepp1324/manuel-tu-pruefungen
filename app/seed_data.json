@@ -7649,21 +7649,6 @@
       "tags": []
     },
     {
-      "id": "inorg:331989450211",
-      "module": "inorganic",
-      "deck": "anki",
-      "kap": 1,
-      "sub": "E1",
-      "subname": "Einheit 01 Einfuehrung",
-      "source": "AnTech Einheit 01",
-      "kind": "exam_process",
-      "q": "Kontext: Anorganische Chemie / Einheit 01 Einfuehrung. Quelle: AnTech Einheit 01\n\nErklaeren Sie die Rauchgasentschwefelung mit Kalk.",
-      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 01 Einfuehrung. Quelle: AnTech Einheit 01<br><br><b>Erwartete Antwortpunkte zu Rauchgasentschwefelung mit Kalk:</b><ul><li>SO2 im Abgas wird mit Kalk/Kalkmilch gebunden</li><li>Vereinfacht: CaCO3 + SO2 + ½ O2 → CaSO4 + CO2</li><li>Produkt: Gips als verwertbares Koppelprodukt</li><li>Reduziert SO2-Emissionen und sauren Regen</li></ul><span class='source'>Quelle: AnTech Einheit 01</span>",
-      "weight": 5,
-      "order": 30,
-      "tags": []
-    },
-    {
       "id": "inorg:4ac666733d80",
       "module": "inorganic",
       "deck": "anki",
@@ -8171,21 +8156,6 @@
       "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 02 Rohstoffe. Quelle: AnTech Einheit 02<br><br><b>Erwartete Antwortpunkte zu Nachhaltige Rohstoffnutzung:</b><ul><li>Effizienzsteigerung und hohes Ausbringen</li><li>Recycling und Kreislaufführung</li><li>Substitution kritischer Rohstoffe</li><li>Ressourcenschonung durch Materialeffizienz</li></ul><span class='source'>Quelle: AnTech Einheit 02</span>",
       "weight": 5,
       "order": 34,
-      "tags": []
-    },
-    {
-      "id": "inorg:aa493b1ba064",
-      "module": "inorganic",
-      "deck": "anki",
-      "kap": 2,
-      "sub": "E2",
-      "subname": "Einheit 02 Rohstoffe",
-      "source": "AnTech Einheit 02",
-      "kind": "exam_application",
-      "q": "Kontext: Anorganische Chemie / Einheit 02 Rohstoffe. Quelle: AnTech Einheit 02\n\nWarum wird das beim Roesten anfallende SO2 verwertet?",
-      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 02 Rohstoffe. Quelle: AnTech Einheit 02<br><br><b>Erwartete Antwortpunkte zu Sulfidröstung und SO2-Nutzung:</b><ul><li>Rösten setzt große Mengen SO2 frei</li><li>SO2 darf aus Umweltgründen nicht emittiert werden</li><li>Verwertung zu Schwefelsäure (Kontaktverfahren)</li><li>Koppelt Metallgewinnung mit Säureproduktion</li></ul><span class='source'>Quelle: AnTech Einheit 02</span>",
-      "weight": 5,
-      "order": 35,
       "tags": []
     },
     {
@@ -13369,7 +13339,7 @@
       "module": "inorganic",
       "kap": 1,
       "name": "Einheit 01 Einfuehrung",
-      "anki": 30,
+      "anki": 29,
       "sources": [
         "AnTech Einheit 01"
       ]
@@ -13378,7 +13348,7 @@
       "module": "inorganic",
       "kap": 2,
       "name": "Einheit 02 Rohstoffe",
-      "anki": 35,
+      "anki": 34,
       "sources": [
         "AnTech Einheit 02"
       ]
