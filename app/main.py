@@ -1503,6 +1503,7 @@ def _exam_score_projection(stats: dict, chapters: list[dict], module: str,
         for item in items:
             if item.get("hit_rate") is not None:
                 weighted_hit.append(item["hit_rate"] / 100)
+        hit_measured = bool(weighted_hit)
         hit = sum(weighted_hit) / len(weighted_hit) if weighted_hit else .55
         again = sum(i.get("again", 0) for i in items)
         penalty = min(.18, again / max(total, 1))
@@ -1510,6 +1511,8 @@ def _exam_score_projection(stats: dict, chapters: list[dict], module: str,
         out.append({
             "block": block,
             "score": score,
+            "hit": round(hit * 100),
+            "hit_measured": hit_measured,
             "label": f"{max(score - 8, 0)}-{min(score + 8, 99)}%",
             "chapters": [i.get("kap") for i in items],
             "detail": f"{seen}/{total} Karten gesehen, Trefferquote {round(hit * 100)}%",
@@ -3074,12 +3077,24 @@ def readiness_plan(module: str = "organic"):
         })
     # Bestehens-Prognose nach der echten Pruefungsregel:
     # mindestens 50 % in JEDEM Teil/Block UND insgesamt mindestens 50 %.
+    # Ein Teil gilt nur dann als bestanden, wenn zusaetzlich die tatsaechlich
+    # GEMESSENE Antwortquote >= 50 % ist (sofern schon Reviews vorliegen) - sonst
+    # wuerde reine Kartenabdeckung ein Bestehen vortaeuschen, obwohl die Antworten
+    # zu oft falsch sind. Ohne Review-Daten bleibt es beim Abdeckungs-Score.
     PASS = 50
-    parts = [{
-        "name": b.get("block"),
-        "score": int(b.get("score") or 0),
-        "pass": int(b.get("score") or 0) >= PASS,
-    } for b in sorted(blocks, key=lambda b: b.get("block") or "")]
+    parts = []
+    for b in sorted(blocks, key=lambda b: b.get("block") or ""):
+        sc = int(b.get("score") or 0)
+        acc = int(b.get("hit") or 0)
+        acc_measured = bool(b.get("hit_measured"))
+        acc_ok = (not acc_measured) or acc >= PASS
+        parts.append({
+            "name": b.get("block"),
+            "score": sc,
+            "accuracy": acc if acc_measured else None,
+            "pass": sc >= PASS and acc_ok,
+            "accuracy_blocks": sc >= PASS and not acc_ok,  # Score reicht, Antwortquote nicht
+        })
     overall_pass = overall >= PASS
     all_parts_pass = bool(parts) and all(p["pass"] for p in parts)
     would_pass = all_parts_pass and overall_pass
@@ -3089,8 +3104,13 @@ def readiness_plan(module: str = "organic"):
     elif not overall_pass:
         verdict = "Gesamtquote noch unter 50 % – breit weiterlernen."
     else:
+        acc_failing = [p["name"] for p in parts if p["accuracy_blocks"]]
         failing = [p["name"] for p in parts if not p["pass"]]
-        verdict = f"Gesamt reicht, aber unter 50 % in: {', '.join(failing)} – hier ist die Bestehensgrenze der Knackpunkt."
+        if acc_failing:
+            verdict = (f"Stoff gesehen, aber Antwortquote unter 50 % in: {', '.join(acc_failing)} "
+                       "– dort gezielt Prüfungsfragen üben, nicht nur durchklicken.")
+        else:
+            verdict = f"Gesamt reicht, aber unter 50 % in: {', '.join(failing)} – hier ist die Bestehensgrenze der Knackpunkt."
     pass_prediction = {
         "threshold": PASS,
         "parts": parts,
