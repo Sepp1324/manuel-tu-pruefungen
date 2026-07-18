@@ -3142,3 +3142,41 @@ textarea {
 
 .card-change-date { color: var(--muted); font-weight: 400; }
 p.card-change-date { font-size: 12px; margin: 0 0 8px; }
+
+/* ---- Adaptiver Lernplan ---- */
+.study-plan { display: grid; gap: 16px; }
+.plan-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.plan-phase { color: #fff; font-weight: 800; font-size: 13px; padding: 3px 10px; border-radius: 999px; }
+.plan-capacity { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.plan-capacity div { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 2px; }
+.plan-capacity b { color: var(--tu-blue); font-size: 22px; }
+.plan-capacity span { color: var(--muted); font-size: 12px; }
+.plan-today { display: grid; gap: 8px; }
+.plan-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+  text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.plan-task:hover { border-color: var(--tu-blue); background: var(--soft); }
+.plan-task > div { display: grid; gap: 2px; }
+.plan-task b { font-size: 15px; }
+.plan-task .muted { font-size: 12px; }
+.plan-task-go { color: var(--tu-blue); font-weight: 800; white-space: nowrap; }
+.plan-part { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.plan-part.focus .plan-part-head b { color: #c0392b; }
+.plan-part-head { display: flex; justify-content: space-between; font-weight: 700; }
+.plan-part-bar { background: #e9edf1; border-radius: 5px; height: 8px; margin: 5px 0; overflow: hidden; }
+.plan-part-bar i { display: block; height: 100%; border-radius: 5px; }
+.plan-part span.muted { font-size: 12px; }
+.plan-schedule { display: grid; gap: 6px; }
+.plan-day { display: flex; gap: 12px; align-items: center; padding: 8px 10px; border: 1px solid var(--line);
+  border-left: 4px solid var(--line); border-radius: 8px; }
+.plan-day.kind-mock { border-left-color: #c0392b; background: #fdf3f2; }
+.plan-day.kind-build { border-left-color: #2980b9; }
+.plan-day.kind-focus { border-left-color: #e67e22; }
+.plan-day-date { display: grid; text-align: center; min-width: 46px; }
+.plan-day-date b { font-size: 14px; }
+.plan-day-date span { color: var(--muted); font-size: 12px; }
+.plan-day-body { display: grid; gap: 2px; }
+.plan-day-body b { font-size: 14px; }
+.plan-day-body span { font-size: 12px; }
+@media (max-width: 780px) {
+  .plan-capacity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

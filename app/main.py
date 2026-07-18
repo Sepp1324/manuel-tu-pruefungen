@@ -3118,6 +3118,173 @@ def readiness_plan(module: str = "organic"):
     }
 
 
+_WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+
+def _adaptive_study_plan(conn, module: str) -> dict:
+    """Tag-fuer-Tag-Plan bis zum Pruefungstag, jedes Mal frisch aus dem aktuellen
+    Kartenstand + Reifegrad generiert (daher adaptiv). Priorisiert Teile, die unter
+    der 50%-Bestehensgrenze liegen, und dosiert neue Karten so, dass der ungesehene
+    Stoff mit Puffer vor der Pruefung durch ist."""
+    now = _now_iso()
+    st = db.deck_stats(conn, now, module)
+    chapters = db.chapter_stats(conn, now, module)
+    fb = db.fehlerbuch_summary(conn, module)
+    exam_score = _exam_score_projection(st, chapters, module)
+
+    today = db.app_today()
+    exam_date = _exam_date(module)
+    days_left = max((exam_date - today).days, 0)
+    total = st.get("total") or 0
+    seen = st.get("seen") or 0
+    unseen = max(total - seen, 0)
+    due = st.get("due") or 0
+    overall = int(exam_score.get("overall") or 0)
+
+    if days_left > 30:
+        phase = {"key": "aufbau", "label": "Aufbau", "focus": "Neuen Stoff breit aufnehmen"}
+    elif days_left > 10:
+        phase = {"key": "festigen", "label": "Festigen", "focus": "Wiederholen und Schwachstellen üben"}
+    else:
+        phase = {"key": "pruefung", "label": "Prüfungsmodus", "focus": "Simulieren und Lücken schließen"}
+
+    # Neue Karten so verteilen, dass der ungesehene Stoff ~7 Tage vor der Pruefung
+    # durch ist (danach nur noch festigen). Wiederholungen halten mindestens due frei.
+    intake_days = max(days_left - 7, 1)
+    new_per_day = min(30, -(-unseen // intake_days)) if unseen and days_left > 7 else 0
+    reviews_per_day = min(120, max(due, 20))
+
+    # Kapitel zu Teilen (Bloecken) aggregieren
+    score_by_block = {b.get("block"): b for b in exam_score.get("blocks", [])}
+    blocks_map: dict[str, dict] = {}
+    for ch in chapters:
+        name = _exam_block(module, ch.get("kap"))
+        blk = blocks_map.setdefault(name, {"total": 0, "seen": 0, "due": 0, "unseen": 0,
+                                           "hit_sum": 0, "hit_n": 0, "weak": 0, "kaps": []})
+        blk["total"] += ch.get("total", 0)
+        blk["seen"] += ch.get("seen", 0)
+        blk["due"] += ch.get("due", 0)
+        blk["unseen"] += max(ch.get("total", 0) - ch.get("seen", 0), 0)
+        if ch.get("hit_rate") is not None:
+            blk["hit_sum"] += ch["hit_rate"]
+            blk["hit_n"] += 1
+        blk["weak"] += ch.get("weak_score", 0) or 0
+        if ch.get("kap"):
+            blk["kaps"].append(ch["kap"])
+
+    parts = []
+    for name, blk in blocks_map.items():
+        coverage = round(blk["seen"] / max(blk["total"], 1) * 100)
+        accuracy = round(blk["hit_sum"] / blk["hit_n"]) if blk["hit_n"] else None
+        score = int(score_by_block.get(name, {}).get("score") or 0)
+        below_pass = score < 50 or (accuracy is not None and accuracy < 50)
+        parts.append({
+            "name": name,
+            "kaps": sorted(set(blk["kaps"])),
+            "coverage": coverage,
+            "accuracy": accuracy,
+            "score": score,
+            "unseen": blk["unseen"],
+            "due": blk["due"],
+            "focus": below_pass,
+        })
+    # Schwaechste Teile zuerst (niedrigster Score, dann meiste ungesehene Karten)
+    parts.sort(key=lambda p: (p["score"], -p["unseen"]))
+    weakest = parts[0] if parts else None
+    intake_target = next((p for p in parts if p["unseen"] > 0), None)
+
+    # Heutige, konkrete Aufgaben (jede mit route/kind fuers Frontend)
+    today_tasks = []
+    if due:
+        today_tasks.append({
+            "key": "due", "kind": "review",
+            "title": f"{min(due, reviews_per_day)} fällige Karten wiederholen",
+            "detail": "Erst Fälliges klären, damit nichts verfällt.",
+            "count": min(due, reviews_per_day),
+        })
+    if new_per_day and intake_target:
+        today_tasks.append({
+            "key": "new", "kind": "new",
+            "title": f"{min(new_per_day, intake_target['unseen'])} neue Karten – {intake_target['name']}",
+            "detail": "Neuen Stoff dosiert aufnehmen, Schwächstes zuerst.",
+            "kap": intake_target["kaps"][0] if intake_target["kaps"] else None,
+            "count": min(new_per_day, intake_target["unseen"]),
+        })
+    if weakest and (days_left <= 30 or (weakest["accuracy"] is not None and weakest["accuracy"] < 50)):
+        today_tasks.append({
+            "key": "exam", "kind": "exam",
+            "title": f"Prüfungsfragen üben – {weakest['name']}",
+            "detail": "Aktiv beantworten statt nur durchklicken.",
+            "count": 10,
+        })
+    if fb.get("open", 0) > 0:
+        today_tasks.append({
+            "key": "fehler", "kind": "fehlerbuch",
+            "title": f"{fb['open']} Fehler aus dem Fehlerbuch aufarbeiten",
+            "detail": "Wiederholte Fehler gezielt schließen.",
+            "count": fb["open"],
+        })
+    if days_left <= 10:
+        today_tasks.append({
+            "key": "mock", "kind": "exam",
+            "title": "Mini-Mock-Exam schreiben",
+            "detail": "Prüfungssituation unter Zeitdruck simulieren.",
+            "count": 20,
+        })
+
+    # Fahrplan der naechsten Tage
+    horizon = min(days_left, 14)
+    schedule = []
+    for i in range(horizon):
+        d = today + timedelta(days=i)
+        dl = days_left - i
+        is_mock = dl <= 3 or (i > 0 and i % 7 == 0)
+        if is_mock:
+            theme, kind = "Mock-Exam und Nacharbeit", "mock"
+        elif dl > 7 and unseen > 0:
+            theme, kind = "Neuer Stoff und Wiederholung", "build"
+        else:
+            wk = parts[i % len(parts)] if parts else None
+            theme, kind = (f"Festigen: {wk['name']}" if wk else "Wiederholung"), "focus"
+        schedule.append({
+            "date": d.isoformat(),
+            "weekday": _WEEKDAYS[d.weekday()],
+            "days_left": dl,
+            "theme": theme,
+            "kind": kind,
+            "new": new_per_day if (dl > 7 and unseen > 0 and not is_mock) else 0,
+            "reviews": reviews_per_day if not is_mock else max(20, reviews_per_day // 2),
+        })
+
+    return {
+        "module": module,
+        "exam_date": exam_date.isoformat(),
+        "days_left": days_left,
+        "generated_for": today.isoformat(),
+        "phase": phase,
+        "overall": overall,
+        "capacity": {
+            "new_per_day": new_per_day,
+            "reviews_per_day": reviews_per_day,
+            "unseen": unseen,
+            "due": due,
+        },
+        "today": today_tasks,
+        "parts": parts,
+        "schedule": schedule,
+    }
+
+
+@app.get("/api/study-plan")
+def study_plan(module: str = "organic"):
+    module = _valid_module(module)
+    conn = db.get_conn()
+    try:
+        return _adaptive_study_plan(conn, module)
+    finally:
+        conn.close()
+
+
 # ---------------------------------------------------------------------------
 # Gamification: quests + level + badges
 # ---------------------------------------------------------------------------

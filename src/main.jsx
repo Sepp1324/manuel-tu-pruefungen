@@ -28,6 +28,7 @@ import {
   Award,
   Brain,
   CalendarClock,
+  CalendarDays,
   ChevronDown,
 } from "lucide-react";
 import "./styles.css";
@@ -3994,6 +3995,108 @@ function AnalyticsPage({ module }) {
   );
 }
 
+function StudyPlanPage({ module, startSession, startExam, setRoute }) {
+  const [d, setD] = useState(null);
+  const [error, setError] = useState(false);
+  function load() { setError(false); api(`/api/study-plan?module=${module}`).then(setD).catch(() => setError(true)); }
+  useEffect(() => { setD(null); load(); }, [module]);
+  if (!d) return error
+    ? <LoadError onRetry={load} label="Lernplan konnte nicht geladen werden." />
+    : <div className="loading">Lernplan laedt...</div>;
+
+  const runTask = (t) => {
+    if (t.kind === "review") startSession?.("anki");
+    else if (t.kind === "new") startSession?.("anki", t.kap || null);
+    else if (t.kind === "exam") startExam?.(t.count || 10, "weak");
+    else if (t.kind === "mock") startExam?.(t.count || 20, "mixed");
+    else if (t.kind === "fehlerbuch") setRoute?.("fehlerbuch");
+  };
+  const phaseColor = { aufbau: "#2980b9", festigen: "#e67e22", pruefung: "#c0392b" }[d.phase?.key] || "#888";
+
+  return (
+    <section className="study-plan">
+      <div className="panel">
+        <div className="section-head">
+          <div>
+            <h2>Lernplan</h2>
+            <p>Adaptiver Plan bis zur Prüfung – jedes Mal neu aus deinem aktuellen Stand berechnet.</p>
+          </div>
+          <div className="forecast-score compact"><b>{d.overall}%</b><span>Reife</span></div>
+        </div>
+        <div className="plan-meta">
+          <span className="plan-phase" style={{ background: phaseColor }}>{d.phase?.label}</span>
+          <span><b>{d.days_left}</b> Tage bis {new Date(d.exam_date).toLocaleDateString("de-AT")}</span>
+          <span className="muted">{d.phase?.focus}</span>
+        </div>
+        <div className="plan-capacity">
+          <div><b>{d.capacity?.new_per_day}</b><span>neue Karten / Tag</span></div>
+          <div><b>{d.capacity?.reviews_per_day}</b><span>Wiederholungen / Tag</span></div>
+          <div><b>{d.capacity?.unseen}</b><span>ungesehen</span></div>
+          <div><b>{d.capacity?.due}</b><span>fällig</span></div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <h3>Heute</h3>
+        <div className="plan-today">
+          {(d.today || []).length === 0 && (
+            <p className="muted">Heute nichts Dringendes – halte deine Wiederholungen am Laufen.</p>
+          )}
+          {(d.today || []).map((t) => (
+            <button key={t.key} className="plan-task" onClick={() => runTask(t)}>
+              <div>
+                <b>{t.title}</b>
+                {t.detail && <span className="muted">{t.detail}</span>}
+              </div>
+              <span className="plan-task-go">Start →</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="panel">
+        <h3>Teile – Schwächstes zuerst</h3>
+        {(d.parts || []).map((p) => (
+          <div key={p.name} className={`plan-part${p.focus ? " focus" : ""}`}>
+            <div className="plan-part-head">
+              <b>{p.focus ? "⚠ " : ""}{p.name}</b>
+              <span>{p.score}%</span>
+            </div>
+            <div className="plan-part-bar">
+              <i style={{ width: `${Math.min(100, p.score)}%`, background: p.focus ? "#c0392b" : "#27ae60" }} />
+            </div>
+            <span className="muted">
+              {p.coverage}% gesehen
+              {p.accuracy !== null && ` · ${p.accuracy}% richtig`}
+              {p.unseen > 0 && ` · ${p.unseen} neu`}
+              {p.due > 0 && ` · ${p.due} fällig`}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="panel">
+        <h3>Fahrplan bis zur Prüfung</h3>
+        {(d.schedule || []).length === 0 && <p className="muted">Prüfung ist da – viel Erfolg!</p>}
+        <div className="plan-schedule">
+          {(d.schedule || []).map((s) => (
+            <div key={s.date} className={`plan-day kind-${s.kind}`}>
+              <div className="plan-day-date">
+                <b>{s.weekday}</b>
+                <span>{new Date(s.date).toLocaleDateString("de-AT", { day: "2-digit", month: "2-digit" })}</span>
+              </div>
+              <div className="plan-day-body">
+                <b>{s.theme}</b>
+                <span className="muted">{s.new > 0 ? `${s.new} neu · ` : ""}{s.reviews} Wdh · T-{s.days_left}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ReadinessPage({ module, startExam, setRoute }) {
   const [d, setD] = useState(null);
   useEffect(() => { api(`/api/readiness-plan?module=${module}`).then(setD).catch(() => {}); }, [module]);
@@ -4242,6 +4345,7 @@ const NAV_GROUPS = [
   {
     label: "Fortschritt", icon: BarChart3,
     items: [
+      { route: "studyplan", label: "Lernplan", icon: CalendarDays },
       { route: "dashboard", label: "Dashboard", icon: BarChart3 },
       { route: "analytics", label: "Analytics", icon: Gauge },
       { route: "readiness", label: "Reifeplan", icon: CalendarClock },
@@ -4404,6 +4508,7 @@ function App() {
     if (route === "fehlerbuch") return <FehlerbuchPage module={module} startSession={startSession} />;
     if (route === "analytics") return <AnalyticsPage module={module} />;
     if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} />;
+    if (route === "studyplan") return <StudyPlanPage module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />;
     if (route === "antwortcheck") return <AntwortCheckPage module={module} />;
     if (route === "lastminute") return <LastMinutePage module={module} />;
     if (route === "quests") return <QuestsPage module={module} />;
