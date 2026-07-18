@@ -8,9 +8,14 @@ using SQLite unchanged.
 """
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Iterable
 from typing import Any
+
+# Muss mit db.APP_TZ uebereinstimmen. local_date() ist unter SQLite eine registrierte
+# Python-Funktion; unter Postgres wird der Aufruf hier in SQL uebersetzt.
+APP_TZ_NAME = os.environ.get("APP_TZ", "Europe/Vienna")
 
 
 # Tables whose INSERT needs a RETURNING id so ``cursor.lastrowid`` keeps working.
@@ -223,6 +228,14 @@ def translate_sql(sql: str, params: Iterable[Any] | None = None) -> str:
     out = re.sub(
         r"json_extract\(([^,]+),\s*'\$\.(\w+)'\)",
         r"(\1::jsonb ->> '\2')",
+        out,
+        flags=re.IGNORECASE,
+    )
+    # local_date(ts): gespeicherter UTC-Timestamp -> Wiener Kalenderdatum als 'YYYY-MM-DD'.
+    # Entspricht der unter SQLite registrierten Python-Funktion.
+    out = re.sub(
+        r"local_date\(([^()]+)\)",
+        rf"to_char(((\1)::timestamptz AT TIME ZONE '{APP_TZ_NAME}'), 'YYYY-MM-DD')",
         out,
         flags=re.IGNORECASE,
     )

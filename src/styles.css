@@ -3070,6 +3070,8 @@ textarea {
   height: 100%;
 }
 .loading { color: var(--muted); padding: 30px; text-align: center; }
+.load-error { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.load-error button { margin-top: 6px; }
 .login-shell {
   align-items: center;
   display: flex;
