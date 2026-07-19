@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 import auth
 import cache
 import db
+import reactions as reactions_mod
 from fsrs import Scheduler
 
 try:
@@ -3303,6 +3304,32 @@ def study_plan(module: str = "organic"):
         return _adaptive_study_plan(conn, module)
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Reaktions-/Gleichungstrainer
+# ---------------------------------------------------------------------------
+
+@app.get("/api/reactions")
+def reactions_list(module: str = "organic"):
+    module = _valid_module(module)
+    items = reactions_mod.public_list(module)
+    return {"module": module, "count": len(items), "reactions": items}
+
+
+class ReactionCheckIn(BaseModel):
+    id: str
+    answer: str
+
+
+@app.post("/api/reactions/check")
+def reactions_check(inp: ReactionCheckIn):
+    reaction = reactions_mod.REACTIONS_BY_ID.get(inp.id)
+    if not reaction:
+        raise HTTPException(404, "Reaktion nicht gefunden")
+    result = reactions_mod.check(reaction, inp.answer)
+    result["name"] = reaction["name"]
+    return result
 
 
 # ---------------------------------------------------------------------------

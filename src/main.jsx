@@ -30,6 +30,7 @@ import {
   CalendarClock,
   CalendarDays,
   ChevronDown,
+  FlaskConical,
 } from "lucide-react";
 import "./styles.css";
 
@@ -4218,6 +4219,110 @@ function QuestsPage({ module }) {
   );
 }
 
+function ReactionTrainerPage({ module }) {
+  const [list, setList] = useState(null);
+  const [error, setError] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const [answer, setAnswer] = useState("");
+  const [result, setResult] = useState(null);
+  const [showHint, setShowHint] = useState(false);
+  const [score, setScore] = useState({ correct: 0, done: 0 });
+  const [busy, setBusy] = useState(false);
+
+  function load() {
+    setError(false);
+    api(`/api/reactions?module=${module}`)
+      .then((d) => {
+        const shuffled = [...(d.reactions || [])].sort(() => Math.random() - 0.5);
+        setList(shuffled); setIdx(0); setAnswer(""); setResult(null); setShowHint(false);
+        setScore({ correct: 0, done: 0 });
+      })
+      .catch(() => setError(true));
+  }
+  useEffect(() => { setList(null); load(); }, [module]);
+
+  if (!list) return error
+    ? <LoadError onRetry={load} label="Reaktionstrainer konnte nicht geladen werden." />
+    : <div className="loading">Reaktionstrainer laedt...</div>;
+  if (!list.length) return <section className="panel"><p className="muted">Keine Reaktionen für dieses Modul.</p></section>;
+
+  const r = list[idx];
+
+  async function checkAnswer() {
+    if (!answer.trim() || busy) return;
+    setBusy(true);
+    try {
+      const res = await api("/api/reactions/check", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: r.id, answer }),
+      });
+      setResult(res);
+      if (!res.form_error) setScore((s) => ({ correct: s.correct + (res.correct ? 1 : 0), done: s.done + 1 }));
+    } catch (e) {
+      setResult({ form_error: true, message: "Prüfung fehlgeschlagen. Verbindung prüfen." });
+    } finally { setBusy(false); }
+  }
+  function next() {
+    if (idx + 1 >= list.length) { load(); return; }  // durch -> neu mischen
+    setIdx(idx + 1); setAnswer(""); setResult(null); setShowHint(false);
+  }
+
+  return (
+    <section className="reaction-trainer">
+      <div className="panel">
+        <div className="section-head">
+          <div>
+            <h2><FlaskConical size={20} /> Reaktionstrainer</h2>
+            <p>Schreib die Reaktionsgleichung. Koeffizienten musst du nicht exakt treffen – es zählen Edukte und Produkte.</p>
+          </div>
+          <div className="forecast-score compact"><b>{score.correct}/{score.done}</b><span>richtig</span></div>
+        </div>
+        <div className="reaction-progress">Reaktion {idx + 1} / {list.length} · {r.teil}</div>
+        <div className="reaction-prompt">
+          <h3>{r.name}</h3>
+          {r.conditions && <p className="muted">Bedingungen: {r.conditions}</p>}
+          {r.hint && (showHint
+            ? <p className="reaction-hint">💡 {r.hint}</p>
+            : <button type="button" className="reaction-hint-btn" onClick={() => setShowHint(true)}>Tipp anzeigen</button>)}
+        </div>
+        <input
+          className="reaction-input"
+          placeholder="z. B. N2 + 3 H2 -> 2 NH3"
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !result) checkAnswer(); }}
+          disabled={!!result && !result.form_error}
+          autoFocus
+        />
+        {!result && (
+          <button className="primary" disabled={busy || !answer.trim()} onClick={checkAnswer}>Prüfen</button>
+        )}
+        {result && result.form_error && (
+          <div className="reaction-result form">
+            <p>{result.message}</p>
+            <button onClick={() => setResult(null)}>Nochmal</button>
+          </div>
+        )}
+        {result && !result.form_error && (
+          <div className={`reaction-result ${result.correct ? "ok" : "bad"}`}>
+            {result.correct
+              ? <p><b>✓ Richtig!</b></p>
+              : <>
+                  <p><b>✗ Noch nicht ganz.</b></p>
+                  {!!result.missing_products?.length && <p>Fehlende Produkte: {result.missing_products.join(", ")}</p>}
+                  {!!result.extra_products?.length && <p>Zu viel bei den Produkten: {result.extra_products.join(", ")}</p>}
+                  {!!result.missing_educts?.length && <p>Fehlende Edukte: {result.missing_educts.join(", ")}</p>}
+                  {!!result.extra_educts?.length && <p>Zu viel bei den Edukten: {result.extra_educts.join(", ")}</p>}
+                </>}
+            <p className="reaction-reference">Lösung: <b>{result.reference}</b>{result.conditions ? ` (${result.conditions})` : ""}</p>
+            <button className="primary" onClick={next}>Nächste Reaktion →</button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function AntwortCheckPage({ module }) {
   const [cards, setCards] = useState([]);
   const [idx, setIdx] = useState(0);
@@ -4321,6 +4426,7 @@ const NAV_GROUPS = [
     items: [
       { route: "exam", label: "Pruefung", icon: Target },
       { route: "antwortcheck", label: "Antwort-Check", icon: Sparkles },
+      { route: "reactions", label: "Reaktionen", icon: FlaskConical },
       { route: "fehlerbuch", label: "Fehlerbuch", icon: AlertTriangle },
       { route: "lastminute", label: "Spickzettel", icon: ListChecks },
     ],
@@ -4499,6 +4605,7 @@ function App() {
     if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} />;
     if (route === "studyplan") return <StudyPlanPage module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />;
     if (route === "antwortcheck") return <AntwortCheckPage module={module} />;
+    if (route === "reactions") return <ReactionTrainerPage module={module} />;
     if (route === "lastminute") return <LastMinutePage module={module} />;
     if (route === "quests") return <QuestsPage module={module} />;
     return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;

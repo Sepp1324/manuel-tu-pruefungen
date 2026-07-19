@@ -3182,3 +3182,22 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
 @media (max-width: 780px) {
   .plan-capacity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---- Reaktionstrainer ---- */
+.reaction-progress { color: var(--muted); font-size: 13px; margin: 2px 0 12px; }
+.reaction-prompt h3 { margin: 0 0 4px; }
+.reaction-prompt .muted { font-size: 13px; margin: 0 0 6px; }
+.reaction-hint { color: var(--gold); font-size: 14px; margin: 4px 0; }
+.reaction-hint-btn { min-height: 30px; padding: 4px 10px; font-size: 13px; }
+.reaction-input {
+  width: 100%; margin: 12px 0; padding: 12px 14px; font-size: 17px;
+  border: 1px solid var(--line); border-radius: 8px; font-family: ui-monospace, Menlo, monospace;
+}
+.reaction-input:focus { outline: none; border-color: var(--tu-blue); }
+.reaction-result { margin-top: 12px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); }
+.reaction-result.ok { background: #eafaf0; border-color: #27ae60; }
+.reaction-result.bad { background: #fdecea; border-color: #e2a49c; }
+.reaction-result.form { background: var(--soft); }
+.reaction-result p { margin: 3px 0; font-size: 14px; }
+.reaction-reference { margin-top: 8px !important; font-size: 15px !important; }
+.reaction-result button { margin-top: 10px; }
