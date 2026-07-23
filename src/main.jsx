@@ -877,13 +877,9 @@ function ModuleSwitch({ modules = {}, active, onChange }) {
   );
 }
 
-function HomePlanCard({ module, startSession, startExam, setRoute }) {
-  const [d, setD] = useState(null);
-  const [error, setError] = useState(false);
-  function load() { setError(false); api(`/api/study-plan?module=${module}`).then(setD).catch(() => setError(true)); }
-  useEffect(() => { setD(null); load(); }, [module]);
-  if (error) return null;  // Home nicht blockieren; die Lernplan-Seite zeigt den Fehler mit Retry
-  if (!d) return <section className="panel"><div className="loading">Plan laedt...</div></section>;
+function HomePlanCard({ plan: d, startSession, startExam, setRoute }) {
+  // Plan kommt direkt aus /api/stats (data.plan) - kein zweiter Roundtrip/Waterfall.
+  if (!d) return null;
 
   const runTask = (t) => {
     if (t.kind === "review") startSession?.("anki");
@@ -948,7 +944,7 @@ function Home({ data, startSession, startExam, setRoute, refresh, module, setMod
       </section>
 
       <XpCard xp={data.xp} streak={data.streak} />
-      <HomePlanCard module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />
+      <HomePlanCard plan={data.plan} startSession={startSession} startExam={startExam} setRoute={setRoute} />
       <ReadinessCoach score={data.exam_score} setRoute={setRoute} startExam={startExam} startSession={startSession} />
 
       <section className={`day-card ${goal.status || ""}`}>

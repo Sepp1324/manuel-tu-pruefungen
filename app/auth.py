@@ -63,5 +63,26 @@ def session_expiry(now: datetime | None = None) -> datetime:
     return now + timedelta(days=SESSION_TTL_DAYS)
 
 
+# Session-Verlaengerung drosseln: sonst schreibt der Auth-Middleware-Pfad bei JEDEM
+# Request ein SQLite-UPDATE+COMMIT (Write-Contention, blockiert den Event-Loop).
+SESSION_REFRESH_INTERVAL_SECONDS = int(os.environ.get("AUTH_SESSION_REFRESH_INTERVAL_SECONDS", "3600"))
+
+
+def session_refresh_due(expires_iso: str | None, now: datetime | None = None) -> bool:
+    """True, wenn die Session-Verlaengerung faellig ist (>= Intervall seit der letzten)."""
+    if not expires_iso:
+        return True
+    now = now or datetime.now(timezone.utc)
+    try:
+        stored = datetime.fromisoformat(expires_iso)
+    except (ValueError, TypeError):
+        return True
+    if stored.tzinfo is None:
+        stored = stored.replace(tzinfo=timezone.utc)
+    # stored == letzte_Verlaengerung + TTL  ->  seit der letzten Verlaengerung vergangene Zeit:
+    last_refresh = stored - timedelta(days=SESSION_TTL_DAYS)
+    return (now - last_refresh).total_seconds() >= SESSION_REFRESH_INTERVAL_SECONDS
+
+
 def cookie_max_age() -> int:
     return SESSION_TTL_DAYS * 86400

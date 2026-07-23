@@ -421,7 +421,7 @@ def create_session(conn: sqlite3.Connection, token_hash: str, user_id: int, crea
 
 def get_session_user(conn: sqlite3.Connection, token_hash: str, now_iso: str):
     return conn.execute(
-        """SELECT u.id, u.username, u.created_at, u.last_login
+        """SELECT u.id, u.username, u.created_at, u.last_login, s.expires_at
            FROM sessions s JOIN users u ON u.id=s.user_id
            WHERE s.token_hash=? AND s.expires_at>?""",
         (token_hash, now_iso),
@@ -1808,10 +1808,12 @@ def xp_level(total_xp: int) -> dict:
 
 def xp_summary(conn: sqlite3.Connection, limit: int = 8) -> dict:
     total = conn.execute("SELECT COALESCE(SUM(amount),0) xp FROM xp_events").fetchone()["xp"] or 0
-    today = app_today().isoformat()
+    today = app_today()
+    # Indexierbarer Zeitbereich (Wiener Tag als UTC-Grenzen) statt local_date(created_at)=?,
+    # damit der Index auf created_at genutzt werden kann (Funktion auf der Spalte tut das nicht).
     today_xp = conn.execute(
-        "SELECT COALESCE(SUM(amount),0) xp FROM xp_events WHERE local_date(created_at)=?",
-        (today,),
+        "SELECT COALESCE(SUM(amount),0) xp FROM xp_events WHERE created_at>=? AND created_at<?",
+        (day_start_utc(today), day_start_utc(today + timedelta(days=1))),
     ).fetchone()["xp"] or 0
     events = conn.execute(
         "SELECT * FROM xp_events ORDER BY id DESC LIMIT ?", (limit,)
