@@ -324,7 +324,9 @@ async def auth_middleware(request: Request, call_next):
         conn = db.get_conn()
         token_hash = auth.hash_token(token)
         user = db.get_session_user(conn, token_hash, _now_iso())
-        if user:
+        if user and auth.session_refresh_due(user["expires_at"]):
+            # Nur gelegentlich verlaengern (siehe session_refresh_due) statt bei jedem
+            # Request - spart ein SQLite-UPDATE+COMMIT pro Anfrage.
             db.refresh_session(conn, token_hash, auth.session_expiry().isoformat())
         conn.close()
 
@@ -2143,6 +2145,10 @@ def stats(module: str = "organic"):
         xp = db.xp_summary(conn)
         streak = db.streak(conn)
         exam_date = _exam_date(module)
+        # Adaptiven Plan gleich mitliefern (Startseite braucht ihn) und dabei die schon
+        # berechneten Deck-/Kapitelstatistiken wiederverwenden - spart der Startseite
+        # einen zweiten Roundtrip auf /api/study-plan samt Neuberechnung.
+        plan = _adaptive_study_plan(conn, module, st=st, chapters=chapters)
         conn.close()
         return {
             "title": modules[module].get("full_title", modules[module].get("title", module)),
@@ -2155,6 +2161,7 @@ def stats(module: str = "organic"):
             "daily_goal": _daily_goal(st, chapters, module),
             "forecast": _forecast(st, chapters, module),
             "study_plan": _study_plan(st, chapters, module),
+            "plan": plan,
             "weaknesses": weaknesses,
             "tags": tags,
             "quality": quality,
@@ -2570,7 +2577,9 @@ def source_audit(module: str = "organic", limit: int = 12):
 def workshop(module: str = "organic", limit: int = 8):
     module = _valid_module(module)
     conn = db.get_conn()
-    moved = db.auto_quality_sweep(conn, module, _now_iso())
+    # Gecachter Sweep (TTL-gedrosselt) statt bei jedem Oeffnen ein voller Durchlauf ueber
+    # alle Karten - das war der langsamste Pfad (~75 ms).
+    moved = _auto_quality_sweep_cached(conn, module, _now_iso())
     out = _workshop_data(conn, module, max(3, min(limit, 20)))
     conn.close()
     if moved:
@@ -3142,16 +3151,24 @@ def readiness_plan(module: str = "organic"):
 _WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 
 
-def _adaptive_study_plan(conn, module: str) -> dict:
+def _adaptive_study_plan(conn, module: str, *, st=None, chapters=None,
+                         fb=None, exam_score=None) -> dict:
     """Tag-fuer-Tag-Plan bis zum Pruefungstag, jedes Mal frisch aus dem aktuellen
     Kartenstand + Reifegrad generiert (daher adaptiv). Priorisiert Teile, die unter
     der 50%-Bestehensgrenze liegen, und dosiert neue Karten so, dass der ungesehene
-    Stoff mit Puffer vor der Pruefung durch ist."""
+    Stoff mit Puffer vor der Pruefung durch ist.
+
+    st/chapters/fb/exam_score koennen vorberechnet uebergeben werden (z.B. aus dem
+    stats-Endpoint), um Doppelberechnungen zu sparen."""
     now = _now_iso()
-    st = db.deck_stats(conn, now, module)
-    chapters = db.chapter_stats(conn, now, module)
-    fb = db.fehlerbuch_summary(conn, module)
-    exam_score = _exam_score_projection(st, chapters, module)
+    if st is None:
+        st = db.deck_stats(conn, now, module)
+    if chapters is None:
+        chapters = db.chapter_stats(conn, now, module)
+    if fb is None:
+        fb = db.fehlerbuch_summary(conn, module)
+    if exam_score is None:
+        exam_score = _exam_score_projection(st, chapters, module)
 
     today = db.app_today()
     exam_date = _exam_date(module)
