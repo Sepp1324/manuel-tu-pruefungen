@@ -22,6 +22,7 @@ import auth
 import cache
 import db
 import reactions as reactions_mod
+import confusions as confusions_mod
 from fsrs import Scheduler
 
 try:
@@ -3346,6 +3347,30 @@ def reactions_check(inp: ReactionCheckIn):
         raise HTTPException(404, "Reaktion nicht gefunden")
     result = reactions_mod.check(reaction, inp.answer)
     result["name"] = reaction["name"]
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Verwechslungs-Trainer (haeufig verwechselte Begriffe, A/B)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/confusions")
+def confusions_list(module: str = "organic"):
+    module = _valid_module(module)
+    items = confusions_mod.public_list(module)
+    return {"module": module, "count": len(items), "items": items}
+
+
+class ConfusionCheckIn(BaseModel):
+    item_id: str
+    choice: str
+
+
+@app.post("/api/confusions/check")
+def confusions_check(inp: ConfusionCheckIn):
+    result = confusions_mod.check(inp.item_id, inp.choice)
+    if result is None:
+        raise HTTPException(404, "Frage nicht gefunden")
     return result
 
 

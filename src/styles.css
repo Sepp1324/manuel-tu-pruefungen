@@ -3201,3 +3201,11 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
 .reaction-result p { margin: 3px 0; font-size: 14px; }
 .reaction-reference { margin-top: 8px !important; font-size: 15px !important; }
 .reaction-result button { margin-top: 10px; }
+
+/* ---- Verwechslungs-Trainer ---- */
+.confusion-statement { font-size: 17px; margin: 10px 0 14px; }
+.confusion-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.confusion-option { min-height: 52px; font-size: 15px; font-weight: 700; }
+.confusion-option.ok { background: #eafaf0; border-color: #27ae60; color: #1e8449; }
+.confusion-option.bad { background: #fdecea; border-color: #c0392b; color: #c0392b; }
+@media (max-width: 620px) { .confusion-options { grid-template-columns: 1fr; } }
