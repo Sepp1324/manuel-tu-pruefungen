@@ -3201,3 +3201,21 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
 .reaction-result p { margin: 3px 0; font-size: 14px; }
 .reaction-reference { margin-top: 8px !important; font-size: 15px !important; }
 .reaction-result button { margin-top: 10px; }
+
+/* ---- Mock-Exam ---- */
+.mock-exam-panel .section-head { align-items: center; }
+.mock-report { text-align: left; border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 8px 0 4px; }
+.mock-report.pass { background: #eafaf0; border-color: #27ae60; }
+.mock-report.fail { background: #fdecea; border-color: #e2a49c; }
+.mock-report-head { display: flex; justify-content: space-between; align-items: baseline; }
+.mock-report-head b { font-size: 20px; }
+.mock-report.pass .mock-report-head b { color: #1e8449; }
+.mock-report.fail .mock-report-head b { color: #c0392b; }
+.mock-overall { font-weight: 800; color: var(--ink); }
+.mock-part { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.mock-part-name { flex: 1.4; font-weight: 700; font-size: 14px; }
+.mock-part-bar { flex: 2; position: relative; height: 9px; background: #e9edf1; border-radius: 5px; overflow: hidden; }
+.mock-part-bar i { display: block; height: 100%; border-radius: 5px; }
+.mock-part-bar em { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: #888; }
+.mock-part-pct { flex: none; width: 92px; text-align: right; font-size: 13px; color: var(--muted); }
+.mock-rule { margin-top: 8px !important; font-size: 12px; }

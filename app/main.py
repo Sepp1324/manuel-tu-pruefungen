@@ -2313,6 +2313,85 @@ def recall_exam(n: int = 20, mode: str = "mixed", module: str = "organic"):
     }
 
 
+@app.get("/api/mock-exam")
+def mock_exam(module: str = "organic"):
+    """Volle Pruefung: ueber ALLE Teile balanciert, zeitbegrenzt."""
+    module = _valid_module(module)
+    conn = db.get_conn()
+    # Grosser Pool, damit ALLE Teile vertreten sind (exam_candidates ordnet nach kap ASC
+    # und wuerde bei kleinem Limit die hoeheren Kapitel/Teile abschneiden).
+    cards = db.exam_candidates(conn, module, 600, "mixed")
+    conn.close()
+    n_blocks = len({_exam_block(module, c.get("kap")) for c in cards}) or 3
+    count = min(len(cards), n_blocks * 6)  # ~6 Fragen pro Teil
+    selected = _pick_balanced(cards, module, count)
+    minutes = max(10, min(75, round(len(selected) * 0.9)))
+    return {
+        "deck": "exam",
+        "module": module,
+        "mock": True,
+        "title": "Volle Prüfung (Mock-Exam)",
+        "minutes": minutes,
+        "cards": selected,
+    }
+
+
+class MockGradeIn(BaseModel):
+    module: str = "organic"
+    results: list[dict]
+    duration_seconds: int = 0
+
+
+@app.post("/api/mock-exam/grade")
+def mock_exam_grade(inp: MockGradeIn):
+    """Bewertet einen Mock-Exam-Versuch nach der echten Regel: >=50% je Teil UND gesamt."""
+    module = _valid_module(inp.module)
+    PASS = 50
+    blocks: dict[str, dict] = {}
+    for r in inp.results:
+        name = _exam_block(module, r.get("kap"))
+        b = blocks.setdefault(name, {"name": name, "total": 0, "correct": 0})
+        b["total"] += 1
+        if int(r.get("rating") or 0) >= 3:
+            b["correct"] += 1
+    parts = []
+    for b in blocks.values():
+        pct = round(b["correct"] / b["total"] * 100) if b["total"] else 0
+        parts.append({**b, "pct": pct, "pass": pct >= PASS})
+    parts.sort(key=lambda p: p["pct"])
+    total = sum(b["total"] for b in blocks.values())
+    correct = sum(b["correct"] for b in blocks.values())
+    overall = round(correct / total * 100) if total else 0
+    overall_pass = overall >= PASS
+    all_parts_pass = bool(parts) and all(p["pass"] for p in parts)
+    would_pass = all_parts_pass and overall_pass
+    failing = [p["name"] for p in parts if not p["pass"]]
+    if would_pass:
+        verdict = "Bestanden! Jeder Teil und die Gesamtquote liegen über 50 %."
+    elif not overall_pass:
+        verdict = "Nicht bestanden – die Gesamtquote liegt unter 50 %. Breit nachlernen."
+    else:
+        verdict = f"Nicht bestanden – unter 50 % in: {', '.join(failing)}. Diese Teile gezielt üben."
+
+    try:
+        conn = db.get_conn()
+        db.record_exam_attempt(conn, module, "mock", "mixed", "Volle Prüfung", "",
+                               correct, total, overall, max(0, int(inp.duration_seconds or 0)),
+                               {"parts": parts, "would_pass": would_pass}, _now_iso())
+        conn.commit()
+        conn.close()
+        _invalidate_module_caches(module)
+    except Exception:  # noqa: BLE001 - Speichern darf die Auswertung nie verhindern
+        pass
+
+    return {
+        "module": module, "threshold": PASS,
+        "overall": overall, "overall_pass": overall_pass,
+        "would_pass": would_pass, "parts": parts, "failing": failing,
+        "verdict": verdict, "total": total, "correct": correct,
+    }
+
+
 @app.get("/api/exam/open")
 def open_exam(module: str = "organic", mode: str = "full"):
     module = _valid_module(module)
