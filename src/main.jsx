@@ -1074,6 +1074,23 @@ function Study({ session, setSession, finish }) {
     return () => clearInterval(timer);
   }, [isTimedExam, session.done, setSession]);
 
+  // Mock-Exam: bei Abschluss serverseitig nach der echten Bestehensregel auswerten.
+  useEffect(() => {
+    if (!session.done || !session.mock || session.mockReport || session.mockGrading) return;
+    setSession((old) => ({ ...old, mockGrading: true }));
+    api("/api/mock-exam/grade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        module: session.module,
+        duration_seconds: session.elapsedSeconds ?? 0,
+        results: (session.results || []).map((r) => ({ kap: r.kap, rating: r.rating })),
+      }),
+    })
+      .then((rep) => setSession((old) => ({ ...old, mockReport: rep, mockGrading: false })))
+      .catch(() => setSession((old) => ({ ...old, mockGrading: false, mockError: true })));
+  }, [session.done, session.mock, session.mockReport, session.mockGrading, session.module, session.results, session.elapsedSeconds, setSession]);
+
   async function rate(rating) {
     // Synchroner Guard: zwei schnelle Klicks passieren sonst beide den State-Check,
     // bevor React neu rendert - das verbuchte Review/XP doppelt und uebersprang eine Karte.
@@ -1220,7 +1237,30 @@ function Study({ session, setSession, finish }) {
     return (
       <section className="done exam-result session-debrief">
         <Check size={32} />
-        <h2>{isExam ? "Pruefungsmodus abgeschlossen" : "Tagesabschluss"}</h2>
+        <h2>{session.mock ? "Volle Prüfung abgeschlossen" : isExam ? "Pruefungsmodus abgeschlossen" : "Tagesabschluss"}</h2>
+        {session.mock && (
+          session.mockGrading ? <p className="muted">Auswertung läuft…</p>
+          : session.mockReport ? (
+            <div className={`mock-report ${session.mockReport.would_pass ? "pass" : "fail"}`}>
+              <div className="mock-report-head">
+                <b>{session.mockReport.would_pass ? "✓ Bestanden" : "✗ Nicht bestanden"}</b>
+                <span className="mock-overall">{session.mockReport.overall}% gesamt</span>
+              </div>
+              <p>{session.mockReport.verdict}</p>
+              {(session.mockReport.parts || []).map((p) => (
+                <div key={p.name} className="mock-part">
+                  <span className="mock-part-name">{p.pass ? "✓" : "✗"} {p.name}</span>
+                  <div className="mock-part-bar">
+                    <i style={{ width: `${Math.min(100, p.pct)}%`, background: p.pass ? "#27ae60" : "#c0392b" }} />
+                    <em title="50%" />
+                  </div>
+                  <span className="mock-part-pct">{p.correct}/{p.total} · {p.pct}%</span>
+                </div>
+              ))}
+              <p className="muted mock-rule">Bestehensregel: ≥ 50 % je Teil UND ≥ 50 % gesamt.</p>
+            </div>
+          ) : <p className="muted">Auswertung nicht verfügbar.</p>
+        )}
         <p>
           {session.timedOut ? "Zeit abgelaufen. " : ""}
           {attempted ? `${strong} von ${attempted} Karten sicher erinnert.` : "Noch keine Karte bewertet."}
@@ -2627,7 +2667,7 @@ function ExamArchive({ archive, onStartCorrection }) {
   );
 }
 
-function ExamPage({ startExam, startSession, module }) {
+function ExamPage({ startExam, startMockExam, startSession, module }) {
   const [count, setCount] = useState(20);
   const [mode, setMode] = useState("mixed");
   const [exam, setExam] = useState(null);
@@ -2719,6 +2759,16 @@ function ExamPage({ startExam, startSession, module }) {
       <FormulaChecklistPanel checklist={checklist} onStart={startFormula} />
       <WeeklyPlanPanel plan={weeklyPlan} />
       <FinalPlanPanel plan={finalPlan} />
+
+      <section className="panel mock-exam-panel">
+        <div className="section-head">
+          <div>
+            <h2>Volle Prüfung (Mock-Exam)</h2>
+            <p>Über alle Teile balanciert, mit Zeitlimit. Am Ende: Bestehen/Durchfallen nach der echten Regel (≥ 50 % je Teil UND gesamt) mit Teil-Auswertung.</p>
+          </div>
+          <button className="primary" onClick={() => startMockExam?.()}><Target size={16} /> Prüfung starten</button>
+        </div>
+      </section>
 
       <section className="panel exam-panel">
         <div className="section-head">
@@ -4659,6 +4709,22 @@ function App() {
     });
   }
 
+  async function startMockExam() {
+    const res = await api(`/api/mock-exam?module=${encodeURIComponent(module)}`);
+    setSession({
+      deck: "exam",
+      module,
+      mock: true,
+      title: res.title || "Volle Prüfung",
+      minutes: res.minutes || Math.max(10, Math.round((res.cards || []).length * .9)),
+      cards: res.cards || [],
+      idx: 0,
+      mode: "mixed",
+      results: [],
+      startedAt: Date.now(),
+    });
+  }
+
   async function finishSession() {
     setSession(null);
     await load();
@@ -4671,7 +4737,7 @@ function App() {
     if (session) return <Study session={session} setSession={setSession} finish={finishSession} />;
     if (route === "dashboard") return <Dashboard startSession={startSession} module={module} />;
     if (route === "knowledge") return <KnowledgeMapPage module={module} startSession={startSession} setRoute={setRoute} />;
-    if (route === "exam") return <ExamPage startExam={startExam} startSession={startSession} module={module} />;
+    if (route === "exam") return <ExamPage startExam={startExam} startMockExam={startMockExam} startSession={startSession} module={module} />;
     if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} module={module} startSession={startSession} />;
     if (route === "workshop") return <WorkshopPage module={module} onDone={load} />;
     if (route === "triage") return <TriagePage module={module} onDone={load} />;
