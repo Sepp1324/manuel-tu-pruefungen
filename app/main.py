@@ -22,7 +22,7 @@ import auth
 import cache
 import db
 import reactions as reactions_mod
-import processes as processes_mod
+import confusions as confusions_mod
 from fsrs import Scheduler
 
 try:
@@ -3351,27 +3351,27 @@ def reactions_check(inp: ReactionCheckIn):
 
 
 # ---------------------------------------------------------------------------
-# Prozess-Schema-Trainer (Reihenfolge der Prozessschritte)
+# Verwechslungs-Trainer (haeufig verwechselte Begriffe, A/B)
 # ---------------------------------------------------------------------------
 
-@app.get("/api/processes")
-def processes_list(module: str = "organic"):
+@app.get("/api/confusions")
+def confusions_list(module: str = "organic"):
     module = _valid_module(module)
-    items = processes_mod.public_list(module)
-    return {"module": module, "count": len(items), "processes": items}
+    items = confusions_mod.public_list(module)
+    return {"module": module, "count": len(items), "items": items}
 
 
-class ProcessCheckIn(BaseModel):
-    id: str
-    order: list[str]
+class ConfusionCheckIn(BaseModel):
+    item_id: str
+    choice: str
 
 
-@app.post("/api/processes/check")
-def processes_check(inp: ProcessCheckIn):
-    process = processes_mod.PROCESSES_BY_ID.get(inp.id)
-    if not process:
-        raise HTTPException(404, "Prozess nicht gefunden")
-    return processes_mod.check(process, inp.order)
+@app.post("/api/confusions/check")
+def confusions_check(inp: ConfusionCheckIn):
+    result = confusions_mod.check(inp.item_id, inp.choice)
+    if result is None:
+        raise HTTPException(404, "Frage nicht gefunden")
+    return result
 
 
 # ---------------------------------------------------------------------------

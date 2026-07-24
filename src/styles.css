@@ -3202,22 +3202,10 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
 .reaction-reference { margin-top: 8px !important; font-size: 15px !important; }
 .reaction-result button { margin-top: 10px; }
 
-/* ---- Prozess-Schema-Trainer ---- */
-.process-steps { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }
-.process-step {
-  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  border: 1px solid var(--line); border-radius: 8px; background: var(--card);
-}
-.process-step.ok { border-color: #27ae60; background: #eafaf0; }
-.process-step.bad { border-color: #e2a49c; background: #fdecea; }
-.process-step-num {
-  flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--tu-blue);
-  color: #fff; font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; justify-content: center;
-}
-.process-step.ok .process-step-num { background: #27ae60; }
-.process-step.bad .process-step-num { background: #c0392b; }
-.process-step-text { flex: 1; font-size: 15px; }
-.process-step-actions { flex: none; display: flex; gap: 4px; }
-.process-step-actions button { min-height: 30px; min-width: 34px; padding: 2px 8px; font-size: 15px; }
-.process-solution { margin: 6px 0 0; padding-left: 20px; }
-.process-solution li { font-size: 14px; margin: 2px 0; }
+/* ---- Verwechslungs-Trainer ---- */
+.confusion-statement { font-size: 17px; margin: 10px 0 14px; }
+.confusion-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.confusion-option { min-height: 52px; font-size: 15px; font-weight: 700; }
+.confusion-option.ok { background: #eafaf0; border-color: #27ae60; color: #1e8449; }
+.confusion-option.bad { background: #fdecea; border-color: #c0392b; color: #c0392b; }
+@media (max-width: 620px) { .confusion-options { grid-template-columns: 1fr; } }

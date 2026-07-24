@@ -31,7 +31,7 @@ import {
   CalendarDays,
   ChevronDown,
   FlaskConical,
-  ListOrdered,
+  Split,
 } from "lucide-react";
 import "./styles.css";
 
@@ -4216,106 +4216,80 @@ function QuestsPage({ module }) {
   );
 }
 
-function ProcessTrainerPage({ module }) {
+function ConfusionTrainerPage({ module }) {
   const [list, setList] = useState(null);
   const [error, setError] = useState(false);
   const [idx, setIdx] = useState(0);
-  const [order, setOrder] = useState([]);
   const [result, setResult] = useState(null);
   const [score, setScore] = useState({ correct: 0, done: 0 });
   const [busy, setBusy] = useState(false);
 
   function load() {
     setError(false);
-    api(`/api/processes?module=${module}`)
-      .then((d) => {
-        const procs = d.processes || [];
-        setList(procs); setIdx(0); setOrder(procs[0]?.steps || []);
-        setResult(null); setScore({ correct: 0, done: 0 });
-      })
+    api(`/api/confusions?module=${module}`)
+      .then((d) => { setList(d.items || []); setIdx(0); setResult(null); setScore({ correct: 0, done: 0 }); })
       .catch(() => setError(true));
   }
   useEffect(() => { setList(null); load(); }, [module]);
 
   if (!list) return error
-    ? <LoadError onRetry={load} label="Prozesstrainer konnte nicht geladen werden." />
-    : <div className="loading">Prozesstrainer laedt...</div>;
-  if (!list.length) return <section className="panel"><p className="muted">Keine Prozesse für dieses Modul.</p></section>;
+    ? <LoadError onRetry={load} label="Verwechslungs-Trainer konnte nicht geladen werden." />
+    : <div className="loading">Verwechslungs-Trainer laedt...</div>;
+  if (!list.length) return <section className="panel"><p className="muted">Keine Fragen für dieses Modul.</p></section>;
 
-  const p = list[idx];
-  function move(i, dir) {
-    if (result) return;
-    const j = i + dir;
-    if (j < 0 || j >= order.length) return;
-    const nextOrder = order.slice();
-    [nextOrder[i], nextOrder[j]] = [nextOrder[j], nextOrder[i]];
-    setOrder(nextOrder);
-  }
-  async function checkAnswer() {
-    if (busy) return;
+  const q = list[idx];
+  async function choose(key) {
+    if (result || busy) return;
     setBusy(true);
     try {
-      const res = await api("/api/processes/check", {
+      const res = await api("/api/confusions/check", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: p.id, order: order.map((s) => s.sid) }),
+        body: JSON.stringify({ item_id: q.item_id, choice: key }),
       });
-      setResult(res);
+      setResult({ ...res, chosen: key });
       setScore((s) => ({ correct: s.correct + (res.correct ? 1 : 0), done: s.done + 1 }));
     } catch (e) { setResult({ error: true }); } finally { setBusy(false); }
   }
   function next() {
     if (idx + 1 >= list.length) { load(); return; }
-    const ni = idx + 1;
-    setIdx(ni); setOrder(list[ni].steps || []); setResult(null);
+    setIdx(idx + 1); setResult(null);
   }
 
   return (
-    <section className="process-trainer">
+    <section className="confusion-trainer">
       <div className="panel">
         <div className="section-head">
           <div>
-            <h2><ListOrdered size={20} /> Prozesstrainer</h2>
-            <p>Bring die Schritte des Prozesses in die richtige Reihenfolge.</p>
+            <h2><Split size={20} /> Verwechslungs-Trainer</h2>
+            <p>Häufig verwechselte Begriffe – welcher ist gemeint?</p>
           </div>
           <div className="forecast-score compact"><b>{score.correct}/{score.done}</b><span>richtig</span></div>
         </div>
-        <div className="reaction-progress">Prozess {idx + 1} / {list.length} · {p.teil}</div>
-        <h3>{p.name}</h3>
-        {p.note && <p className="muted">{p.note}</p>}
-        <ol className="process-steps">
-          {order.map((s, i) => {
-            const posClass = result && !result.error ? (result.positions_ok[i] ? "ok" : "bad") : "";
+        <div className="reaction-progress">Frage {idx + 1} / {list.length} · {q.teil}</div>
+        <p className="confusion-statement">{q.statement}</p>
+        <div className="confusion-options">
+          {q.options.map((o) => {
+            let cls = "";
+            if (result && !result.error) {
+              if (o.key === result.correct_key) cls = "ok";
+              else if (o.key === result.chosen) cls = "bad";
+            }
             return (
-              <li key={s.sid} className={`process-step ${posClass}`}>
-                <span className="process-step-num">{i + 1}</span>
-                <span className="process-step-text">{s.text}</span>
-                {!result && (
-                  <span className="process-step-actions">
-                    <button type="button" disabled={i === 0} onClick={() => move(i, -1)} aria-label="nach oben">↑</button>
-                    <button type="button" disabled={i === order.length - 1} onClick={() => move(i, 1)} aria-label="nach unten">↓</button>
-                  </span>
-                )}
-              </li>
+              <button key={o.key} className={`confusion-option ${cls}`} disabled={!!result} onClick={() => choose(o.key)}>
+                {o.label}
+              </button>
             );
           })}
-        </ol>
-        {!result && <button className="primary" disabled={busy} onClick={checkAnswer}>Prüfen</button>}
+        </div>
         {result && result.error && (
           <div className="reaction-result form"><p>Prüfung fehlgeschlagen. Verbindung prüfen.</p>
             <button onClick={() => setResult(null)}>Nochmal</button></div>
         )}
         {result && !result.error && (
           <div className={`reaction-result ${result.correct ? "ok" : "bad"}`}>
-            <p><b>{result.correct ? "✓ Richtige Reihenfolge!" : `✗ ${result.n_correct}/${result.n_total} an der richtigen Stelle.`}</b></p>
-            {!result.correct && (
-              <>
-                <p className="muted">Richtige Reihenfolge:</p>
-                <ol className="process-solution">
-                  {result.correct_steps.map((t, i) => <li key={i}>{t}</li>)}
-                </ol>
-              </>
-            )}
-            <button className="primary" onClick={next}>Nächster Prozess →</button>
+            <p><b>{result.correct ? "✓ Richtig!" : `✗ Richtig wäre: ${result.correct_label}`}</b></p>
+            {result.explain && <p className="muted">{result.explain}</p>}
+            <button className="primary" onClick={next}>Nächste Frage →</button>
           </div>
         )}
       </div>
@@ -4531,7 +4505,7 @@ const NAV_GROUPS = [
       { route: "exam", label: "Pruefung", icon: Target },
       { route: "antwortcheck", label: "Antwort-Check", icon: Sparkles },
       { route: "reactions", label: "Reaktionen", icon: FlaskConical },
-      { route: "processes", label: "Prozesse", icon: ListOrdered },
+      { route: "confusions", label: "Verwechslungen", icon: Split },
       { route: "fehlerbuch", label: "Fehlerbuch", icon: AlertTriangle },
       { route: "lastminute", label: "Spickzettel", icon: ListChecks },
     ],
@@ -4711,7 +4685,7 @@ function App() {
     if (route === "studyplan") return <StudyPlanPage module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />;
     if (route === "antwortcheck") return <AntwortCheckPage module={module} />;
     if (route === "reactions") return <ReactionTrainerPage module={module} />;
-    if (route === "processes") return <ProcessTrainerPage module={module} />;
+    if (route === "confusions") return <ConfusionTrainerPage module={module} />;
     if (route === "lastminute") return <LastMinutePage module={module} />;
     if (route === "quests") return <QuestsPage module={module} />;
     return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
