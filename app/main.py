@@ -23,6 +23,7 @@ import cache
 import db
 import reactions as reactions_mod
 import confusions as confusions_mod
+import processes as processes_mod
 from fsrs import Scheduler
 
 try:
@@ -2314,6 +2315,20 @@ def recall_exam(n: int = 20, mode: str = "mixed", module: str = "organic"):
     }
 
 
+# Serverseitige Mock-Exam-Zusammenstellung (In-Memory). Noetig, damit bei der
+# Bewertung UNBEANTWORTETE Karten (z.B. nach Zeitablauf) als falsch zaehlen -
+# sonst koennte eine einzige richtige Antwort 100% und "bestanden" ergeben.
+_MOCK_EXAMS: dict[str, dict] = {}
+_MOCK_EXAM_TTL_SECONDS = 3 * 3600
+
+
+def _purge_mock_exams(now: datetime) -> None:
+    stale = [k for k, v in _MOCK_EXAMS.items()
+             if (now - v["created"]).total_seconds() > _MOCK_EXAM_TTL_SECONDS]
+    for k in stale:
+        _MOCK_EXAMS.pop(k, None)
+
+
 @app.get("/api/mock-exam")
 def mock_exam(module: str = "organic"):
     """Volle Pruefung: ueber ALLE Teile balanciert, zeitbegrenzt."""
@@ -2327,10 +2342,20 @@ def mock_exam(module: str = "organic"):
     count = min(len(cards), n_blocks * 6)  # ~6 Fragen pro Teil
     selected = _pick_balanced(cards, module, count)
     minutes = max(10, min(75, round(len(selected) * 0.9)))
+
+    now = datetime.now(timezone.utc)
+    _purge_mock_exams(now)
+    exam_id = f"mock:{uuid.uuid4().hex}"
+    _MOCK_EXAMS[exam_id] = {
+        "module": module,
+        "cards": [{"id": c.get("id"), "kap": c.get("kap")} for c in selected],
+        "created": now,
+    }
     return {
         "deck": "exam",
         "module": module,
         "mock": True,
+        "exam_id": exam_id,
         "title": "Volle Prüfung (Mock-Exam)",
         "minutes": minutes,
         "cards": selected,
@@ -2339,22 +2364,39 @@ def mock_exam(module: str = "organic"):
 
 class MockGradeIn(BaseModel):
     module: str = "organic"
+    exam_id: str = ""
     results: list[dict]
     duration_seconds: int = 0
 
 
 @app.post("/api/mock-exam/grade")
 def mock_exam_grade(inp: MockGradeIn):
-    """Bewertet einen Mock-Exam-Versuch nach der echten Regel: >=50% je Teil UND gesamt."""
+    """Bewertet einen Mock-Exam-Versuch nach der echten Regel: >=50% je Teil UND gesamt.
+    Unbeantwortete Karten der gespeicherten Zusammenstellung zaehlen als FALSCH."""
     module = _valid_module(inp.module)
     PASS = 50
+    answered = {r.get("card_id"): int(r.get("rating") or 0)
+                for r in inp.results if r.get("card_id") is not None}
+    composition = _MOCK_EXAMS.pop(inp.exam_id, None) if inp.exam_id else None
+    composition_missing = not (composition and composition.get("module") == module)
+
     blocks: dict[str, dict] = {}
-    for r in inp.results:
-        name = _exam_block(module, r.get("kap"))
-        b = blocks.setdefault(name, {"name": name, "total": 0, "correct": 0})
-        b["total"] += 1
-        if int(r.get("rating") or 0) >= 3:
-            b["correct"] += 1
+    if not composition_missing:
+        # Gegen die volle Zusammenstellung werten - unbeantwortet == falsch.
+        for c in composition["cards"]:
+            name = _exam_block(module, c.get("kap"))
+            b = blocks.setdefault(name, {"name": name, "total": 0, "correct": 0})
+            b["total"] += 1
+            if answered.get(c.get("id"), 0) >= 3:
+                b["correct"] += 1
+    else:
+        # Fallback (z.B. nach Server-Neustart): nur eingereichte Karten werten.
+        for r in inp.results:
+            name = _exam_block(module, r.get("kap"))
+            b = blocks.setdefault(name, {"name": name, "total": 0, "correct": 0})
+            b["total"] += 1
+            if int(r.get("rating") or 0) >= 3:
+                b["correct"] += 1
     parts = []
     for b in blocks.values():
         pct = round(b["correct"] / b["total"] * 100) if b["total"] else 0
@@ -2390,6 +2432,7 @@ def mock_exam_grade(inp: MockGradeIn):
         "overall": overall, "overall_pass": overall_pass,
         "would_pass": would_pass, "parts": parts, "failing": failing,
         "verdict": verdict, "total": total, "correct": correct,
+        "composition_missing": composition_missing,
     }
 
 
@@ -3454,6 +3497,31 @@ def confusions_check(inp: ConfusionCheckIn):
 
 
 # ---------------------------------------------------------------------------
+# Prozess-Schema-Trainer (Reihenfolge der Prozessschritte)
+# (Re-Integration: beim Merge von PR #50 versehentlich entfernt worden)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/processes")
+def processes_list(module: str = "organic"):
+    module = _valid_module(module)
+    items = processes_mod.public_list(module)
+    return {"module": module, "count": len(items), "processes": items}
+
+
+class ProcessCheckIn(BaseModel):
+    id: str
+    order: list[str]
+
+
+@app.post("/api/processes/check")
+def processes_check(inp: ProcessCheckIn):
+    process = processes_mod.PROCESSES_BY_ID.get(inp.id)
+    if not process:
+        raise HTTPException(404, "Prozess nicht gefunden")
+    return processes_mod.check(process, inp.order)
+
+
+# ---------------------------------------------------------------------------
 # Gamification: quests + level + badges
 # ---------------------------------------------------------------------------
 
@@ -3913,6 +3981,10 @@ if SPA_DIR.exists():
 
 @app.get("/{path:path}")
 def spa(path: str):
+    # Unbekannte API-Pfade als echten JSON-404 beantworten, nicht als SPA-HTML mit 200
+    # (sonst scheitert der Client erst beim JSON-Parsen und Monitoring sieht keinen Fehler).
+    if path.startswith("api/"):
+        return JSONResponse({"detail": "Nicht gefunden"}, status_code=404)
     target = SPA_DIR / path
     if target.exists() and target.is_file():
         return FileResponse(target)

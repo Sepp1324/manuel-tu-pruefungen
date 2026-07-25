@@ -31,6 +31,7 @@ import {
   CalendarDays,
   ChevronDown,
   FlaskConical,
+  ListOrdered,
   Split,
 } from "lucide-react";
 import "./styles.css";
@@ -1075,21 +1076,27 @@ function Study({ session, setSession, finish }) {
   }, [isTimedExam, session.done, setSession]);
 
   // Mock-Exam: bei Abschluss serverseitig nach der echten Bestehensregel auswerten.
+  // mockError ist terminal (kein automatischer Retry -> keine Endlosschleife); ein
+  // expliziter Retry-Button setzt ihn zurueck.
   useEffect(() => {
-    if (!session.done || !session.mock || session.mockReport || session.mockGrading) return;
-    setSession((old) => ({ ...old, mockGrading: true }));
+    if (!session.done || !session.mock || session.mockReport || session.mockGrading || session.mockError) return;
+    const examId = session.exam_id;
+    // Verspaetete Antwort nur uebernehmen, wenn es noch dieselbe Mock-Session ist.
+    const belongs = (old) => old && old.mock && old.done && old.exam_id === examId;
+    setSession((old) => belongs(old) ? { ...old, mockGrading: true } : old);
     api("/api/mock-exam/grade", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         module: session.module,
+        exam_id: examId,
         duration_seconds: session.elapsedSeconds ?? 0,
-        results: (session.results || []).map((r) => ({ kap: r.kap, rating: r.rating })),
+        results: (session.results || []).map((r) => ({ card_id: r.card_id, kap: r.kap, rating: r.rating })),
       }),
     })
-      .then((rep) => setSession((old) => ({ ...old, mockReport: rep, mockGrading: false })))
-      .catch(() => setSession((old) => ({ ...old, mockGrading: false, mockError: true })));
-  }, [session.done, session.mock, session.mockReport, session.mockGrading, session.module, session.results, session.elapsedSeconds, setSession]);
+      .then((rep) => setSession((old) => belongs(old) ? { ...old, mockReport: rep, mockGrading: false } : old))
+      .catch(() => setSession((old) => belongs(old) ? { ...old, mockGrading: false, mockError: true } : old));
+  }, [session.done, session.mock, session.mockReport, session.mockGrading, session.mockError, session.exam_id, session.module, session.results, session.elapsedSeconds, setSession]);
 
   async function rate(rating) {
     // Synchroner Guard: zwei schnelle Klicks passieren sonst beide den State-Check,
@@ -1258,6 +1265,14 @@ function Study({ session, setSession, finish }) {
                 </div>
               ))}
               <p className="muted mock-rule">Bestehensregel: ≥ 50 % je Teil UND ≥ 50 % gesamt.</p>
+              {session.mockReport.composition_missing && (
+                <p className="muted mock-rule">Hinweis: Prüfungssitzung nicht mehr im Server – nur beantwortete Karten gewertet.</p>
+              )}
+            </div>
+          ) : session.mockError ? (
+            <div className="mock-report fail">
+              <p><b>Auswertung fehlgeschlagen.</b> Verbindung prüfen.</p>
+              <button className="primary" onClick={() => setSession((old) => ({ ...old, mockError: false }))}>Erneut auswerten</button>
             </div>
           ) : <p className="muted">Auswertung nicht verfügbar.</p>
         )}
@@ -4266,6 +4281,113 @@ function QuestsPage({ module }) {
   );
 }
 
+function ProcessTrainerPage({ module }) {
+  const [list, setList] = useState(null);
+  const [error, setError] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const [order, setOrder] = useState([]);
+  const [result, setResult] = useState(null);
+  const [score, setScore] = useState({ correct: 0, done: 0 });
+  const [busy, setBusy] = useState(false);
+
+  function load() {
+    setError(false);
+    api(`/api/processes?module=${module}`)
+      .then((d) => {
+        const procs = d.processes || [];
+        setList(procs); setIdx(0); setOrder(procs[0]?.steps || []);
+        setResult(null); setScore({ correct: 0, done: 0 });
+      })
+      .catch(() => setError(true));
+  }
+  useEffect(() => { setList(null); load(); }, [module]);
+
+  if (!list) return error
+    ? <LoadError onRetry={load} label="Prozesstrainer konnte nicht geladen werden." />
+    : <div className="loading">Prozesstrainer laedt...</div>;
+  if (!list.length) return <section className="panel"><p className="muted">Keine Prozesse für dieses Modul.</p></section>;
+
+  const p = list[idx];
+  function move(i, dir) {
+    if (result) return;
+    const j = i + dir;
+    if (j < 0 || j >= order.length) return;
+    const nextOrder = order.slice();
+    [nextOrder[i], nextOrder[j]] = [nextOrder[j], nextOrder[i]];
+    setOrder(nextOrder);
+  }
+  async function checkAnswer() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await api("/api/processes/check", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: p.id, order: order.map((s) => s.sid) }),
+      });
+      setResult(res);
+      setScore((s) => ({ correct: s.correct + (res.correct ? 1 : 0), done: s.done + 1 }));
+    } catch (e) { setResult({ error: true }); } finally { setBusy(false); }
+  }
+  function next() {
+    if (idx + 1 >= list.length) { load(); return; }
+    const ni = idx + 1;
+    setIdx(ni); setOrder(list[ni].steps || []); setResult(null);
+  }
+
+  return (
+    <section className="process-trainer">
+      <div className="panel">
+        <div className="section-head">
+          <div>
+            <h2><ListOrdered size={20} /> Prozesstrainer</h2>
+            <p>Bring die Schritte des Prozesses in die richtige Reihenfolge.</p>
+          </div>
+          <div className="forecast-score compact"><b>{score.correct}/{score.done}</b><span>richtig</span></div>
+        </div>
+        <div className="reaction-progress">Prozess {idx + 1} / {list.length} · {p.teil}</div>
+        <h3>{p.name}</h3>
+        {p.note && <p className="muted">{p.note}</p>}
+        <ol className="process-steps">
+          {order.map((s, i) => {
+            const posClass = result && !result.error ? (result.positions_ok[i] ? "ok" : "bad") : "";
+            return (
+              <li key={s.sid} className={`process-step ${posClass}`}>
+                <span className="process-step-num">{i + 1}</span>
+                <span className="process-step-text">{s.text}</span>
+                {!result && (
+                  <span className="process-step-actions">
+                    <button type="button" disabled={i === 0} onClick={() => move(i, -1)} aria-label="nach oben">↑</button>
+                    <button type="button" disabled={i === order.length - 1} onClick={() => move(i, 1)} aria-label="nach unten">↓</button>
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+        {!result && <button className="primary" disabled={busy} onClick={checkAnswer}>Prüfen</button>}
+        {result && result.error && (
+          <div className="reaction-result form"><p>Prüfung fehlgeschlagen. Verbindung prüfen.</p>
+            <button onClick={() => setResult(null)}>Nochmal</button></div>
+        )}
+        {result && !result.error && (
+          <div className={`reaction-result ${result.correct ? "ok" : "bad"}`}>
+            <p><b>{result.correct ? "✓ Richtige Reihenfolge!" : `✗ ${result.n_correct}/${result.n_total} an der richtigen Stelle.`}</b></p>
+            {!result.correct && (
+              <>
+                <p className="muted">Richtige Reihenfolge:</p>
+                <ol className="process-solution">
+                  {result.correct_steps.map((t, i) => <li key={i}>{t}</li>)}
+                </ol>
+              </>
+            )}
+            <button className="primary" onClick={next}>Nächster Prozess →</button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function ConfusionTrainerPage({ module }) {
   const [list, setList] = useState(null);
   const [error, setError] = useState(false);
@@ -4555,6 +4677,7 @@ const NAV_GROUPS = [
       { route: "exam", label: "Pruefung", icon: Target },
       { route: "antwortcheck", label: "Antwort-Check", icon: Sparkles },
       { route: "reactions", label: "Reaktionen", icon: FlaskConical },
+      { route: "processes", label: "Prozesse", icon: ListOrdered },
       { route: "confusions", label: "Verwechslungen", icon: Split },
       { route: "fehlerbuch", label: "Fehlerbuch", icon: AlertTriangle },
       { route: "lastminute", label: "Spickzettel", icon: ListChecks },
@@ -4715,6 +4838,7 @@ function App() {
       deck: "exam",
       module,
       mock: true,
+      exam_id: res.exam_id,
       title: res.title || "Volle Prüfung",
       minutes: res.minutes || Math.max(10, Math.round((res.cards || []).length * .9)),
       cards: res.cards || [],
@@ -4751,6 +4875,7 @@ function App() {
     if (route === "studyplan") return <StudyPlanPage module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />;
     if (route === "antwortcheck") return <AntwortCheckPage module={module} />;
     if (route === "reactions") return <ReactionTrainerPage module={module} />;
+    if (route === "processes") return <ProcessTrainerPage module={module} />;
     if (route === "confusions") return <ConfusionTrainerPage module={module} />;
     if (route === "lastminute") return <LastMinutePage module={module} />;
     if (route === "quests") return <QuestsPage module={module} />;
