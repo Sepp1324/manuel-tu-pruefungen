@@ -37,6 +37,8 @@ import {
 import "./styles.css";
 
 const RATING_LABELS = { 1: "Nochmal", 2: "Schwer", 3: "Gut", 4: "Leicht" };
+// Vaia-Prinzip: eine mit "Nochmal" bewertete Karte kommt so viele Karten spaeter wieder.
+const REQUEUE_AHEAD = 3;
 const TRIAGE_REASONS = [
   ["kein_kontext", "Kein Kontext"],
   ["person_firma", "Person/Firma"],
@@ -1031,9 +1033,18 @@ function Study({ session, setSession, finish }) {
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [secondsLeft, setSecondsLeft] = useState((session.minutes || 0) * 60);
-  const progress = pct(session.idx, Math.max(cards.length, 1));
   const isExam = session.deck === "exam";
   const isTimedExam = isExam && Number(session.minutes || 0) > 0;
+  // Fortschritt an "gemeisterten" (mit Gut/Leicht beantworteten) EINZIGARTIGEN Karten messen -
+  // sonst wuerde der Balken durch die Requeues (gleiche Karte mehrfach in der Queue) springen.
+  const totalUnique = isExam ? cards.length : new Set(cards.map((c) => c.id)).size;
+  const masteredUnique = isExam
+    ? (session.results || []).length
+    : new Set((session.results || []).filter((r) => r.rating >= 3).map((r) => r.card_id)).size;
+  const remaining = Math.max(cards.length - session.idx, 0);
+  const progress = isExam
+    ? pct(session.idx, Math.max(cards.length, 1))
+    : pct(masteredUnique, Math.max(totalUnique, 1));
 
   useEffect(() => {
     setRevealed(false);
@@ -1123,12 +1134,30 @@ function Study({ session, setSession, finish }) {
       return;
     }
     const nextResult = { card_id: card.id, rating, kap: card.kap, subname: card.subname, feedback_reason: reviewReason };
-    if (session.idx + 1 >= cards.length) {
-      const elapsedSeconds = isTimedExam ? Math.max(0, (session.minutes || 0) * 60 - secondsLeft) : undefined;
-      setSession((old) => ({ ...old, done: true, elapsedSeconds, results: [...(old.results || []), nextResult] }));
-    } else {
-      setSession((old) => ({ ...old, idx: old.idx + 1, results: [...(old.results || []), nextResult] }));
-    }
+    setSession((old) => {
+      const q = (old.cards || []).slice();
+      const curIdx = old.idx;
+      const nextIdx = curIdx + 1;
+      // Vaia-Prinzip: schlecht bewertete Karten kommen INNERHALB der Session wieder,
+      // damit man sie sofort vertiefen kann (statt nur per FSRS auf Tage rausgeschoben).
+      // Nur im Lernmodus, nicht in der zeitbegrenzten Pruefung.
+      if (!isExam) {
+        if (rating === 1) {
+          // "Nochmal" -> in ~4 Karten wieder
+          q.splice(Math.min(nextIdx + REQUEUE_AHEAD, q.length), 0, card);
+        } else if (rating === 2) {
+          // "Schwer" -> am Ende der laufenden Runde nochmal
+          q.push(card);
+        }
+      }
+      const done = nextIdx >= q.length;
+      const results = [...(old.results || []), nextResult];
+      if (done) {
+        const elapsedSeconds = isTimedExam ? Math.max(0, (old.minutes || 0) * 60 - secondsLeft) : undefined;
+        return { ...old, cards: q, done: true, elapsedSeconds, results };
+      }
+      return { ...old, cards: q, idx: nextIdx, results };
+    });
     // Guard wird beim Kartenwechsel im Reset-Effekt geloest (siehe useEffect auf card?.id).
   }
 
@@ -1328,7 +1357,7 @@ function Study({ session, setSession, finish }) {
       <div className="study-top">
         <button onClick={finish}><ArrowLeft size={16} /> Zurueck</button>
         <div className="progress"><span style={{ width: `${progress}%` }} /></div>
-        <span>{session.idx + 1}/{cards.length}</span>
+        <span>{isExam ? `${session.idx + 1}/${cards.length}` : `${masteredUnique}/${totalUnique} gelernt · noch ${remaining}`}</span>
         {isTimedExam && <span className={`study-timer ${secondsLeft <= 60 ? "urgent" : ""}`}>{formatSeconds(secondsLeft)}</span>}
         <button onClick={startEdit}><Edit3 size={16} /> Bearbeiten</button>
       </div>
@@ -1397,12 +1426,18 @@ function Study({ session, setSession, finish }) {
               </button>
             </div>
             <div className="ratings">
-              {[1, 2, 3, 4].map((r) => (
-                <button key={r} className={`rating r${r}`} disabled={submitting} onClick={() => rate(r)}>
-                  <b>{RATING_LABELS[r]}</b>
-                  <span>{preview[r] || ""}</span>
-                </button>
-              ))}
+              {[1, 2, 3, 4].map((r) => {
+                // Im Lernmodus die Session-Requeue-Wirkung anzeigen (nicht nur das FSRS-Intervall).
+                const hint = !isExam && r === 1 ? `in ${REQUEUE_AHEAD + 1} Karten`
+                  : !isExam && r === 2 ? "am Ende nochmal"
+                  : (preview[r] || "");
+                return (
+                  <button key={r} className={`rating r${r}`} disabled={submitting} onClick={() => rate(r)}>
+                    <b>{RATING_LABELS[r]}</b>
+                    <span>{hint}</span>
+                  </button>
+                );
+              })}
             </div>
           </>
         ) : (
