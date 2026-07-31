@@ -2256,8 +2256,9 @@ def knowledge_map(module: str = "organic"):
 
 
 @app.get("/api/study/anki")
-def study(limit: int = 30, kap: int | None = None, module: str = "organic"):
+def study(limit: int = 20, kap: int | None = None, module: str = "organic"):
     module = _valid_module(module)
+    limit = max(1, min(limit, 100))  # gegen unsinnige Werte absichern
     conn = db.get_conn()
     cards = db.due_cards(conn, _now_iso(), limit, kap, module)
     conn.close()

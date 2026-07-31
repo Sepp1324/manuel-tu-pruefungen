@@ -3233,3 +3233,10 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
 .process-step-actions button { min-height: 30px; min-width: 34px; padding: 2px 8px; font-size: 15px; }
 .process-solution { margin: 6px 0 0; padding-left: 20px; }
 .process-solution li { font-size: 14px; margin: 2px 0; }
+
+/* Konfigurierbare Session-Groesse im Hero */
+.hero .session-size select {
+  background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.35);
+  border-radius: 6px; padding: 8px 10px; min-height: 38px; font: inherit; cursor: pointer;
+}
+.hero .session-size select option { color: #111; }

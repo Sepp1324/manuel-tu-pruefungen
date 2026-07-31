@@ -924,7 +924,7 @@ function HomePlanCard({ plan: d, startSession, startExam, setRoute }) {
   );
 }
 
-function Home({ data, startSession, startExam, setRoute, refresh, module, setModule }) {
+function Home({ data, startSession, startExam, setRoute, refresh, module, setModule, sessionSize, setSessionSize }) {
   const st = data.anki || {};
   const goal = data.daily_goal || {};
   const forecast = data.forecast || {};
@@ -940,6 +940,11 @@ function Home({ data, startSession, startExam, setRoute, refresh, module, setMod
           <p>Manuels Anki-Style Trainer bis zur Pruefung am {examDate}.</p>
           <div className="hero-actions">
             <button className="primary" onClick={() => startSession("anki")}>Session starten</button>
+            <label className="session-size" title="Karten pro Session">
+              <select value={sessionSize} onChange={(e) => setSessionSize?.(Number(e.target.value))}>
+                {[10, 15, 20, 25, 30, 40, 50].map((n) => <option key={n} value={n}>{n} Karten</option>)}
+              </select>
+            </label>
             <button onClick={() => setRoute("dashboard")}><BarChart3 size={16} /> Dashboard</button>
             <button onClick={() => setRoute("knowledge")}><Tag size={16} /> Landkarte</button>
             <button onClick={() => setRoute("workshop")}><Edit3 size={16} /> Werkstatt</button>
@@ -4823,6 +4828,16 @@ function App() {
   const [loadError, setLoadError] = useState(false);
   const [session, setSession] = useState(null);
   const [lightbox, setLightbox] = useState(null);
+  // Konfigurierbare Session-Groesse (Anzahl Karten pro Lernsession), im Browser gespeichert.
+  const [sessionSize, setSessionSizeState] = useState(() => {
+    const saved = parseInt(localStorage.getItem("sr_session_size") || "", 10);
+    return Number.isFinite(saved) && saved > 0 ? saved : 20;
+  });
+  const setSessionSize = (n) => {
+    const v = Math.max(5, Math.min(100, Number(n) || 20));
+    setSessionSizeState(v);
+    try { localStorage.setItem("sr_session_size", String(v)); } catch (e) { /* Speicher evtl. blockiert */ }
+  };
 
   async function load() {
     setLoadError(false);
@@ -4844,7 +4859,7 @@ function App() {
   }, [isLogin, module]);
 
   async function startSession(deck = "anki", kap = null) {
-    const qs = new URLSearchParams({ limit: "30" });
+    const qs = new URLSearchParams({ limit: String(sessionSize) });
     if (kap) qs.set("kap", String(kap));
     qs.set("module", module);
     const res = await api(`/api/study/${deck}?${qs}`);
@@ -4914,8 +4929,8 @@ function App() {
     if (route === "confusions") return <ConfusionTrainerPage module={module} />;
     if (route === "lastminute") return <LastMinutePage module={module} />;
     if (route === "quests") return <QuestsPage module={module} />;
-    return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} />;
-  }, [data, loadError, session, route, module]);
+    return <Home data={data} startSession={startSession} startExam={startExam} setRoute={setRoute} refresh={load} module={module} setModule={setModule} sessionSize={sessionSize} setSessionSize={setSessionSize} />;
+  }, [data, loadError, session, route, module, sessionSize]);
 
   if (isLogin) return <Login />;
   return (
