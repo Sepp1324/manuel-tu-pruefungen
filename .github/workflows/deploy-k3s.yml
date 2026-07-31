@@ -86,8 +86,22 @@ jobs:
 
       - name: Manifeste anwenden
         run: |
+          set -euo pipefail
+          # Den Image-Tag DIREKT in die Kustomization backen, statt ihn nachtraeglich per
+          # fluechtigem `kubectl set image` zu setzen. Das getrennte set-image kollidierte
+          # mit der Feld-Verwaltung des vorherigen `apply -k` (newTag: 1.0.0) -> der SHA
+          # blieb in der CI nicht kleben und Produktion hing auf dem letzten Stand fest.
+          # Jetzt traegt das EINE applizierte Manifest selbst den richtigen Tag.
+          sed -i "s|newTag: .*|newTag: \"$TAG\"|" k8s/kustomization.yaml
           kubectl -n "$NAMESPACE" apply -k k8s
-          kubectl -n "$NAMESPACE" set image deployment/organicsr organicsr="$IMAGE:$TAG"
+          # Hart verifizieren, dass die Live-Spec wirklich den SHA traegt (faengt jeden
+          # Reset/Konflikt sofort ab, statt still auf dem alten Image zu bleiben).
+          live=$(kubectl -n "$NAMESPACE" get deploy organicsr -o jsonpath='{.spec.template.spec.containers[0].image}')
+          echo "Deployment-Image live: $live"
+          case "$live" in
+            *":$TAG") echo "Image korrekt gesetzt." ;;
+            *) echo "FEHLER: Deployment-Image ist '$live', erwartet Tag '$TAG'"; exit 1 ;;
+          esac
 
       - name: Rollout abwarten
         run: kubectl -n "$NAMESPACE" rollout status deployment/organicsr --timeout=180s
