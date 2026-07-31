@@ -87,15 +87,19 @@ jobs:
       - name: Manifeste anwenden
         run: |
           set -euo pipefail
-          # Den Image-Tag DIREKT in die Kustomization backen, statt ihn nachtraeglich per
-          # fluechtigem `kubectl set image` zu setzen. Das getrennte set-image kollidierte
-          # mit der Feld-Verwaltung des vorherigen `apply -k` (newTag: 1.0.0) -> der SHA
-          # blieb in der CI nicht kleben und Produktion hing auf dem letzten Stand fest.
-          # Jetzt traegt das EINE applizierte Manifest selbst den richtigen Tag.
-          sed -i "s|newTag: .*|newTag: \"$TAG\"|" k8s/kustomization.yaml
-          kubectl -n "$NAMESPACE" apply -k k8s
-          # Hart verifizieren, dass die Live-Spec wirklich den SHA traegt (faengt jeden
-          # Reset/Konflikt sofort ab, statt still auf dem alten Image zu bleiben).
+          # WICHTIG: Das Deployment NICHT per `kubectl apply -k` anfassen.
+          # In diesem Cluster fuehrt `apply` auf das Deployment reproduzierbar dazu,
+          # dass die Image-Aenderung zwar in der Spec landet und `rollout status`
+          # "successfully rolled out" meldet, die Pods aber NICHT ersetzt werden
+          # (Produktion blieb auf dem alten Build, kein Downtime). Ein direktes
+          # `kubectl set image` rollt dagegen sauber aus - im Cluster verifiziert
+          # (manuelles set-image ersetzte den Pod jedes Mal korrekt).
+          # Daher: Infra-Ressourcen per apply, das Deployment-Image per set-image.
+          for f in 00-namespace 10-storage-local 15-secret 30-ingress 50-cronjob-ntfy; do
+            [ -f "k8s/$f.yaml" ] && kubectl -n "$NAMESPACE" apply -f "k8s/$f.yaml"
+          done
+          kubectl -n "$NAMESPACE" set image deployment/organicsr organicsr="$IMAGE:$TAG"
+          # Verifizieren, dass die Spec den SHA traegt.
           live=$(kubectl -n "$NAMESPACE" get deploy organicsr -o jsonpath='{.spec.template.spec.containers[0].image}')
           echo "Deployment-Image live: $live"
           case "$live" in
@@ -104,7 +108,20 @@ jobs:
           esac
 
       - name: Rollout abwarten
-        run: kubectl -n "$NAMESPACE" rollout status deployment/organicsr --timeout=180s
+        run: |
+          set -euo pipefail
+          kubectl -n "$NAMESPACE" rollout status deployment/organicsr --timeout=180s
+          # Zusatz-Absicherung: der TATSAECHLICH laufende Pod muss den SHA fahren
+          # (nicht nur die Spec / nicht nur rollout-status, der sich schon als
+          # unzuverlaessig gezeigt hat).
+          running=$(kubectl -n "$NAMESPACE" get pods -l app=organicsr \
+            --field-selector=status.phase=Running \
+            -o jsonpath='{.items[0].spec.containers[0].image}' 2>/dev/null || true)
+          echo "Laufender Pod: $running"
+          case "$running" in
+            *":$TAG") echo "Laufender Pod faehrt $TAG." ;;
+            *) echo "FEHLER: laufender Pod ist '$running', erwartet '$TAG'"; exit 1 ;;
+          esac
 
       # Prueft die OEFFENTLICHE URL ueber HTTPS - OHNE -k, damit ein ungueltiges
       # Zertifikat (Traefik-Default-Cert) fehlschlaegt. Faengt Ingress-/TLS-Regressionen
