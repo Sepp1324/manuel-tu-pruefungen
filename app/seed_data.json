@@ -13242,6 +13242,341 @@
       "weight": 5,
       "order": 36,
       "tags": []
+    },
+    {
+      "id": "inorg:713653d6c666",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nBeschreiben Sie das Midrex-Verfahren zur Eisengewinnung. Wie unterscheidet es sich vom Hochofen?",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Midrex – Direktreduktion:</b><ul><li>Direktreduktion von Eisenerz (Pellets/Stueckerz) im Schachtofen, unterhalb des Schmelzpunkts</li><li>Reduktionsgas aus Erdgas-Reformierung: Gemisch aus CO und H₂</li><li>Fe₂O₃ wird durch CO/H₂ schrittweise zu metallischem Eisen reduziert</li><li>Produkt: fester Eisenschwamm (DRI, direct reduced iron) – keine fluessige Phase</li><li>Kein Koks/Kokerei noetig; weltweit wichtigstes Direktreduktionsverfahren</li><li>Eisenschwamm wird meist im Elektrolichtbogenofen zu Stahl eingeschmolzen</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 45,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:483d2134623c",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nWas kennzeichnet das Finex-Verfahren der Eisenerzeugung?",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Finex – Schmelzreduktion:</b><ul><li>Schmelzreduktionsverfahren (POSCO), Alternative zum Hochofen</li><li>Setzt Feinerz direkt ein – keine Sinter-/Pelletieranlage noetig</li><li>Nutzt Nicht-Kokskohle – keine Kokerei noetig</li><li>Feinerz wird in mehrstufigen Wirbelschichtreaktoren mit CO/H₂ reduziert</li><li>Reduziertes Erz wird im Einschmelzvergaser mit Kohle geschmolzen → fluessiges Roheisen</li><li>Vorteile: billigere Rohstoffe, geringere Emissionen (CO₂, SOₓ, NOₓ) als der Hochofen</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 46,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:090e9025542e",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nErklaeren Sie den Aufbau des Corex-Verfahrens.",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Corex – Schmelzreduktion:</b><ul><li>Zweistufiges Schmelzreduktionsverfahren, kommt ohne Koks aus</li><li>Stufe 1 – Reduktionsschacht: Stueckerz/Pellets werden durch Gichtgas (CO/H₂) zu Eisenschwamm reduziert</li><li>Stufe 2 – Einschmelzvergaser: Eisenschwamm + Nicht-Kokskohle + O₂; die Kohle wird vergast, liefert das Reduktionsgas und schmilzt das Eisen</li><li>Produkt: fluessiges Roheisen (wie beim Hochofen)</li><li>Ueberschuessiges Exportgas (CO/H₂-reich) ist als Energietraeger bzw. Reduktionsgas (z.B. fuer Midrex) nutzbar</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 47,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:f199c86fb031",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nBeschreiben Sie das Bessemer-Verfahren und seine wesentliche Einschraenkung.",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Bessemer-Verfahren – Windfrischen (sauer):</b><ul><li>Windfrischen: Luft wird von unten durch das fluessige Roheisen geblasen (Konverter/Birne)</li><li>Luftsauerstoff oxidiert C, Si, Mn → stark exotherm, haelt die Schmelze ohne Zusatzheizung fluessig</li><li>SAURE Auskleidung (SiO₂) → keine basische Schlacke moeglich</li><li>Kann Phosphor NICHT entfernen → nur fuer phosphorarme Erze geeignet</li><li>Historisch erstes Massenverfahren zur Stahlerzeugung</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 48,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:c0977ad29f7f",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nWodurch unterscheidet sich das Thomas-Verfahren vom Bessemer-Verfahren?",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Thomas-Verfahren – Windfrischen (basisch):</b><ul><li>Prinzip wie Bessemer (Windfrischen im Konverter, „Thomasbirne“)</li><li>Aber BASISCHE Auskleidung (Dolomit/CaO) + Kalkzusatz</li><li>Dadurch wird Phosphor als Calciumphosphat in die Schlacke ueberfuehrt (Entphosphorung)</li><li>Geeignet fuer phosphorreiche Erze (z.B. Minette)</li><li>Nebenprodukt: Thomasschlacke/Thomasmehl als Phosphatduenger</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 49,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:4bdbef114e23",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nErklaeren Sie das Siemens-Martin-Verfahren.",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Siemens-Martin-Verfahren – Herdfrischen:</b><ul><li>Herdfrischen im flachen offenen Herdofen (Open-Hearth)</li><li>Regenerativfeuerung: Abgaswaerme waermt Luft/Brenngas vor → sehr hohe Temperaturen</li><li>Einsatz: Roheisen + Schrott (Schrott gut verwertbar)</li><li>Langsamer Prozess, dafuer gut steuerbar → hohe, gleichmaessige Stahlqualitaet, grosse Chargen</li><li>Heute weitgehend durch das LD-Verfahren verdraengt</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 50,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:27bb7fad8128",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nBeschreiben Sie das LD-Verfahren (Linz-Donawitz) der Stahlerzeugung.",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu LD-Verfahren – Sauerstoffaufblasverfahren:</b><ul><li>Sauerstoffaufblasverfahren: technisch reiner O₂ wird ueber eine wassergekuehlte Lanze von oben auf das fluessige Roheisen geblasen</li><li>O₂ oxidiert C, Si, Mn, P (Frischen) → stark exotherm</li><li>Kalkzugabe bildet basische Schlacke → Entphosphorung moeglich</li><li>Schrott dient als Kuehlmittel zur Temperaturregelung</li><li>In Linz und Donawitz (Oesterreich) entwickelt; heute dominierendes Verfahren</li><li>Sehr schnell (Charge ~20 min) und hohe Qualitaet, da reiner O₂ (kein Stickstoffeintrag wie beim Luftfrischen)</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 51,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:e1f9a0909ab9",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_fact",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nWie funktioniert ein Induktionsofen und wofuer wird er in der Metallurgie eingesetzt?",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Induktionsofen:</b><ul><li>Eine stromdurchflossene Spule erzeugt ein magnetisches Wechselfeld</li><li>Dieses induziert im metallischen Einsatz Wirbelstroeme → Joulesche Waerme schmilzt das Metall</li><li>Kein Frischen (kein O₂-Einblasen): reines Um-/Einschmelzen, Zusammensetzung bleibt erhalten</li><li>Sehr praezise, saubere Temperatur- und Legierungsfuehrung</li><li>Einsatz v.a. in Giessereien und fuer Edelstaehle/Legierungen</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 52,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:4416fbe8ecf8",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_compare",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nVergleichen Sie Bessemer-, Thomas-, Siemens-Martin- und LD-Verfahren.",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Stahlerzeugung – Verfahrensvergleich:</b><ul><li>Bessemer: Windfrischen, saure Zustellung, KEINE P-Entfernung, nur P-arme Erze</li><li>Thomas: Windfrischen, basische Zustellung + Kalk, P-Entfernung (Thomasmehl), P-reiche Erze</li><li>Siemens-Martin: Herdfrischen, regenerativ, Roheisen + viel Schrott, langsam aber gut steuerbar</li><li>LD: O₂-Aufblasen ueber Lanze, basische Schlacke, schnell, hohe Qualitaet, heute Standard</li><li>Trend: Luftfrischen (Bessemer/Thomas) und Herdoefen wurden durch das LD-Verfahren abgeloest</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 53,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:2de99e89e6ae",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "Einheit 05 Eisen und Stahl",
+      "source": "Einheit 05 Eisen und Stahl",
+      "kind": "exam_compare",
+      "q": "Kontext: Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl\n\nWas unterscheidet Direktreduktion (Midrex) und Schmelzreduktion (Corex/Finex) vom klassischen Hochofen?",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 05 Eisen und Stahl. Quelle: Einheit 05 Eisen und Stahl<br><br><b>Pruefungsantwort zu Alternativen zum Hochofen:</b><ul><li>Hochofen: braucht Koks (Kokerei) und meist Sinter/Pellets; Produkt fluessiges Roheisen</li><li>Direktreduktion (Midrex): Reduktion im festen Zustand mit Erdgas-Reformgas (CO/H₂) → fester Eisenschwamm (DRI); kein Koks</li><li>Schmelzreduktion (Corex/Finex): Reduktion + Einschmelzen mit Nicht-Kokskohle → fluessiges Roheisen; kein Koks, kein/kaum Sinter</li><li>Finex zusaetzlich: Feinerz direkt einsetzbar</li><li>Motivation: Verzicht auf Koks/Sinter, geringere Emissionen und Kosten</li></ul><span class='source'>Quelle: Einheit 05 Eisen und Stahl</span>",
+      "weight": 7,
+      "order": 54,
+      "tags": [
+        "Eisen/Stahl",
+        "Metallurgie"
+      ]
+    },
+    {
+      "id": "inorg:2bc5f0ce3fe0",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "Einheit 07 Grosschemie Stickstoff",
+      "source": "Einheit 07 Grosschemie Stickstoff",
+      "kind": "exam_compare",
+      "q": "Kontext: Anorganische Chemie / Einheit 07 Grosschemie Stickstoff. Quelle: Einheit 07 Grosschemie Stickstoff\n\nWas ist der Unterschied zwischen Monodruck- und Zweidruckanlagen beim Ostwald-Verfahren (Salpetersaeure)?",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 07 Grosschemie Stickstoff. Quelle: Einheit 07 Grosschemie Stickstoff<br><br><b>Pruefungsantwort zu Ostwald – Mono- vs. Zweidruckanlage:</b><ul><li>Ostwald: NH₃-Verbrennung am Pt/Rh-Netz (4 NH₃ + 5 O₂ → 4 NO + 6 H₂O), dann 2 NO + O₂ → 2 NO₂, Absorption 3 NO₂ + H₂O → 2 HNO₃ + NO</li><li>Gegenlaeufige Druckwuensche: NH₃-Verbrennung besser bei niedrigem Druck (hohe NO-Ausbeute, schont Pt-Netz), Absorption besser bei hohem Druck</li><li>Monodruck (single pressure): Verbrennung UND Absorption bei gleichem Druck (Mitteldruck ~5 bar oder Hochdruck ~10 bar); einfacher, fuer kleinere Anlagen</li><li>Zweidruck (dual pressure): Verbrennung bei niedrigem Druck (~4–5 bar), Absorption bei hoeherem Druck (~10–12 bar) → beide Schritte optimiert</li><li>Zweidruck: hoechste Ausbeute + geringste Pt-Verluste → Standard fuer Grossanlagen</li></ul><span class='source'>Quelle: Einheit 07 Grosschemie Stickstoff</span>",
+      "weight": 7,
+      "order": 41,
+      "tags": [
+        "Stickstoff"
+      ]
+    },
+    {
+      "id": "inorg:9276be208b18",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda",
+      "source": "Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda. Quelle: Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda\n\nWie wird Soda aus Trona gewonnen und worin liegt der Vorteil gegenueber dem Solvay-Verfahren?",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda. Quelle: Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda<br><br><b>Pruefungsantwort zu Trona – natuerliche Soda:</b><ul><li>Trona = natuerliches Mineral, Natriumsesquicarbonat (Na₂CO₃·NaHCO₃·2H₂O), grosse Lagerstaetten (z.B. Green River, Wyoming/USA)</li><li>Gewinnung: Trona wird geloest bzw. calciniert; beim Erhitzen entsteht aus dem Hydrogencarbonat-Anteil Na₂CO₃ + CO₂ + H₂O</li><li>Nach Kristallisation reines Natriumcarbonat (Soda)</li><li>Vorteil ggue. Solvay: keine Synthese noetig, deutlich weniger Energie und kein CaCl₂-Abfall</li><li>Wo Trona vorkommt, ist Natursoda billiger und umweltfreundlicher als synthetische Solvay-Soda</li></ul><span class='source'>Quelle: Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda</span>",
+      "weight": 7,
+      "order": 35,
+      "tags": [
+        "Chloralkali/Soda",
+        "Rohstoffe"
+      ]
+    },
+    {
+      "id": "inorg:0888205b2dc7",
+      "module": "inorganic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "Einheit 09 Grosschemie Schwefel",
+      "source": "Einheit 09 Grosschemie Schwefel",
+      "kind": "exam_process",
+      "q": "Kontext: Anorganische Chemie / Einheit 09 Grosschemie Schwefel. Quelle: Einheit 09 Grosschemie Schwefel\n\nBeschreiben Sie das Mueller-Kuehne-Verfahren. Welche zwei Produkte entstehen?",
+      "a": "<b>Kontext:</b> Anorganische Chemie / Einheit 09 Grosschemie Schwefel. Quelle: Einheit 09 Grosschemie Schwefel<br><br><b>Pruefungsantwort zu Mueller-Kuehne-Verfahren (Gips-Schwefelsaeure):</b><ul><li>Gips-Schwefelsaeure-Verfahren: nutzt Calciumsulfat (Gips/Anhydrit, CaSO₄) als Schwefelquelle</li><li>Im Drehrohrofen mit Koks (Reduktionsmittel) + Ton/Sand bei ~1200–1400 °C</li><li>CaSO₄ wird reduktiv zersetzt → SO₂ + CaO; das CaO reagiert mit Ton zu Zementklinker</li><li>Das freigesetzte SO₂ geht ins Kontaktverfahren → SO₃ → H₂SO₄</li><li>Zwei Produkte: Schwefelsaeure UND Portlandzement(-klinker)</li><li>Wirtschaftlich v.a. wo elementarer Schwefel knapp, aber Gips reichlich verfuegbar ist</li></ul><span class='source'>Quelle: Einheit 09 Grosschemie Schwefel</span>",
+      "weight": 7,
+      "order": 36,
+      "tags": [
+        "Bindemittel",
+        "Schwefel"
+      ]
+    },
+    {
+      "id": "org:c7d8101337ef",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie und Polymerisation",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation\n\nVergleichen Sie Herstellung und Eigenschaften von LDPE und HDPE.",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Polyethylen – Hochdruck (LDPE) vs. Niederdruck (HDPE):</b><ul><li>LDPE (Hochdruckverfahren): radikalische Polymerisation bei hohem Druck (~1000–3000 bar) und hoher Temperatur, Initiator (O₂/Peroxid)</li><li>Radikalische Kettenuebertragung erzeugt Verzweigungen → geringe Dichte/Kristallinitaet, weich, flexibel (Folien)</li><li>HDPE (Niederdruckverfahren): koordinative Polymerisation mit Ziegler-Natta- (oder Phillips-)Katalysator bei niedrigem Druck</li><li>Kaum Verzweigung → lineare Ketten, hohe Dichte/Kristallinitaet, haerter, fester (Rohre, Behaelter)</li><li>Kernaussage: das Verfahren bestimmt den Verzweigungsgrad → damit Dichte und Eigenschaften</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 50,
+      "tags": [
+        "Polymere"
+      ]
+    },
+    {
+      "id": "org:f58d0be2970c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie und Polymerisation",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation\n\nAus welchen Monomeren und ueber welche Reaktion entsteht Nylon 6,6?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Polyamid – Nylon 6,6:</b><ul><li>Monomere: Adipinsaeure (HOOC–(CH₂)₄–COOH) + Hexamethylendiamin (H₂N–(CH₂)₆–NH₂)</li><li>Reaktion: Polykondensation unter Abspaltung von Wasser → Amidbindungen (–CO–NH–)</li><li>„6,6“: je 6 C-Atome in Diamin und Dicarbonsaeure</li><li>Produkt: Polyamid (Fasern, technische Kunststoffe)</li><li>Abgrenzung: Nylon 6 entsteht dagegen aus Caprolactam durch ringoeffnende Polymerisation</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 51,
+      "tags": [
+        "Polymere"
+      ]
+    },
+    {
+      "id": "org:0e408f228dbf",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie und Polymerisation",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation\n\nWas unterscheidet Novolak und Resol bei den Phenol-Formaldehyd-Harzen?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Phenoplaste – Novolak vs. Resol:</b><ul><li>Beide: Polykondensation von Phenol + Formaldehyd (Bakelit-Typ)</li><li>Resol: Formaldehyd-Ueberschuss, BASISCH katalysiert → selbsthaertend (reaktive Methylolgruppen), haertet beim Erhitzen ohne Zusatz</li><li>Novolak: Formaldehyd-Unterschuss, SAUER katalysiert → thermoplastisch, nicht selbsthaertend</li><li>Novolak braucht zum Aushaerten einen Haerter (Formaldehydquelle, z.B. Hexamethylentetramin/„Hexa“)</li><li>Endprodukt: hochvernetzter, harter Duroplast</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 52,
+      "tags": [
+        "Polymere"
+      ]
+    },
+    {
+      "id": "org:43f08d7fb4f0",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie und Polymerisation",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation\n\nWie werden Silikone technisch hergestellt (Mueller-Rochow-Synthese)?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Silikone – Herstellung:</b><ul><li>Mueller-Rochow-Synthese: Silicium + Methylchlorid → Methylchlorsilane (v.a. (CH₃)₂SiCl₂), Cu-Katalysator</li><li>Hydrolyse der Chlorsilane: Si–Cl + H₂O → Si–OH + HCl</li><li>Kondensation der Silanole → Siloxanbindungen (–Si–O–Si–) → Polysiloxane (Silikone)</li><li>Kettenlaenge/Vernetzung ueber Anteil di-/tri-funktioneller Silane steuerbar → Oele, Kautschuk, Harze</li><li>Eigenschaften: temperatur-, wasser- und alterungsbestaendig</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 53,
+      "tags": [
+        "Polymere"
+      ]
+    },
+    {
+      "id": "org:0c6c5732d9a0",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie und Polymerisation",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation\n\nWie entsteht ein Harnstoff-Formaldehyd-Harz und wozu dient es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Aminoplaste – Harnstoff-Formaldehyd:</b><ul><li>Aminoplast: Polykondensation von Harnstoff (H₂N–CO–NH₂) + Formaldehyd</li><li>Zuerst Methylolharnstoffe (Anlagerung von Formaldehyd an die NH₂-Gruppen), dann Vernetzung unter Wasserabspaltung</li><li>Ergibt einen hochvernetzten, harten, hellen Duroplast</li><li>Anwendung: Leime/Klebstoffe fuer Holzwerkstoffe (Spanplatten), Pressmassen, Beschichtungen</li><li>Verwandt: Melamin-Formaldehyd-Harz (bestaendiger, z.B. fuer Dekorschichtstoffe)</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 54,
+      "tags": [
+        "Polymere"
+      ]
+    },
+    {
+      "id": "org:681adfddc9a0",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie und Polymerisation",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation\n\nWas ist POM (Polyoxymethylen) und wie entsteht es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie und Polymerisation. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Polyoxymethylen (POM):</b><ul><li>POM = Polyoxymethylen (Polyacetal), aus Formaldehyd bzw. dessen Trimer Trioxan</li><li>Bildung durch Polymerisation zu langen –[CH₂–O]–-Ketten</li><li>Kettenenden werden stabilisiert (Veresterung bzw. Copolymer mit z.B. Dioxolan) gegen thermischen Abbau</li><li>Eigenschaften: hochkristallin, hart, steif, formstabil, gute Gleit-/Verschleisseigenschaften</li><li>Technischer Kunststoff fuer Zahnraeder, Lager, Praezisionsteile</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 55,
+      "tags": [
+        "Polymere"
+      ]
     }
   ],
   "coverage": [
@@ -13321,7 +13656,7 @@
       "module": "organic",
       "kap": 9,
       "name": "VO9 Polymerchemie",
-      "anki": 49,
+      "anki": 55,
       "sources": [
         "VO9 Polymerchemie und Polymerisation"
       ]
@@ -13375,7 +13710,7 @@
       "module": "inorganic",
       "kap": 5,
       "name": "Einheit 05 Eisen und Stahl",
-      "anki": 44,
+      "anki": 54,
       "sources": [
         "AnTech Einheit 05"
       ]
@@ -13393,7 +13728,7 @@
       "module": "inorganic",
       "kap": 7,
       "name": "Einheit 07 Grosschemie Stickstoff",
-      "anki": 40,
+      "anki": 41,
       "sources": [
         "AnTech Einheit 07"
       ]
@@ -13402,7 +13737,7 @@
       "module": "inorganic",
       "kap": 8,
       "name": "Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda",
-      "anki": 34,
+      "anki": 35,
       "sources": [
         "AnTech Einheit 08"
       ]
@@ -13411,7 +13746,7 @@
       "module": "inorganic",
       "kap": 9,
       "name": "Einheit 09 Grosschemie Schwefel",
-      "anki": 35,
+      "anki": 36,
       "sources": [
         "AnTech Einheit 09"
       ]
