@@ -30,7 +30,9 @@ jobs:
         run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "$REGISTRY" -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
 
       - name: Image bauen
-        run: docker build -t "$IMAGE:$TAG" .
+        # GIT_SHA als Build-Arg bustet den Frontend-Layer-Cache -> das Frontend wird
+        # bei jedem Commit frisch gegen den ausgecheckten Quellstand gebaut.
+        run: docker build --build-arg GIT_SHA="$TAG" -t "$IMAGE:$TAG" .
 
       # Startet das FRISCH gebaute Image und prueft, ob es ueberhaupt hochkommt und
       # der Login funktioniert. Faengt Import-/Boot-Crashes ab (z.B. fehlendes tzdata,
@@ -58,7 +60,15 @@ jobs:
             -d '{"username":"smoke","password":"smoke-pass-123"}' >/dev/null
           code=$(curl -s -b /tmp/ck.txt -o /dev/null -w '%{http_code}' 'http://127.0.0.1:18080/api/stats?module=organic')
           [ "$code" = "200" ] || { echo "FEHLER: /api/stats lieferte $code statt 200"; exit 1; }
-          echo "Smoke-Test OK"
+          # Frontend-Frische verifizieren: build-id.txt wird im Frontend-Stage aus dem
+          # GIT_SHA geschrieben. Stimmt sie mit $TAG ueberein, wurde das Frontend fuer
+          # DIESEN Commit gebaut (nicht aus altem Layer-Cache). Faengt genau den Bug ab,
+          # der #54/#55 unsichtbar machte.
+          fe=$(curl -fsS -b /tmp/ck.txt "http://127.0.0.1:18080/build-id.txt" || true)
+          [ "$fe" = "$TAG" ] || { echo "FEHLER: Frontend-build-id ist '$fe', erwartet '$TAG' (veralteter Frontend-Build im Image?)"; exit 1; }
+          be=$(curl -fsS http://127.0.0.1:18080/healthz | grep -o "\"build\":\"[^\"]*\"" | cut -d'"' -f4)
+          [ "$be" = "$TAG" ] || { echo "FEHLER: Backend-build ist '$be', erwartet '$TAG'"; exit 1; }
+          echo "Smoke-Test OK (Frontend+Backend build-id = $TAG)"
 
       - name: Image pushen
         run: docker push "$IMAGE:$TAG"
@@ -94,4 +104,14 @@ jobs:
             sleep 6
           done
           [ -n "$ok" ] || { echo "FEHLER: $PUBLIC_URL/healthz nicht erreichbar oder Zertifikat ungueltig"; exit 1; }
-          echo "Live-Check OK: $PUBLIC_URL erreichbar mit gueltigem Zertifikat"
+          # Verifizieren, dass PRODUKTION wirklich DIESEN Commit faehrt. Haette den
+          # stillen "Deploy gruen, aber alte UI"-Bug (#54/#55) sofort rot gemacht:
+          # Pods rollen nicht / altes Image / veraltetes Frontend -> build != $TAG.
+          live=""
+          for i in $(seq 1 15); do
+            b=$(curl -fsS "$PUBLIC_URL/healthz" | grep -o "\"build\":\"[^\"]*\"" | cut -d'"' -f4 || true)
+            if [ "$b" = "$TAG" ]; then live=1; break; fi
+            sleep 4
+          done
+          [ -n "$live" ] || { echo "FEHLER: Produktion faehrt build '$b', erwartet '$TAG' (Rollout/Image/Frontend veraltet?)"; exit 1; }
+          echo "Live-Check OK: $PUBLIC_URL faehrt build $TAG mit gueltigem Zertifikat"

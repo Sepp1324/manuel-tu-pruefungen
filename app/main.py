@@ -2066,7 +2066,10 @@ def _weekly_plan(conn, module: str) -> dict:
 
 @app.get("/healthz")
 def healthz():
-    return {"ok": True}
+    # BUILD_ID wird im Docker-Image aus dem Git-SHA gesetzt. Oeffentlich abrufbar,
+    # damit der Deploy-Live-Check verifizieren kann, dass Produktion wirklich den
+    # neuen Stand faehrt (und nicht ein altes Image/veraltetes Frontend).
+    return {"ok": True, "build": os.environ.get("BUILD_ID", "dev")}
 
 
 @app.post("/api/auth/login")
