@@ -33,6 +33,8 @@ import {
   FlaskConical,
   ListOrdered,
   Split,
+  Sun,
+  Moon,
 } from "lucide-react";
 import "./styles.css";
 
@@ -617,6 +619,32 @@ function formatSeconds(s) {
   return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
 }
 
+function currentTheme() {
+  const t = (typeof document !== "undefined" && document.documentElement.getAttribute("data-theme")) || "light";
+  return t === "dark" ? "dark" : "light";
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useState(currentTheme);
+  const toggle = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("sr_theme", next); } catch (e) {}
+    setTheme(next);
+  };
+  const dark = theme === "dark";
+  return (
+    <button
+      className="theme-toggle"
+      title={dark ? "Zu hellem Design wechseln" : "Zu dunklem Design wechseln"}
+      aria-label={dark ? "Helles Design" : "Dunkles Design"}
+      onClick={toggle}
+    >
+      {dark ? <Sun size={15} /> : <Moon size={15} />}
+    </button>
+  );
+}
+
 function AuthBar() {
   const [user, setUser] = useState("");
   useEffect(() => {
@@ -629,6 +657,7 @@ function AuthBar() {
   return (
     <div className="authbar">
       <span>{user}</span>
+      <ThemeToggle />
       <button title="Abmelden" onClick={logout}><LogOut size={15} /></button>
     </div>
   );
@@ -892,7 +921,7 @@ function HomePlanCard({ plan: d, startSession, startExam, setRoute }) {
     else if (t.kind === "mock") startExam?.(t.count || 20, "mixed");
     else if (t.kind === "fehlerbuch") setRoute?.("fehlerbuch");
   };
-  const phaseColor = { aufbau: "#2980b9", festigen: "#e67e22", pruefung: "#c0392b" }[d.phase?.key] || "#888";
+  const phaseColor = { aufbau: "#2980b9", festigen: "var(--warn-strong)", pruefung: "var(--bad)" }[d.phase?.key] || "var(--muted)";
 
   return (
     <section className="panel home-plan">
@@ -1313,7 +1342,7 @@ function Study({ session, setSession, finish }) {
                 <div key={p.name} className="mock-part">
                   <span className="mock-part-name">{p.pass ? "✓" : "✗"} {p.name}</span>
                   <div className="mock-part-bar">
-                    <i style={{ width: `${Math.min(100, p.pct)}%`, background: p.pass ? "#27ae60" : "#c0392b" }} />
+                    <i style={{ width: `${Math.min(100, p.pct)}%`, background: p.pass ? "var(--ok)" : "var(--bad)" }} />
                     <em title="50%" />
                   </div>
                   <span className="mock-part-pct">{p.correct}/{p.total} · {p.pct}%</span>
@@ -4069,9 +4098,9 @@ function AnalyticsPage({ module }) {
             <th>Karte</th><th>VO</th><th>Quote</th><th>Reviews</th><th>Nochmal</th></tr></thead>
           <tbody>
             {items.worst.slice(0, 25).map((it) => (
-              <tr key={it.card_id} style={{ borderBottom: "1px solid #eee" }}>
+              <tr key={it.card_id} style={{ borderBottom: "1px solid var(--line)" }}>
                 <td>{it.title}</td><td>{it.kap}</td>
-                <td style={{ color: (it.hit_rate ?? 100) < 60 ? "#c0392b" : "inherit" }}>{it.hit_rate ?? "–"}%</td>
+                <td style={{ color: (it.hit_rate ?? 100) < 60 ? "var(--bad)" : "inherit" }}>{it.hit_rate ?? "–"}%</td>
                 <td>{it.reviews}</td><td>{it.agains}</td>
               </tr>
             ))}
@@ -4098,7 +4127,7 @@ function StudyPlanPage({ module, startSession, startExam, setRoute }) {
     else if (t.kind === "mock") startExam?.(t.count || 20, "mixed");
     else if (t.kind === "fehlerbuch") setRoute?.("fehlerbuch");
   };
-  const phaseColor = { aufbau: "#2980b9", festigen: "#e67e22", pruefung: "#c0392b" }[d.phase?.key] || "#888";
+  const phaseColor = { aufbau: "#2980b9", festigen: "var(--warn-strong)", pruefung: "var(--bad)" }[d.phase?.key] || "var(--muted)";
 
   return (
     <section className="study-plan">
@@ -4150,7 +4179,7 @@ function StudyPlanPage({ module, startSession, startExam, setRoute }) {
               <span>{p.score}%</span>
             </div>
             <div className="plan-part-bar">
-              <i style={{ width: `${Math.min(100, p.score)}%`, background: p.focus ? "#c0392b" : "#27ae60" }} />
+              <i style={{ width: `${Math.min(100, p.score)}%`, background: p.focus ? "var(--bad)" : "var(--ok)" }} />
             </div>
             <span className="muted">
               {p.coverage}% gesehen
@@ -4192,7 +4221,7 @@ function ReadinessPage({ module, startExam, setRoute }) {
   if (!d) return error
     ? <LoadError onRetry={load} label="Reifeplan konnte nicht geladen werden." />
     : <div className="loading">Reifeplan laedt...</div>;
-  const bandColor = { ready: "#27ae60", steady: "#e67e22", risk: "#c0392b" }[d.band] || "#888";
+  const bandColor = { ready: "var(--ok)", steady: "var(--warn-strong)", risk: "var(--bad)" }[d.band] || "var(--muted)";
   return (
     <section className="panel">
       <div className="section-head">
@@ -4211,10 +4240,10 @@ function ReadinessPage({ module, startExam, setRoute }) {
       </div>
       {d.pass_prediction && (
         <div style={{ marginTop: 16, padding: 12, borderRadius: 8,
-          background: d.pass_prediction.would_pass ? "#eafaf0" : "#fdecea",
-          border: `1px solid ${d.pass_prediction.would_pass ? "#27ae60" : "#c0392b"}` }}>
+          background: d.pass_prediction.would_pass ? "var(--ok-bg)" : "var(--bad-bg)",
+          border: `1px solid ${d.pass_prediction.would_pass ? "var(--ok)" : "var(--bad)"}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <b style={{ color: d.pass_prediction.would_pass ? "#1e8449" : "#c0392b" }}>
+            <b style={{ color: d.pass_prediction.would_pass ? "var(--ok)" : "var(--bad)" }}>
               {d.pass_prediction.would_pass ? "✓ Aktuell auf Bestehenskurs" : "✗ Noch nicht bestehenssicher"}
             </b>
             <small className="muted">{d.pass_prediction.rule}</small>
@@ -4226,15 +4255,15 @@ function ReadinessPage({ module, startExam, setRoute }) {
               <span style={{ flex: 1 }}>
                 {p.name}
                 {p.accuracy_blocks && (
-                  <em style={{ color: "#c0392b", fontStyle: "normal", fontSize: 12 }}> · nur {p.accuracy}% richtig beantwortet</em>
+                  <em style={{ color: "var(--bad)", fontStyle: "normal", fontSize: 12 }}> · nur {p.accuracy}% richtig beantwortet</em>
                 )}
               </span>
-              <div style={{ flex: 1, background: "#e9edf1", borderRadius: 5, height: 8, position: "relative" }}>
+              <div style={{ flex: 1, background: "var(--panel-line)", borderRadius: 5, height: 8, position: "relative" }}>
                 <div style={{ width: `${Math.min(100, p.score)}%`, height: "100%", borderRadius: 5,
-                  background: p.pass ? "#27ae60" : "#c0392b" }} />
-                <div style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 1, background: "#888" }} title="50%" />
+                  background: p.pass ? "var(--ok)" : "var(--bad)" }} />
+                <div style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 1, background: "var(--muted)" }} title="50%" />
               </div>
-              <span style={{ width: 42, textAlign: "right", color: p.pass ? "#1e8449" : "#c0392b" }}>{p.score}%</span>
+              <span style={{ width: 42, textAlign: "right", color: p.pass ? "var(--ok)" : "var(--bad)" }}>{p.score}%</span>
             </div>
           ))}
           <small className="muted">Gestrichelte Linie = 50-%-Bestehensgrenze je Teil.</small>
@@ -4242,9 +4271,9 @@ function ReadinessPage({ module, startExam, setRoute }) {
       )}
       <h3 style={{ marginTop: 16 }}>Fokus-Blöcke</h3>
       {(d.milestones || []).map((m) => (
-        <div key={m.block} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #eee" }}>
+        <div key={m.block} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
           <span><b>{m.block}</b> — {m.action}</span>
-          <span style={{ color: { ready: "#27ae60", steady: "#e67e22", risk: "#c0392b" }[m.status] || "#888" }}>{m.score}%</span>
+          <span style={{ color: { ready: "var(--ok)", steady: "var(--warn-strong)", risk: "var(--bad)" }[m.status] || "var(--muted)" }}>{m.score}%</span>
         </div>
       ))}
       <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
@@ -4315,22 +4344,22 @@ function QuestsPage({ module }) {
           <p>Level {xp.level} · {xp.rank} · <Flame size={13} /> {d.streak?.current || 0} Tage Streak</p></div>
         <div style={{ textAlign: "right" }}><b>{xp.total_xp} XP</b></div>
       </div>
-      <div style={{ background: "#e9edf1", borderRadius: 6, height: 10, margin: "6px 0 4px", overflow: "hidden" }}>
+      <div style={{ background: "var(--panel-line)", borderRadius: 6, height: 10, margin: "6px 0 4px", overflow: "hidden" }}>
         <div style={{ width: `${xp.progress_pct || 0}%`, height: "100%", background: "var(--accent, #06c)" }} />
       </div>
       <small className="muted">{xp.xp_in_level}/{xp.next_level_xp} bis Level {xp.level + 1}</small>
       {msg && <div className="form-msg">{msg}</div>}
       <h3 style={{ marginTop: 16 }}>Quests</h3>
       {(d.quests || []).map((q) => (
-        <div key={q.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #eee" }}>
+        <div key={q.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
           <div style={{ flex: 1 }}>
             <b>{q.title}</b>
-            <div style={{ background: "#e9edf1", borderRadius: 5, height: 7, marginTop: 4 }}>
-              <div style={{ width: `${Math.min(100, (q.progress / q.goal) * 100)}%`, height: "100%", background: q.done ? "#27ae60" : "var(--accent, #06c)", borderRadius: 5 }} />
+            <div style={{ background: "var(--panel-line)", borderRadius: 5, height: 7, marginTop: 4 }}>
+              <div style={{ width: `${Math.min(100, (q.progress / q.goal) * 100)}%`, height: "100%", background: q.done ? "var(--ok)" : "var(--accent, #06c)", borderRadius: 5 }} />
             </div>
             <small className="muted">{q.progress}/{q.goal} · +{q.xp} XP</small>
           </div>
-          {q.claimed ? <span style={{ color: "#27ae60" }}><Check size={16} /> abgeholt</span>
+          {q.claimed ? <span style={{ color: "var(--ok)" }}><Check size={16} /> abgeholt</span>
             : q.done ? <button className="primary" onClick={() => claim(q.key)}>Abholen</button>
             : <span className="muted">offen</span>}
         </div>
@@ -4339,7 +4368,7 @@ function QuestsPage({ module }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {(d.badges || []).map((b) => (
           <span key={b.key} style={{ padding: "6px 10px", borderRadius: 16, fontSize: 13,
-            background: b.earned ? "#27ae60" : "#e9edf1", color: b.earned ? "#fff" : "#888" }}>
+            background: b.earned ? "var(--ok)" : "var(--panel-line)", color: b.earned ? "#fff" : "var(--muted)" }}>
             <Award size={13} /> {b.label}
           </span>
         ))}
@@ -4686,7 +4715,7 @@ function AntwortCheckPage({ module, sessionSize = 20, setSessionSize }) {
     ? <LoadError onRetry={loadCards} label="Antwort-Check konnte nicht geladen werden." />
     : <div className="loading">Antwort-Check laedt...</div>;
   const label = result?.score_label;
-  const badge = { full: ["Voll", "#27ae60"], partial: ["Teilweise", "#e67e22"], miss: ["Verfehlt", "#c0392b"] }[label] || ["", "#888"];
+  const badge = { full: ["Voll", "var(--ok)"], partial: ["Teilweise", "var(--warn-strong)"], miss: ["Verfehlt", "var(--bad)"] }[label] || ["", "var(--muted)"];
   return (
     <section className="panel">
       <div className="section-head">
@@ -4724,7 +4753,7 @@ function AntwortCheckPage({ module, sessionSize = 20, setSessionSize }) {
           <p style={{ margin: "10px 0" }}>{result.feedback}</p>
           {(result.missed_points || []).length > 0 && (
             <div style={{ marginBottom: 8 }}>
-              <b style={{ color: "#c0392b" }}>Noch offen:</b>
+              <b style={{ color: "var(--bad)" }}>Noch offen:</b>
               <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
                 {result.missed_points.map((p, i) => <li key={i}>{p}</li>)}
               </ul>
