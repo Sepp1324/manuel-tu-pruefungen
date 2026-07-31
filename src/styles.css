@@ -3240,3 +3240,10 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
   border-radius: 6px; padding: 8px 10px; min-height: 38px; font: inherit; cursor: pointer;
 }
 .hero .session-size select option { color: #111; }
+
+/* Selektor auf hellem Panel (z.B. Antwort-Check-Header) */
+.session-size.light { display: inline-flex; align-items: center; white-space: nowrap; }
+.session-size.light select {
+  background: var(--surface-2, #f4f6f8); color: inherit; border: 1px solid var(--border, #d5dbe0);
+  border-radius: 6px; padding: 6px 8px; min-height: 34px; font: inherit; cursor: pointer;
+}

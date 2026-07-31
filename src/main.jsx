@@ -4613,7 +4613,7 @@ function ReactionTrainerPage({ module }) {
   );
 }
 
-function AntwortCheckPage({ module }) {
+function AntwortCheckPage({ module, sessionSize = 20, setSessionSize }) {
   const [cards, setCards] = useState([]);
   const [idx, setIdx] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -4625,12 +4625,12 @@ function AntwortCheckPage({ module }) {
   async function loadCards() {
     setError(false);
     try {
-      const res = await api(`/api/study/anki?module=${module}&limit=30`);
+      const res = await api(`/api/study/anki?module=${module}&limit=${sessionSize}`);
       setCards(res.cards || []);
       setIdx(0); setAnswer(""); setResult(null);
     } catch (err) { setError(true); }
   }
-  useEffect(() => { loadCards(); }, [module]);
+  useEffect(() => { loadCards(); }, [module, sessionSize]);
   useEffect(() => { api("/api/coach/status").then(setCoach).catch(() => {}); }, []);
 
   const card = cards[idx];
@@ -4665,6 +4665,12 @@ function AntwortCheckPage({ module }) {
       <div className="section-head">
         <div><h2><Sparkles size={18} /> Antwort-Check</h2>
           <p>Frei formulieren wie in der Pruefung – dann bewerten lassen.</p></div>
+        <label className="session-size light" title="Karten pro Runde">
+          <span className="muted" style={{ marginRight: 6 }}>Karten/Runde</span>
+          <select value={sessionSize} onChange={(e) => setSessionSize?.(Number(e.target.value))}>
+            {[10, 15, 20, 25, 30, 40, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
       </div>
       {coach && !coach.available && (
         <div className="form-msg">Kein KI-Key aktiv – Bewertung erfolgt über Stichwort-Näherung. (ANTHROPIC_API_KEY setzen für echtes KI-Feedback.)</div>
@@ -4923,7 +4929,7 @@ function App() {
     if (route === "analytics") return <AnalyticsPage module={module} />;
     if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} />;
     if (route === "studyplan") return <StudyPlanPage module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />;
-    if (route === "antwortcheck") return <AntwortCheckPage module={module} />;
+    if (route === "antwortcheck") return <AntwortCheckPage module={module} sessionSize={sessionSize} setSessionSize={setSessionSize} />;
     if (route === "reactions") return <ReactionTrainerPage module={module} />;
     if (route === "processes") return <ProcessTrainerPage module={module} />;
     if (route === "confusions") return <ConfusionTrainerPage module={module} />;
