@@ -13577,6 +13577,1803 @@
       "tags": [
         "Polymere"
       ]
+    },
+    {
+      "id": "org:827322c49e70",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 1,
+      "sub": "VO1",
+      "subname": "VO1 Fossile Rohstoffe: Grundlagen",
+      "source": "VO1 Einfuehrung, Fossile Rohstoffe",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe\n\nNach welchen Merkmalen wird Erdöl eingeteilt und welche Rolle spielt die wahre Siedepunktskurve?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe<br><br><b>Pruefungsantwort zu Einteilung Erdöl / Siedepunktskurve:</b><ul><li>Einteilung u.a. nach der wahren Siedepunktskurve (Siedeverhalten der Fraktionen)</li><li>Siedebereich 20 °C - 550 °C; darüber thermische Zersetzung</li><li>weiteres Merkmal Dichte: Unterscheidung konventionell vs. nicht-konventionell</li><li>weitere Merkmale: Viskosität/Stockpunkt und Schwefelgehalt</li><li>diese Merkmale beeinflussen auch die Förderbarkeit</li></ul><span class='source'>Quelle: VO1 Einfuehrung, Fossile Rohstoffe</span>",
+      "weight": 7,
+      "order": 901,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:007e34747c29",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 1,
+      "sub": "VO1",
+      "subname": "VO1 Fossile Rohstoffe: Grundlagen",
+      "source": "VO1 Einfuehrung, Fossile Rohstoffe",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe\n\nVergleichen Sie fossile und nachwachsende Rohstoffe hinsichtlich Nachhaltigkeit, chemischer Struktur und Wirtschaftlichkeit.",
+      "a": "<b>Kontext:</b> Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe<br><br><b>Pruefungsantwort zu Bewertung fossil vs. NaWaRo:</b><ul><li>Fossil - chemische Struktur: günstiges C/H-Verhältnis, etablierte Verfahren, optimierte Produkteigenschaften</li><li>Fossil - Nachhaltigkeit: Ressourcen-Endlichkeit, Abfall (Abwasser/Abluft), nicht-abbaubare Endprodukte, ökologische Schäden (CO₂, Feinstaub)</li><li>Fossil - Wirtschaftlichkeit: volatile Rohstoffpreise, geopolitische Abhängigkeit, steigende Preise bei nicht-konventionellen Vorkommen</li><li>NaWaRo - Nachhaltigkeit: regenerierbar, potenziell CO₂-neutral, potenziell weniger Abfall (aber energieaufwändig, Futter-/Lebensmittelkonkurrenz)</li><li>NaWaRo - chemische Struktur: hoch-funktionalisierte Rohstoffe, energieaufwändige Modifikation, Qualitätsvariabilität des Rohstoffs</li><li>NaWaRo - Wirtschaftlichkeit: flächen- und ernteabhängige Verfügbarkeit, tendenziell höhere Rohstoffpreise</li></ul><span class='source'>Quelle: VO1 Einfuehrung, Fossile Rohstoffe</span>",
+      "weight": 7,
+      "order": 902,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:60e48f85fd8a",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 1,
+      "sub": "VO1",
+      "subname": "VO1 Fossile Rohstoffe: Grundlagen",
+      "source": "VO1 Einfuehrung, Fossile Rohstoffe",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe\n\nWie werden verschiedene fossile Rohstoffe vergleichbar gemacht und was ist die Öl-Einheit?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe<br><br><b>Pruefungsantwort zu Öl-Einheit (ÖA):</b><ul><li>Vergleich verschiedener fossiler Rohstoffarten über den Energiegehalt</li><li>Berechnung in Öl-Einheit (ÖA): 1 t ÖA ≈ 42 · 10⁶ kJ</li><li>notwendig, weil sich die Rohstoffe je nach Aggregatzustand und Zusammensetzung unterscheiden</li></ul><span class='source'>Quelle: VO1 Einfuehrung, Fossile Rohstoffe</span>",
+      "weight": 7,
+      "order": 903,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:ae04b1d91901",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 1,
+      "sub": "VO1",
+      "subname": "VO1 Fossile Rohstoffe: Grundlagen",
+      "source": "VO1 Einfuehrung, Fossile Rohstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe\n\nMit welchen Methoden werden Erdöl- und Erdgasvorkommen exploriert?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe<br><br><b>Pruefungsantwort zu Exploration:</b><ul><li>geophysikalische Untersuchungsmethoden zur Auffindung von Vorkommen</li><li>Luftbilder (Photogrammetrie) und Magnetismus</li><li>Reflexions-Seismik (am Land mittels künstlicher Sprengung)</li><li>Widerstandskartierung</li><li>anschließend Probebohrung (z.B. Molln OÖ, Straßwalchen/Attersee, St. Georgen Sbg)</li></ul><span class='source'>Quelle: VO1 Einfuehrung, Fossile Rohstoffe</span>",
+      "weight": 7,
+      "order": 904,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:3a0e8ca6aa03",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 1,
+      "sub": "VO1",
+      "subname": "VO1 Fossile Rohstoffe: Grundlagen",
+      "source": "VO1 Einfuehrung, Fossile Rohstoffe",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe\n\nWelche zwei grundsätzlichen Verfahren der Kohleförderung gibt es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe<br><br><b>Pruefungsantwort zu Kohleförderung:</b><ul><li>Tagebau: an Oberflächen, in Bergsenkungen/Gräben</li><li>Tagebau-Sonderform 'Mountaintop (removal) mining': Absprengung von Bergkuppen</li><li>Abbau unter Tage: über Stollen und Schacht-Tiefbau</li></ul><span class='source'>Quelle: VO1 Einfuehrung, Fossile Rohstoffe</span>",
+      "weight": 7,
+      "order": 905,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:9cfcc20a687b",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 1,
+      "sub": "VO1",
+      "subname": "VO1 Fossile Rohstoffe: Grundlagen",
+      "source": "VO1 Einfuehrung, Fossile Rohstoffe",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe\n\nWelche Quellen für Erdgas gibt es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe<br><br><b>Pruefungsantwort zu Erdgasquellen:</b><ul><li>Erdöllagerstätten (Gas im Erdöl gelöst)</li><li>Erdgaslagerstätten (über dem Öllager)</li><li>Kohleflöze: Methan an Kohle adsorbiert (je höher der Druck, umso mehr; 'coalbed methane')</li><li>Schiefergas: im Stein eingeschlossenes Gas</li><li>Synthetisches Erdgas via Vergasung</li><li>Biogas: Faulgas aus anaerober Vergärung, variabler CH₄-Gehalt</li></ul><span class='source'>Quelle: VO1 Einfuehrung, Fossile Rohstoffe</span>",
+      "weight": 7,
+      "order": 906,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:fad14ee11293",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 1,
+      "sub": "VO1",
+      "subname": "VO1 Fossile Rohstoffe: Grundlagen",
+      "source": "VO1 Einfuehrung, Fossile Rohstoffe",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe\n\nWie unterscheiden sich physikalische und chemische Absorption bei der Abtrennung saurer Begleitgase aus Erdgas?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe<br><br><b>Pruefungsantwort zu Physikalische vs. chemische Absorption:</b><ul><li>Ziel: Abtrennung saurer Begleitgase (CO₂, H₂S) aus dem Rohgas</li><li>Physikalische Absorption: saures Gas unter Druck im Lösungsmittel lösen; z.B. Rectisol (Methanol, -10 bis -30 °C, 5-50 bar), Purisol (N-Methylpyrrolidon); Regeneration durch Entspannung; Nachteil: Löslichkeit von KW im Lösungsmittel</li><li>Chemische Absorption (Chemisorption): Reaktion zwischen saurem Gas und Lösungsmittel; z.B. Amine wie Diethanolamin zur Salzbildung, Druckwäsche mit K₂CO₃-Lösung; Nachteil: begrenzte Beladung (Stöchiometrie), E-Bedarf</li><li>Physikalisch-chemische Verfahren: Sulfinol-Verfahren (Shell), Sulfolan/Diisopropylamin-Gemisch; Regeneration durch Entspannung + Erhitzen</li></ul><span class='source'>Quelle: VO1 Einfuehrung, Fossile Rohstoffe</span>",
+      "weight": 7,
+      "order": 907,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:4488940852bb",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 1,
+      "sub": "VO1",
+      "subname": "VO1 Fossile Rohstoffe: Grundlagen",
+      "source": "VO1 Einfuehrung, Fossile Rohstoffe",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe\n\nWelche Rolle spielen Methanclathrate bei der Speicherung von Erdgas?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO1 Fossile Rohstoffe: Grundlagen. Quelle: VO1 Einfuehrung, Fossile Rohstoffe<br><br><b>Pruefungsantwort zu Methanclathrat als Speicher:</b><ul><li>Methanclathrate = feste Gashydrate (H₂O + Gas), Form der chemischen Erdgasspeicherung</li><li>bilden sich bei hohem Druck und niedriger Temperatur</li><li>hohe Speicherdichte: 1 m³ Clathrat ≈ 164 m³ CH₄</li><li>Antarktis fungiert als natürlicher Methanspeicher</li></ul><span class='source'>Quelle: VO1 Einfuehrung, Fossile Rohstoffe</span>",
+      "weight": 7,
+      "order": 908,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:a8b10006ba79",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nWie wird der bei der Verkokung anfallende Teer aufgearbeitet und wozu?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Fraktionierte Destillation des Steinkohlenteers:</b><ul><li>Teer faellt bei der Verkokung (Pyrolyse) mit ca. 25-35% an (Kokteer: viele hochmolekulare Aromaten)</li><li>Aufarbeitung durch fraktionierte Destillation im Bereich ca. 70 bis 400 Grad C</li><li>Ziel: Gewinnung von (Hetero-)Aromaten als Synthesebausteine</li><li>Fraktionen (aufsteigend): Leichtoel ca. 3%, Carboloel ca. 3%, Naphtalinoel ca. 10%, Waschoel ca. 10%, Anthracenoel ca. 25%, Pech ca. 50%</li><li>Hauptprodukte: Phenole, Pyridine, Naphtalin, Anthrazen, Phenantren</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 901,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:b5887bd497f2",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nWas ist Leichtoel und was liefert es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Leichtoel (Teerfraktion):</b><ul><li>Leichteste Fraktion der Steinkohlenteer-Destillation (Beginn bei ca. 70 Grad C)</li><li>Ausbeute ca. 3% des Teers</li><li>Liefert Phenole und Pyridine (Heteroaromaten als Synthesebausteine)</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 902,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:8e96975257eb",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nWas ist Carboloel und was liefert es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Carboloel (Teerfraktion):</b><ul><li>2. Fraktion der Steinkohlenteer-Destillation, siedet oberhalb des Leichtoels</li><li>Ausbeute ca. 3% des Teers</li><li>Liefert wie das Leichtoel Phenole und Pyridine als Synthesebausteine</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 903,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:1ac68919a53c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nWas ist die Naphtalinoel-Fraktion und ihr Hauptprodukt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Naphtalinoel / Naphtalin (Teerfraktion):</b><ul><li>3. Fraktion der Steinkohlenteer-Destillation</li><li>Ausbeute ca. 10% des Teers</li><li>Liefert Naphtalin als aromatischen Synthesebaustein</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 904,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:92bb673fc3a9",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nWas ist die Waschoel-Fraktion des Steinkohlenteers?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Waschoel (Teerfraktion):</b><ul><li>4. Fraktion der Steinkohlenteer-Destillation, zwischen Naphtalinoel und Anthracenoel</li><li>Ausbeute ca. 10% des Teers</li><li>Mittelsiedende Teerfraktion im Weg zu hoeheren Destillationstemperaturen (bis 400 Grad C)</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 905,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:041c6912db62",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nWas ist Anthracenoel und was liefert es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Anthracenoel (Teerfraktion):</b><ul><li>5. und mengenmaessig groesste fluessige Fraktion der Steinkohlenteer-Destillation</li><li>Ausbeute ca. 25% des Teers</li><li>Liefert Anthrazen und Phenantren (mehrkernige Aromaten) als Synthesebausteine</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 906,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:d3b1ea426aa3",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nWas ist Pech in der Steinkohlenteer-Aufarbeitung?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Pech (Teerrueckstand):</b><ul><li>Hochsiedender Rueckstand der Teer-Destillation (bei ca. 400 Grad C)</li><li>Mengenmaessig groesste Fraktion mit ca. 50% des Teers</li><li>Besteht aus den hochmolekularen, nicht mehr destillierbaren Aromaten</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 907,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:b35e57a644e5",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nCharakterisieren Sie den Winkler-Generator als Vergasungsverfahren.",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Winkler-Generator (Kohlevergasung):</b><ul><li>Vergasungsverfahren nach dem Wirbelschicht-Prinzip</li><li>Einsatzstoff: feinkoernige Braunkohle</li><li>Betriebstemperatur ca. 1500 Grad C</li><li>Erzeugtes Synthesegas hat ein Verhaeltnis H₂:CO von ca. 1,4:1</li><li>Steht zwischen Flugstrom (Koppers-Totzek) und Festbett (Lurgi-Druckvergaser)</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 908,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:f7ccb2f6a1be",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 2,
+      "sub": "VO2",
+      "subname": "VO2 Raffinerie und Kohleveredelung",
+      "source": "VO2 Raffinerieprozesse",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse\n\nWas ist Reichgas und wie ordnet es sich unter den Brenngasen ein?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO2 Raffinerie und Kohleveredelung. Quelle: VO2 Raffinerieprozesse<br><br><b>Pruefungsantwort zu Reichgas:</b><ul><li>Energietraeger aus der Kohlevergasung: Gasgemisch mit mehr als 50% CH₄</li><li>Heizwert groesser als 25.000 kJ/m³</li><li>Hoeherer CH₄-Gehalt und Heizwert als Stadtgas (ca. 20.000 kJ/m³)</li><li>Noch nicht so rein wie synthetisches Erdgas SNG (groesser 95% CH₄, ca. 37.000 kJ/m³)</li></ul><span class='source'>Quelle: VO2 Raffinerieprozesse</span>",
+      "weight": 7,
+      "order": 909,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:4b2746f22a54",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWarum und wie wird Rohöl vor der Destillation entsalzt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Entsalzung:</b><ul><li>Rohöl enthält gelöste Salze aus dem Kontakt mit Wasser</li><li>Chloride (z.B. NaCl) verursachen Korrosion; organische und metallorganische Salze inhibieren Katalysatoren</li><li>Waschen mit ca. 10 % Wasser bei > 100 °C (bessere Phasentrennung durch niedrigere Viskosität)</li><li>Elektrostatischer Abscheider: Hochspannungsfeld beschleunigt die Tröpfchenbildung</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 901,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:4c49fca4400c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWelche Rolle spielen Preflash und Vorheizung vor der atmosphärischen Kolonne?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Preflash & Vorheizung:</b><ul><li>Preflash entlastet die Hauptkolonne: ~200 °C, 15 bar werden schlagartig entspannt</li><li>Flüchtige Komponenten werden abgetrennt, der Rest geht zur Hauptkolonne</li><li>Vorheizung über Wärmetauscher (Rückgewinnung aus den Destillationsprodukten), dann Ofen</li><li>Rohöl ist danach zu ~90 % gasförmig bei ~400 °C</li><li>Atmosphärische Kolonne: ~50 Trennböden, energieintensivster Prozess der Raffinerie</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 902,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:fd63489a78b4",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWas sind Cut Points und wie werden sie gesteuert?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Cut Points:</b><ul><li>Cut Points begrenzen die Destillationsschnitte (Fraktionen)</li><li>Verschiebbar durch Steuerung der Produktentnahmemengen; die Zusammensetzung der Schnitte ändert sich entsprechend</li><li>Begrenzt durch Produkt-Spezifikationen</li><li>Saisonal flexibel: Sommer mehr Kerosin/Benzin, Winter Kerosin im Diesel für Kälteeigenschaften</li><li>Optimale Cut Points entscheidend für Profitabilität; Steuerung über lineare Optimierung</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 903,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:735561a83f03",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWie funktioniert die Vakuumdestillation des atmosphärischen Rückstands?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Vakuumdestillation:</b><ul><li>Feed: atmosphärischer Rückstand bei 400 °C, ~10 mbar</li><li>Trennung in Topgas, Rückstand und VGO; 10 mbar erzeugt große Gasmengen → teure Kolonne</li><li>Heißdampf (~100 kg/t Feed) senkt den Partialdruck der Komponenten</li><li>Vakuum über Dampfejektoren (Bernoulli-Prinzip): zuverlässig und korrosionsresistent</li><li>Produkte: Rückstand als Kraftwerksbrennstoff, LVGO/HVGO zur Konversion oder als Bunker Fuel</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 904,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:079a540fd20f",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWas sind LVGO und HVGO und wie werden sie weiterverarbeitet?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Vacuum Gas Oils (LVGO/HVGO):</b><ul><li>LVGO = Light Vacuum Gas Oil, HVGO = Heavy Vacuum Gas Oil</li><li>Produkte der Vakuumdestillation (Vakuumgasöle)</li><li>Weiterverarbeitung a) durch Konversion: Entschwefelung + Cracken</li><li>Weiterverarbeitung b) als Bunker Fuel (Schiffsdiesel)</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 905,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:f3e421c8b08c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWas unterscheidet sour und sweet crude und welche wirtschaftliche Bedeutung hat das?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Sour vs. Sweet Crude:</b><ul><li>Sour crude = viel Schwefel, sweet crude = wenig Schwefel</li><li>Entschwefelung ist teuer → saure (schwefelreiche) Rohöle sind billiger</li><li>Wichtiger Faktor in der Raffinerieplanung</li><li>Schweres/saures Rohöl bietet Profitmöglichkeit, sofern es verarbeitbar ist</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 906,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:1dc6a1fd0da9",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWas bedeutet Severity beim Hydrotreatment und welche Folgen hat sie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Hydrotreatment Severity:</b><ul><li>< 70 bar H₂: mild hydrotreating; > 70 bar H₂: severe hydrotreating</li><li>Severe hydrotreating führt Hydrocracking als Nebenreaktion herbei</li><li>Langkettige Alkane werden dabei gecrackt</li><li>Schwerere Fraktionen sind schwieriger zu desulfurieren</li><li>Problem für die Schmierfähigkeit (Lubricity) von JET-A1</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 907,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:84db082b5f9f",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWozu dient die Hydrodenitrogenation und warum ist sie wichtig?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Hydrodenitrogenation (HDN):</b><ul><li>Hydrierende Entfernung von Stickstoff aus dem Feed</li><li>Stickstoff ist ein katalytisches Gift für die HDS</li><li>Nötig zur Vorbereitung des Platformings (empfindlicher Edelmetallkatalysator)</li><li>Ohne HDS + HDN käme es zur Vergiftung des Platinum-Reformer-Katalysators</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 908,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:aba5dd50f6ee",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWas versteht man unter Hydrocracking in der Raffinerie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Hydrocracking:</b><ul><li>Katalytisches Cracken langkettiger Alkane unter Wasserstoff</li><li>Tritt als Nebenreaktion bei severe hydrotreating (> 70 bar H₂) auf</li><li>Konkurriert bei der Entparaffinierung mit der Isomerisierung</li><li>Höhere Temperatur begünstigt Cracking → Naphtha und Gase entstehen</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 909,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:032e507a02d8",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWie funktioniert die katalytische Entparaffinierung und wozu dient sie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Katalytische Entparaffinierung:</b><ul><li>Langkettige Paraffine sind bei Raumtemperatur fest → Probleme im Winterdiesel</li><li>Isomerisierung zu verzweigten Alkanen unter H₂ (~80 bar, 400 °C)</li><li>Katalysator: Desulfurierungskatalysator + saure Zeolithe</li><li>Ablauf: n-Alkan → Olefin (Dehydrierung) → Isomerisierung → verzweigtes Alkan</li><li>Hydrierung im Gleichgewicht mit Dehydrierung; Hydrocracking konkurriert mit Isomerisierung</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 910,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:6e2b22c4382d",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWelche Aufgabe hat der Naphtha Hydrotreater?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Naphtha Hydrotreater (NHT):</b><ul><li>Straight-Run Naphtha: leichte S-Verbindungen, geringe Severity nötig</li><li>FCC-/Visbreaker-Naphtha: sehr olefinhaltig und instabil</li><li>Hydrieren der Olefine reduziert die Dichte</li><li>Bereitet den Feed für das Platforming vor (HDS + HDN gegen Kat.-Vergiftung)</li><li>Nur C7+ zum Platformer, sonst Benzolbildung (EN228: Benzollimit max. 1 %)</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 911,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:0e7fdce4203e",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWas ist das Platforming und wie läuft es ab?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Platforming / Platinum Reforming:</b><ul><li>Platforming = Platinum Reforming; hebt die Naphtha-Oktanzahl durch Aromatisieren und Isomerisieren</li><li>Hauptquelle von Wasserstoff in der Raffinerie</li><li>Katalysator: Pt-Re auf Alumina (teuer); Bedingungen > 500 °C, 10 bar</li><li>Endotherm → mehrstufiger Reaktor mit Zwischenheizen (erste Stufe klein, reaktivste Substrate)</li><li>Kat. verkokt bei 500 °C → Continuous Catalyst Recycling; ROZ über Severity steuerbar (verkürzt Kat.-Lebenszeit)</li><li>Beispiel: Methylcyclohexan → Toluol (ROZ 121) + 3 H₂</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 912,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:d14e2dcf4c6c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWarum und wie werden leichte n-Alkane isomerisiert?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Isomerisierung (Conversion):</b><ul><li>NHT liefert eine leichte Fraktion mit n-Hexan/n-Pentan: schlechte ROZ, würde im Platformer Benzol bilden</li><li>Isomerisierung unter milden Bedingungen, Gleichgewicht zwischen den Isomeren</li><li>Katalysator: saurer Pt-basierter Katalysator; < 300 °C, < 30 bar → kein Hydrocracking</li><li>Vollständiger Umsatz durch Abtrennung und Rückführung der n-Alkane</li><li>Beispiel: n-Pentan (ROZ 61) → Isopentan (ROZ 92)</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 913,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:8c91aa77f796",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWelche Referenzwerte definieren die Research-Oktanzahl (ROZ)?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Oktanzahl-Referenzskala:</b><ul><li>Hohe ROZ = niedrige Zündwilligkeit (Benzin: Klopfen verhindern), begünstigt durch Radikalstabilität</li><li>n-Heptan ROZ 0, Isooctan ROZ 100 (Ankerpunkte der Skala)</li><li>Benzol ROZ 101, MTBE ROZ 117, Toluol ROZ 121, Ethanol ROZ 108</li><li>n-Pentan ROZ 61 vs. Isopentan ROZ 92 (Verzweigung erhöht ROZ)</li><li>n-Hexadecan (Cetan): Cetanzahl 100, aber ROZ −30</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 914,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:a0cfb50dd078",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWelche wichtigen Anforderungen und Spezifikationen gelten für JET-A1?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu JET-A1 Anforderungen:</b><ul><li>Schwefelgrenzwert 3000 ppm</li><li>Standards: Def Stan 91-091 (brit. Verteidigungsministerium), ASTM-D1655</li><li>Freezing Point < −47 °C, Flash Point > 38 °C</li><li>Lubricity für Selbstschmierung; Specific Energy für Reichweite; clear, bright and free of solid matter</li><li>Severe hydrotreating crackt langkettige Alkane → Problem für die Schmierfähigkeit</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 915,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:83a5c47a690b",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWie ist ein Steamcracker aufgebaut und was passiert im heißen Teil?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Steamcracker – Heißer Teil:</b><ul><li>Erzeugt olefinische Gase (Ethen, Propen, Butadien) aus Naphtha für die Petrochemie</li><li>Dampfverdünnung unterdrückt Polymerisation → Name Steamcracker; drei Teile: heiß, warm, kalt</li><li>Heißer Teil: 850 °C für wenige ms, Naphtha strömt mit ~1000 km/h; 10 Öfen</li><li>Sofortiges Quenchöl am Austritt stoppt die Reaktion, dann Wärmetauscher → HD-Dampf</li><li>HD-Dampf treibt Kompressoren (> 50 MW); Ölwäscher und Wasserwäsche zur Nachbehandlung</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 916,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:846254493d1b",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWie wird Pyrolysebenzin aus dem Steamcracker aufbereitet?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Pyrolysebenzin (PyBi):</b><ul><li>Stufenweise Kompression, dabei kondensiert PyBi, danach Komprimat</li><li>Entschwefelung mit NaOH-Wäsche (entfernt auch CO₂); Kalt-Destillation trennt C₄ ab</li><li>PyBi hat gute ROZ, aber die Olefine sind instabil und Benzol ist krebserregend</li><li>Olefine werden hydriert (Styrol würde sonst polymerisieren)</li><li>Benzol in extra Kolonne → C₆-Kernschnitt zur Petrochemie; Rest für Ottokraftstoff geeignet</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 917,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:d48a72b05f15",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWie werden 1,3-Butadien und Isobuten aus dem C₄-Schnitt verwertet?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Butadien-Gewinnung & Isobuten-Verwertung:</b><ul><li>C₄-Schnitt: n-/iso-Butan, n-/iso-Buten, Butadien (wertvoll für Polymere)</li><li>Siedepunkte sehr ähnlich, aber Butadien polarer → Extraktion mit NMP (N-Methylpyrrolidon), dann Destillation</li><li>Isobuten wird sauer zu MTBE/ETBE umgesetzt (ROZ 117, OK-Komponente); Restbutan wird verheizt</li><li>Sicherheit: Butadien-Anlagen streng O₂-frei, sonst radikalische Polymerisation zu Butadien-Popcorn</li><li>Antioxidans zur Aufbewahrung zugesetzt</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 918,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:00121f555ee4",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWie werden Ethylen und Propylen im kalten Teil des Steamcrackers gewonnen?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu Propylen-/Ethylen-Kältetrennung:</b><ul><li>Trennung der Gase durch Destillation in der Kälte</li><li>Selektive Hydrierung von Ethin/Propin (Verunreinigungen)</li><li>Coldbox trennt H₂ ab, Demethanizer trennt CH₄ ab</li><li>C₂-Splitter trennt Ethen von Ethan, C₃-Splitter trennt Propen von Propan</li><li>H₂-Gewinnung aus CH₄ via Steam Methane Reforming; Ethan/Propan zum Heizen der Spaltöfen</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 919,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:452a854a67d8",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 3,
+      "sub": "VO3",
+      "subname": "VO3 Raffinerieprozesse (Vertiefung)",
+      "source": "VO3 Raffinerieprozesse (Gastvortrag)",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)\n\nWie erzeugt der HEFA-SPK-Pfad Sustainable Aviation Fuel?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO3 Raffinerieprozesse (Vertiefung). Quelle: VO3 Raffinerieprozesse (Gastvortrag)<br><br><b>Pruefungsantwort zu HEFA-SPK Pathway (SAF):</b><ul><li>ASTM D7566 Annex 2, max. 50 % Blend, kommerziell seit 2011, > 95 % aller SAF-Flüge</li><li>Triglycerid + H₂ → HDO (Sättigung + O-Entfernung) → n-Paraffine + H₂O + CO₂</li><li>HDC crackt auf C₈–C₁₆, Isomerisierung für den Freezing Point, dann Fraktionierung zu SAF/Naphtha/Diesel</li><li>Feedstocks: UCO, Tierfette (Tallow), Camelina, Jatropha; EU nur 2nd/3rd Gen.</li><li>Vorteile: CO₂-Reduktion, sauberere Verbrennung (keine Aromaten), Drop-in in bestehende Infrastruktur</li><li>Nebenprodukt Biopropan → Propen → Bio-Polypropylen (zirkuläre Wertschöpfung)</li></ul><span class='source'>Quelle: VO3 Raffinerieprozesse (Gastvortrag)</span>",
+      "weight": 7,
+      "order": 920,
+      "tags": [
+        "Teil I Fossile Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:ce28334fb896",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "VO5 Fette und Oele",
+      "source": "VO5 Nachwachsende Rohstoffe, Fette und Oele",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele\n\nWie werden nachwachsende Rohstoffe grob nach ihrem natuerlichen Vorkommen eingeteilt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele<br><br><b>Pruefungsantwort zu Einteilung nachwachsender Rohstoffe nach Vorkommen:</b><ul><li>Definition: land- und forstwirtschaftlich erzeugte Produkte, stofflich oder zur Erzeugung von Waerme, Strom oder Kraftstoffen genutzt</li><li>erneuerbar, koennen in Konkurrenz zu Nahrungs- und Futtermitteln stehen</li><li>Gruppen: 1. Holz, 2. Staerke, 3. Zucker, 4. Fette & Oele</li><li>5. Naturfasern, 6. Harze, 7. Pharmakologische Grundstoffe</li></ul><span class='source'>Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele</span>",
+      "weight": 7,
+      "order": 901,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:cbc9ded33f37",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "VO5 Fette und Oele",
+      "source": "VO5 Nachwachsende Rohstoffe, Fette und Oele",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele\n\nWie verteilt sich die Nutzung nachwachsender Rohstoffe zwischen energetischer und stofflicher Verwendung (grobe Trends)?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele<br><br><b>Pruefungsantwort zu Nutzungsverteilung nachwachsender Rohstoffe:</b><ul><li>Grosser Teil energetisch genutzt (~95%), nur kleiner Teil stofflich (~5%)</li><li>Energetisch dominiert von Strom + Waerme (~87%)</li><li>Biokraftstoffe machen nur einen kleinen Anteil aus (~8%)</li><li>Zahlen: Einsatzmengen Deutschland inkl. Import, 2022</li><li>nur die groben Trends sind pruefungsrelevant</li></ul><span class='source'>Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele</span>",
+      "weight": 7,
+      "order": 902,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:2ab2b969925e",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "VO5 Fette und Oele",
+      "source": "VO5 Nachwachsende Rohstoffe, Fette und Oele",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele\n\nWas versteht man unter Biomass-to-Liquid (BtL) und welche Vorteile bietet es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele<br><br><b>Pruefungsantwort zu Biomass-to-Liquid (BtL):</b><ul><li>Vergasung der Biomasse zu Syngas, analog zu fossilen Brennstoffen (CtL, Coal-to-Liquid)</li><li>aus dem Syngas wird fluessiger Kraftstoff erzeugt</li><li>Vorteil ggü. frueheren Biofuel-Generationen: gesamte Pflanze wird genutzt</li><li>jede Pflanze nutzbar, v.a. zellulosereiche, trockene Restbiomasse</li><li>z.B. Stroh, Restholz, Kurzumtriebsplantagen (KUP), Bioabfaelle</li></ul><span class='source'>Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele</span>",
+      "weight": 7,
+      "order": 903,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:8eda4a4b2620",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "VO5 Fette und Oele",
+      "source": "VO5 Nachwachsende Rohstoffe, Fette und Oele",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele\n\nWodurch unterscheiden sich die Generationen von Biokraftstoffen bei der Rohstoffbasis?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele<br><br><b>Pruefungsantwort zu Generationen von Biokraftstoffen:</b><ul><li>1. Generation: aus nachwachsenden Rohstoffen (Anbaupflanzen)</li><li>2.-3. Generation: aus Abfallstoffen</li><li>Kritik an 1. Generation: benoetigte Agrarflaechen, Konkurrenz zu Lebensmitteln, Monokulturen</li><li>BtL gilt als Fortschritt ggü. frueheren Generationen (ganze Pflanze, jede Pflanze nutzbar)</li></ul><span class='source'>Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele</span>",
+      "weight": 7,
+      "order": 904,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:3739b9291189",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 5,
+      "sub": "VO5",
+      "subname": "VO5 Fette und Oele",
+      "source": "VO5 Nachwachsende Rohstoffe, Fette und Oele",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele\n\nVergleichen Sie Bioethanol und Biodiesel hinsichtlich THG-Einsparung, Energiegehalt und Beimischung.",
+      "a": "<b>Kontext:</b> Organische Chemie / VO5 Fette und Oele. Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele<br><br><b>Pruefungsantwort zu Bioethanol vs. Biodiesel:</b><ul><li>Bioethanol: -48% THG ggü. Ottokraftstoff (83,8 vs. 44 g CO2-Aeq MJ⁻¹); Beimischung E5, E10 (5-10 vol%), auch E100</li><li>Biodiesel: -38% THG (83,8 vs. 52 g CO2-Aeq MJ⁻¹); Beimischung B7 (7%), auch B100 (100%)</li><li>Energiegehalt: 1 L Bioethanol ~ 0,66 L Ottokraftstoff</li><li>Energiegehalt: 1 L Biodiesel ~ 0,95 L Diesel</li><li>beide: mineraloelsteuerbefreit, gemeinsame Kritik (Agrarflaechen, N2O-Emissionen, Lebensmittelkonkurrenz)</li></ul><span class='source'>Quelle: VO5 Nachwachsende Rohstoffe, Fette und Oele</span>",
+      "weight": 7,
+      "order": 905,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:5b6f1e8bad4e",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWie sind Kohlenhydrate summenformelmäßig definiert (historisch und heute)?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Summenformel und Definition der Kohlenhydrate:</b><ul><li>Historischer Name (C. Schmidt 1844): Cₙ(H₂O)ₘ, daher Kohlen-hydrate</li><li>Heutige Definition: CₙH₂ₙOₙ mit n > 3</li><li>Mindestens 1 Aldehyd- oder Ketogruppe erforderlich</li><li>Mindestens 2 Hydroxygruppen erforderlich</li><li>Synonyme: Zucker = Saccharide (gr.)</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 901,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:10419e47f21a",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_structure",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWelche Schreibweisen zur Darstellung von Zuckermolekülen gibt es und wofür stehen sie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Chemische Schreibweisen der Zuckereinheiten:</b><ul><li>Fischer-Projektion: offenkettige Darstellung, zeigt Stereochemie (D/L)</li><li>Haworth-Formel: ebene Ringdarstellung der cyclischen Form</li><li>Sessel-Konformation: räumlich realistische 3D-Darstellung des Rings</li><li>Alle drei beschreiben dasselbe Molekül in unterschiedlicher Genauigkeit</li><li>Grundlage der Ring-Ketten-Tautomerie und der α-/β-Positionsangabe</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 902,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:aaa9e37e5fca",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWie wird der Polymerisationsgrad von Polysacchariden definiert und welche Rolle spielt die AGU?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Polymerisationsgrad (DP) und Anhydroglucose-Einheit (AGU):</b><ul><li>DP = Mw / M_monomer (Molekulargewicht geteilt durch Monomergewicht)</li><li>Als Monomer wird die Anhydroglucose-Einheit (AGU) verwendet</li><li>AGU = Glucose abzüglich Wasser bei der glycosidischen Verknüpfung</li><li>Polysaccharide: (C₆H₁₀O₅)ₙ bzw. C₆ₙH₁₀ₙ₊₂O₅ₙ₊₁</li><li>Cellulose DP = 350–1000 AGU; Stärke DP = 1.850–6.200 AGU</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 903,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:3ba959d0fc33",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWie wird lösliche Stärke hergestellt und wofür wird sie eingesetzt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Lösliche Stärke:</b><ul><li>Stärke (0,6 %) in heißem Glyzerin gelöst und in Ethanol ausgefällt</li><li>Vor allem aus Kartoffelstärke</li><li>Verwendung, wenn Wasserlöslichkeit benötigt wird</li><li>Typisches Beispiel: Indikator in der Iodometrie</li><li>Abzugrenzen von Quellstärke (nur gequollen, nicht echt gelöst)</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 904,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:5b917a83fcc1",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWas ist die Iodometrie und welche Rolle spielt Stärke dabei?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Iodometrie:</b><ul><li>Quantifizierung von durch Iod oxidierten Substanzen</li><li>Redoxgleichgewicht: I₂ + 2e⁻ ⇄ 2I⁻</li><li>Bildung des Triiodids: I₂ + I⁻ ⇄ I₃⁻</li><li>Lösliche Stärke dient als Indikator (charakteristische Färbung)</li><li>Qualitativ zusätzlich als Stärkenachweis nutzbar</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 905,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:7a715c6733d8",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWas gibt das Dextrose-Äquivalent an und wie ist die Skala definiert?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Dextrose-Äquivalent (DE):</b><ul><li>Maß für den Hydrolysegrad von Stärke</li><li>Native (unhydrolysierte) Stärke: DE = 0</li><li>Reine Glucose: DE = 100</li><li>Zwischenprodukte Dextrose/Dextrine: Oligoglucose (n = 1–9)</li><li>Höherer Hydrolysegrad → höheres DE</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 906,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:12eefe978c43",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWorin unterscheiden sich säure- und enzymkatalysierte Stärkehydrolyse?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Säure- vs. enzymkatalysierte Stärkehydrolyse:</b><ul><li>Beide bauen Stärke hydrolytisch ab (auch gemischt möglich)</li><li>Säurekatalysiert: unspezifischer Abbau</li><li>Enzymkatalysiertes Hauptverfahren: α-Amylase</li><li>Vorteile der Enzymkatalyse: weniger energieaufwändig</li><li>Weitere Vorteile: wenige Nebenprodukte, höheres DE</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 907,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:73718fb6ae2c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWas versteht man unter Retrogradation von Stärke und wann tritt sie auf?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Retrogradation:</b><ul><li>Rückordnung/Wiederannäherung der Stärkeketten nach Verkleisterung</li><li>Betrifft vor allem die Amylose</li><li>Nach Quellstärke-Bildung (Verkleisterung) möglich</li><li>Bei anorganischen Stärkeestern nicht mehr möglich (Substitution verhindert sie)</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 908,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:7c2a39873b5d",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWelche Verkleisterungstemperaturen sind für die wichtigsten Stärkequellen angegeben?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Verkleisterungstemperaturen verschiedener Stärken:</b><ul><li>Kartoffelstärke: 58–60 °C</li><li>Maisstärke: 63–70 °C</li><li>Weizenstärke: ~50 °C</li><li>Verkleisterung erfolgt in heißem Wasser (kalt kaum löslich, T < 55 °C)</li><li>Bei chemisch substituierten Stärken sinkt die Verkleisterungstemperatur</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 909,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:b3d978bdf44e",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nUnter welchen Bedingungen wird Stärke chemisch derivatisiert und welche Substitutionsgrenzen gelten?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Bedingungen der chemischen Stärkederivatisierung:</b><ul><li>Umsetzung als wässrige Slurries (35–40 %)</li><li>Alkalische Bedingungen</li><li>Maximaler Substitutionsgrad (DS): 3 pro AGU (drei OH-Gruppen)</li><li>Technisch typische DS-Werte: 0,001–0,2</li><li>Substituierte Stärken zeigen erniedrigte Verkleisterungstemperatur</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 910,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:7852edffb806",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWas sind anorganische Stärkeester und wofür werden sie verwendet?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Anorganische Stärkeester (Distärkephosphat):</b><ul><li>Veresterung der Stärke mit anorganischen Säuren (z. B. Phosphat)</li><li>Typischer DS ~ 0,02 (etwa 1 Derivatisierung pro 50 AGU)</li><li>Retrogradation nicht mehr möglich</li><li>Anwendung als Lebensmittelzusatzstoff (erhöht Viskosität)</li><li>Beispiele: E1410 (Monostärkephosphat), E1412 (Distärkephosphat)</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 911,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:c3dab2d735f4",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWie wird ein Stärkepfropfcopolymer hergestellt und welche Anwendung hat es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Stärkepfropfcopolymer (grafted):</b><ul><li>Schritt 1: Radikalgenerierung am Polymerrückgrat (z. B. Cer(IV)-Ammoniumnitrat)</li><li>Schritt 2: Pfropfcopolymerisation mit radikalisch polymerisierbaren Monomeren (z. B. Acrylnitril)</li><li>Nebenreaktion: oxidative Ringöffnung (unter Bildung von Ce(III) + H⁺)</li><li>Anwendung: verseiftes Acrylnitril-Pfropfcopolymer als Superabsorber (Superslurper)</li><li>Verseifung: -C≡N → -COO⁻Na⁺ und -CONH₂; Wasseraufnahme > 1.000 g/g</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 912,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:edc337629b41",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWovon hängt das Amylose/Amylopektin-Verhältnis ab und welche züchterische Bedeutung hat es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Amylose/Amylopektin-Verhältnis und Pflanzenzucht:</b><ul><li>Verhältnis ist pflanzenart-abhängig; Trennung nur schwierig möglich</li><li>Amylopektin ist strukturbedingt besser verarbeitbar → Zuchtziel</li><li>Wachsmais besonders amylosearm (~1 % Amylose)</li><li>Amylomais besonders amylosereich (~60–85 % Amylose)</li><li>Beispiele: Kartoffel ~24 %, Mais ~26 %, Erbse ~35 % Amylose</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 913,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:4141589e6a83",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 6,
+      "sub": "VO6",
+      "subname": "VO6 Kohlenhydrate und Staerke",
+      "source": "VO6 Kohlenhydrate, Staerke",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke\n\nWie verhält sich Stärke gegenüber kaltem und heißem Wasser?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO6 Kohlenhydrate und Staerke. Quelle: VO6 Kohlenhydrate, Staerke<br><br><b>Pruefungsantwort zu Löslichkeitsverhalten von Stärke:</b><ul><li>In kaltem Wasser sehr geringe Löslichkeit (T < 55 °C)</li><li>In heißem Wasser: Verkleisterung (Quellung, kein echtes Lösen)</li><li>Daraus folgt temperatursensitive Verarbeitung</li><li>Verkleisterung ist reine Quellung ohne chemische Veränderung</li></ul><span class='source'>Quelle: VO6 Kohlenhydrate, Staerke</span>",
+      "weight": 7,
+      "order": 914,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:8ac04bbbfd26",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWie unterscheiden sich Cellulose, Stärke und Chitosan in Baustein und Verknüpfung?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Cellulose, Stärke und Chitosan im Vergleich:</b><ul><li>Cellulose: aus β-Glucose, β-1,4-glykosidisch verknüpft, unverzweigt</li><li>Stärke: aus α-Glucose, α-1,4-verknüpft, verzweigt</li><li>Stärke besteht aus Amylose (α-1,4) und Amylopektin (α-1,4 und α-1,6)</li><li>Chitosan: aus Glucosamin (mit NH₂-Gruppe), β-1,4-verknüpft, unverzweigt</li><li>Gleiche Zuckerbasis, aber Verknüpfungstyp bestimmt die Eigenschaften</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 901,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:9e0ff6ce51de",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWelche Reaktivität zeigen die drei OH-Gruppen der Anhydroglucoseeinheit?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Reaktivität der OH-Gruppen der AGU:</b><ul><li>Jede Anhydroglucoseeinheit (AGU) trägt drei OH-Gruppen: an C2, C3 und C6</li><li>C6-OH: primär, am stabilsten und sterisch bevorzugt</li><li>C2-OH und C3-OH: kinetisch bevorzugt</li><li>Unterschiedliche Reaktivität steuert die Derivatisierung</li><li>Grundlage aller Cellulosederivate (max. 3 Substituenten pro AGU)</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 902,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:d55c3fcf5a08",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWomit werden Celluloseester bzw. Celluloseether hergestellt und welche Beispiele gibt es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Grundtypen der Cellulosederivate:</b><ul><li>Celluloseester: Reaktion mit organischen Säuren, Anhydriden oder anorganischen Säuren</li><li>Ester-Beispiele: Celluloseacetat, Cellulosenitrat</li><li>Celluloseether: Reaktion mit Halogenkohlenwasserstoffen, Epoxiden oder Epichlorhydrin</li><li>Ether-Beispiele: Methylcellulose, Carboxymethylcellulose, Hydroxyethylcellulose</li><li>Weitere Modifikationen: Grafting, Vernetzung, Oxidation</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 903,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:beda502742fc",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWodurch werden verschiedene Grades eines Cellulosederivat-Typs definiert?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Kenngrößen von Cellulosederivat-Graden:</b><ul><li>Substitutionsgrad DS (maximaler DS = 3)</li><li>Polymerisationsgrad DP, Kettenlängenverteilung und Polydispersität</li><li>Derivatisierungsmuster in der AGU und entlang der Kette: block, regioselektiv, random</li><li>Verteilung entlang der und innerhalb der Ketten</li><li>Reinheit und Nebenreaktionen</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 904,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:56bf8620915a",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWas ist CMC, wo wird sie eingesetzt und welche Eigenschaften hat sie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Carboxymethylcellulose (CMC):</b><ul><li>Wichtigster Celluloseether, oft als Na-Salz eingesetzt</li><li>Lebensmittelzusatz E466: Verdicker, Bindemittel, Viskositätsmodifikator</li><li>Anwendungen: Zahnpasta/Kosmetik (cellulose gum), Waschmittel, Papier, Lebensmittel, Farben</li><li>Trägt Carboxylgruppe → pH entscheidend (Salzform vs. freie Säure)</li><li>Eigenschaften: löslich in Lauge/Wasser (DS-abhängig), quellbar, gelierend, filmbildend</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 905,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:313d9e8fbb2f",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWie wird Carboxymethylcellulose synthetisiert?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu CMC-Synthese (Williamson-Ethersynthese):</b><ul><li>Hauptroute: Williamson-Ethersynthese</li><li>Schritt 1: Herstellung von Alkalicellulose</li><li>Schritt 2: Reaktion mit Chloressigsäure</li><li>Schritt 3: Neutralisation</li><li>Schritt 4: Aufreinigung (Entfernung von Natriumchlorid und Natriumglycolat)</li><li>Na-Salz geliert gut; Gelierfähigkeit sinkt bei niedrigerem pH</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 906,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:5511cb76a1eb",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWorin unterscheiden sich Papierzellstoff (paper pulp) und Chemiezellstoff (dissolving pulp)?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Papierzellstoff vs. Chemiezellstoff:</b><ul><li>Papierzellstoff: Fasern in Wasser suspendiert, auf Trockenmaschine entwässert</li><li>Papierzellstoff: alle Kohlenhydrate sollen ins Papier, hoher Hemicellulosegehalt, hoher DP</li><li>Hemicellulosen fördern dabei die Faser-Faser-Wechselwirkung</li><li>Chemiezellstoff: Fasern werden gelöst und regeneriert → lange Fasern</li><li>Chemiezellstoff: hohe Reinheit, niedrige Hemicellulosen, niedrige Anorganik, niedrige Extraktstoffe, niedriger DP</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 907,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:9422c806df28",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWelche Schritte durchläuft dissolving pulp von der Holzart bis zur Faser?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Prozesskette der Chemiezellstoff-Faser:</b><ul><li>Ablauf: Holzart → Aufschlussprozess → Bleichsequenz → Zielfaserprozess</li><li>Aufschluss: Kraft/Sulfat (alkalisch) oder Sulfit (sauer)</li><li>Bleiche: ECF (elementarchlorfrei) oder TCF (totalchlorfrei)</li><li>Beispielzuordnung: Softwood → Viscose-grade, Hardwood → Lyocell-grade</li><li>Ziel: maßgeschneiderter Zellstoff je nach Faserprozess</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 908,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:e758c66c5ff6",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWelche chemischen Vorgänge laufen beim sauren Mg-Bisulfit-Aufschluss ab?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Saurer Mg-Bisulfit-Aufschluss:</b><ul><li>Saurer Magnesium-Bisulfit-Aufschluss bei pH ~1-2</li><li>Chemikalien im Kocher: SO₂, MgO und Mg(OH)₂</li><li>Lignin wird durch Sulfonierung löslich gemacht</li><li>Hemicellulosen zu Monozuckern hydrolysiert (z.B. Xylose), Xylose teils zu Furfural dehydratisiert</li><li>Cellulose-DP über Säurehydrolyse auf gewünschtes Niveau eingestellt</li><li>Schwarzlauge entsteht (meist verbrannt), Mg-Chemikalien regeneriert, SO₂ rückgeführt</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 909,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:191606340725",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWelche Bioraffinerie-Co-Produkte fallen bei der Sulfit-Zellstoffproduktion an?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Co-Produkte der Sulfit-Zellstoffproduktion:</b><ul><li>Bio-basierte Essigsäure</li><li>Furfural: Rohstoff für Duftstoffe, Pharmazeutika, Klebstoffe, Harze, Lösungsmittel</li><li>Xylose ('Buchenzucker'): Zuckerersatz für Kaugummi, Zahnpasta</li><li>Schwarzlauge = Magnesium-Lignosulfonat: Energiegewinnung, Chemikalienrückgewinnung, Straßenbau, Bindemittel in der Aluminiumproduktion</li><li>Asche (Glasproduktion) und Mutterlauge (Mastfutter)</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 910,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:61e70d2e11f1",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWann wurden die wichtigsten Cellulose-Regeneratfasern entdeckt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Geschichte der man-made Cellulosefasern:</b><ul><li>Cellulosenitrat: 1846 entdeckt (Schönbein), 1892 'Chardonnet-Seide' in Besançon</li><li>Cupro (Kupferseide): 1857 entdeckt (Schweizer), erste Textilfabrik 1899</li><li>Celluloseacetat: 1865 entdeckt (Schützenberger), erste CA-Fabrik 1898</li><li>Viscose (Cellulosexanthogenat): 1891 (Cross, Bevan, Beadle), erste dt. Fabrik 1902/03</li><li>Direktlösung: 1939 N-Oxide (Graenacher & Sallmann), 1992 Courtaulds, 1997 Lenzing</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 911,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:35aa533c5e59",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWie unterscheiden sich Viscose- und Lyocellfasern in Herstellung und Eigenschaften?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Viscose vs. Lyocell:</b><ul><li>Viscose (CV): über Derivatisierungsprozess hergestellt</li><li>Viscose: blütenförmiger (flower-like) Querschnitt, häufigster Fasertyp</li><li>Lyocell (CLY): über physikalischen Lösungsprozess hergestellt</li><li>Lyocell: runder Querschnitt</li><li>Lyocell: hohe Festigkeit, besonders im nassen Zustand</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 912,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:15fafd5a5223",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWie funktioniert die Cellulose-Direktlösung im Lyocell-Prozess?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu NMMO und Lyocell-Direktlösung:</b><ul><li>Physikalische (direkte) Lösung der Cellulose</li><li>Lösungsmittel: N-Methylmorpholin-N-oxid (NMMO), Mischung aus NMMO, Wasser und Cellulose</li><li>NMMO ist ein Oxidationsmittel</li><li>Spinnmasse: hochviskos, erhöhte Temperatur, hoher Druck, alkalische Bedingungen</li><li>Air-gap-Spinnen, geschlossener Kreislauf (closed loop) mit NMMO-Rückgewinnung</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 913,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:295978c6d69a",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWelches Wasserstoffbrückensystem besitzt Cellulose und wie wird sie gelöst?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu H-Brückensystem der Cellulose:</b><ul><li>Ausgeprägtes Wasserstoffbrückensystem stabilisiert die Cellulose</li><li>Intramolekular: OH(2')···O(6) sowie OH(3)···O(5')</li><li>Intermolekular: OH(6)···O(3\")</li><li>H-Brücken bedingen die schwere Löslichkeit</li><li>Auflösung über Derivatisierung, Komplexierung oder direkte Lösung</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 914,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:b840e5bcfc1c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWie unterscheiden sich mechanisches und chemisches Recycling von Cellulosefasern?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Mechanisches vs. chemisches Cellulose-Recycling:</b><ul><li>Mechanisch: Textilien zerlegen, Fasern zu neuen Garnen oder Vliesen verarbeiten</li><li>Nachteil mechanisch: Qualitätsverlust (u.a. Faserlänge) begrenzt die Zahl der Zyklen</li><li>Chemisch (Cellulose): 'cellulosic waste' durch Lösen und Neuverspinnen zu Neufasern</li><li>Hoher Anspruch an Feedstock-Zusammensetzung, Sortierung und Verarbeitung</li><li>DP (Kettenlänge) sinkt während der Verarbeitung</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 915,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:ba98f5136be2",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nIn welchen Formen tritt Nanocellulose auf und welche Eigenschaften haben sie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Nanocellulose: Powders, Beads, Gels:</b><ul><li>Powders: sphärische/faserige Partikel (5-250 µm), geringe Viskositätserhöhung</li><li>Beads: sphärisch oder hohl (0,8-4 mm), großes Inkorporations- und Modifikationspotenzial</li><li>Gel: viskose Suspension bei niedrigem Feststoffgehalt, temperatur- und pH-stabil, scherverdünnend, filmbildend</li><li>Typen: MFC (mikrofibrilliert), CNF (Nanofibrillen), CNC (Nanokristalle), Aerogel</li><li>Erstes MFC bereits 1983</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 916,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:aa0b5427b437",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWelche Hölzer werden welchem Aufschlussverfahren zugeordnet?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Hart- vs. Weichholz und Aufschlussverfahren:</b><ul><li>Hartholz (hardwood): Buche und Eucalyptus</li><li>Weichholz (softwood): Fichte</li><li>Buche und Fichte werden im Sulfit-Verfahren aufgeschlossen</li><li>Eucalyptus wird im Kraft-(Sulfat-)Verfahren aufgeschlossen</li><li>Sulfit = sauer, Kraft/Sulfat = alkalisch</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 917,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:5e2f68187d68",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWie läuft der Viscose-Prozess ab und wie wird das Spinnbad zurückgewonnen?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Viscose-Prozess und Glaubersalz-Rückgewinnung:</b><ul><li>Alkalicellulose aus Pulp und Natronlauge (NaOH)</li><li>Xanthogenierung mit Schwefelkohlenstoff (CS₂) → Cellulosexanthogenat, Lösung ('Viscose')</li><li>Nassspinnen in Schwefelsäure-Spinnbad regeneriert die Cellulose</li><li>CS₂-Rückgewinnung im Prozess</li><li>Spinnbad-Rückgewinnung über Eindampfen und Kristallisation → Natriumsulfat (Na₂SO₄, Glaubersalz)</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 918,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:1a2a1e27ac53",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWie wird das Holz in der Lenzing-Bioraffinerie stofflich und energetisch genutzt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Lenzing-Bioraffinerie: Holzausnutzung:</b><ul><li>Prinzip: Nutzung des gesamten Rohstoffs Holz</li><li>~40% Zellstoff (pulp)</li><li>~10% Nebenprodukte (by-products)</li><li>~50% Bioenergie</li><li>Ziel ist die vollständige Verwertung des Holzes</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 919,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:849fbf244e1b",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 7,
+      "sub": "VO7",
+      "subname": "VO7 Holz, Cellulose und Papier",
+      "source": "VO7 Holz, Cellulose und Papier",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier\n\nWelche Schritte durchläuft das Holz vor dem Kocher?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO7 Holz, Cellulose und Papier. Quelle: VO7 Holz, Cellulose und Papier<br><br><b>Pruefungsantwort zu Holzvorbereitung zur Zellstoffproduktion:</b><ul><li>Anlieferung per LKW oder Zug, danach Lagerung</li><li>Entrindung (debarking)</li><li>Hackschnitzelproduktion (chip production)</li><li>Sortierung der Hackschnitzel</li><li>Zwischenlagerung, dann Transport zum Kocher (digester)</li></ul><span class='source'>Quelle: VO7 Holz, Cellulose und Papier</span>",
+      "weight": 7,
+      "order": 920,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:1ddfda82925d",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWodurch ist eine Faser definiert und welche Kraefte kann sie aufnehmen?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Faser - Definition und mechanische Eigenschaft:</b><ul><li>Hohes Laenge-zu-Durchmesser-Verhaeltnis > 3:1 (auch 1000:1 und laenger)</li><li>Kann keine Druckkraefte, sondern nur Zugkraefte in Laengsrichtung aufnehmen</li><li>Unterscheidung nach Rohstoff und nach Laengenbegrenzung</li><li>Produkte aus Fasern: Garne, Vliesstoffe, Faser-Kunststoff-Verbund</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 901,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:533cae96d834",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWas ist Matrixspinnen und wofuer wird es verwendet?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Matrixspinnen:</b><ul><li>Spezielles Spinnverfahren zum Verspinnen unloeslicher Polymere, z.B. PTFE (Teflon)</li><li>Unloesliches PTFE wird in waessriger Loesung dispergiert</li><li>Dispersion wird co-nassversponnen mit Viskose-Spinnmasse -> PTFE mit Viskose als Matrix eingebettet</li><li>Sintern des PTFE und Zersetzung der Viskosematrix bei hohen Temperaturen</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 902,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:dd95f756d7e9",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWie werden textile Flaechengebilde hergestellt und in welche Gruppen teilt man sie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Textile Flaechengebilde: Maschenware, Webware, Vliesstoffe:</b><ul><li>Textil (lat. textilis = gewebt, gewirkt)</li><li>Maschenware: Haekeln, Stricken, Wirken</li><li>Webware: Weben aus Ketten- und Schussfaeden</li><li>Vliesstoffe (Nonwovens): Filz</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 903,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:c04600f8ce1c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWie laeuft der Webprozess ab?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Weben:</b><ul><li>Jeder erste Kettenfaden gehoben, jeder zweite abgesenkt -> Oeffnung = Fach</li><li>Schussfaden zwischen oberer und unterer Kettenfadenreihe durchziehen</li><li>Ueberkreuzen der Kettenfaeden = Fachwechsel</li><li>Schuss ans bestehende Gewebe anschlagen</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 904,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:52f66af84f40",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWas ist Schlichten und was bewirken Kern- und Manteleffekt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Schlichten (mit Kern- und Manteleffekt):</b><ul><li>Beschlichten = Vorbehandlung von Kettgarnen gegen 'Klammern' und die damit verbundene Dehnbeanspruchung</li><li>Manteleffekt: Glaettung des Garns</li><li>Kerneffekt: Verklebung des Garnquerschnitts</li><li>Typische Schlichtmittel: Staerke, CMC, PMMA, PVA</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 905,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:b05f5d065973",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWas ist die Mercerisation und welche Eigenschaften verbessert sie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Mercerisation von Baumwolle:</b><ul><li>Faserbehandlung mit NaOH bewirkt Umkristallisation der Cellulose</li><li>Verfahrenstechnische Parameter beeinflussen das Ergebnis</li><li>Eigenschaftssteigerungen: hoeherer Glanz, Farbstoffaffinitaet, Reissfestigkeit, weicherer Griff</li><li>Wird auch fuer andere Fasern angewendet</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 906,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:8b04ee88c852",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWas sind Mischtextilien und was kennzeichnet Halbleinen?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Mischtextilien und Halbleinen:</b><ul><li>Mischtextilien kombinieren verschiedene Fasern</li><li>Halbleinen: Kettenfaden = Baumwollgarn, Schussfaden = Leinengarn</li><li>Eigenschaftssteigerung gegenueber reiner Baumwolle: bessere Feuchtigkeitsaufnahme</li><li>Anwendung z.B. Geschirrtuecher</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 907,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:dcc9c5eff1a3",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWas sind Celluloseregenerate und wie werden sie hergestellt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Celluloseregenerate - Prinzip:</b><ul><li>Aus Loesung wiedergewonnene (regenerierte) Cellulose</li><li>Prozessschritte: Loesen -> Formen -> Regenerieren -> Klassifizierung</li><li>Aktivieren = Aufquellen in 20% NaOH vor dem Loesen</li><li>Formgebungsvarianten: Filamentgarn, Spinnfaser, verpresste Folie</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 908,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:07963a121661",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWie funktioniert das Kupferseide-Ammoniak-Verfahren?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Kupferseide-Ammoniak-Verfahren:</b><ul><li>Loesung in Cuoxam (Schweizers Reagenz)</li><li>Faellung in H2O</li><li>Regeneration mit 2-6% H2SO4 (Entkupfern)</li><li>Produkt: Filamentfasern = Kupferseide = Cupro (CUP), Anwendung Kleidung (historisch)</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 909,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:d3d34c5587db",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWie laeuft das Viskose-Verfahren ab und welche Produkte entstehen?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Viskose-Verfahren:</b><ul><li>Cellulose wird in loesliches Xanthogenat ueberfuehrt</li><li>Faellung in schwefelsaurer Loesung</li><li>Produkt: Viskose (CV) = Filamentgarn = Reyon = Kunstseide</li><li>Modal (CMD): ausschliesslich aus Buchenholz, modifiziertes Verfahren, hoehere Festigkeit, schrumpffest</li><li>Folie: Cellulosehydrat = Zellglas; Cellophan mit Glycerin als Weichmacher</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 910,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:12b0f8fceede",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWodurch unterscheidet sich das Lyocell-Verfahren?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Lyocell-Verfahren:</b><ul><li>Regenerat wird nassgesponnen aus NMMO (N-Methylmorpholin-N-oxid-Monohydrat)</li><li>Loeslichkeit ist vom NMMO/H2O-Verhaeltnis abhaengig</li><li>Kreislaufprozess (im Gegensatz zum Viskose-Verfahren)</li><li>Produkt: Filamentfasern = Zellwolle, Anwendung Textilien</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 911,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:2335ccda5734",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWie wird Celluloseacetat hergestellt und wo wird es als Faser eingesetzt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Celluloseacetat als Kunstfaser:</b><ul><li>Quellung in Essigsaeure, dann Acetylierung mit Essigsaeureanhydrid (Veresterung)</li><li>Teilhydrolyse mit definierter Wassermenge, Isolierung durch Faellung in Wasser</li><li>Primaeracetate DS 2.8-3 (Cellulosetriacetat DS = 3), Sekundaeracetate DS 2-2.5</li><li>Eigenschaften: optische Klarheit, gutes antistatisches Verhalten, geringe Wasseraufnahme</li><li>Sekundaeracetate als Textilfasern (z.B. Hemden, Krawatten)</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 912,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:60dacc1abc88",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWie unterscheiden sich wichtige pflanzliche Naturfasern in ihrer Zusammensetzung?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Naturfasern - Zusammensetzung:</b><ul><li>Baumwolle: ca. 93% Cellulose, 5% Hemicellulosen, 0% Lignin</li><li>Flachs (Leinen) und Jute: ca. 72% Cellulose</li><li>Hanf: ca. 47% Cellulose</li><li>Lignin-Anteil bei Jute ca. 13%, bei Baumwolle 0% (Werte auf Trockenmasse bezogen)</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 913,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:959ccd87df10",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWie werden Zellstoffarten nach Lignin-Gehalt unterschieden?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Zellstoffarten nach Lignin-Gehalt:</b><ul><li>Holzstoff (Holzschliff): < 30% Lignin, mechanisch, Papierindustrie</li><li>Halbzellstoff: 10-20% Lignin, mechanochemisch</li><li>Vollzellstoff (Edelzellstoff): 3-5% Lignin, chemisch, chemische Industrie</li><li>Cellulose: 0% Lignin, immer gebleicht</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 914,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:6f4de420c899",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWorin unterscheiden sich mechanischer und chemischer Holzaufschluss?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Mechanischer vs. chemischer Holzaufschluss:</b><ul><li>Mechanisch -> Holzstoff; chemische Zusammensetzung des Holzes bleibt unveraendert</li><li>Chemomechanisch: milder Kochprozess zur Schnitzelerweichung (z.B. TMP, CTMP)</li><li>Chemisch -> Zellstoff; veraenderte chemische Zusammensetzung</li><li>Chemisch: Ueberfuehrung von Lignin und Hemicellulose in fluessige Form zur Abtrennung der Cellulose</li><li>Chemische Verfahren: Soda-, Sulfit- und Sulfat-Verfahren</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 915,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:e17008d70a15",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWie unterscheiden sich Sulfit- und Sulfat-Verfahren?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Sulfit- vs. Sulfat-(Kraft-)Verfahren:</b><ul><li>Sulfit-Verfahren: ca. 92% Zellulose, Aufschluss mit Turmsaeure (SO2)</li><li>Sulfit-Nebenprodukt: Ligninsulfonsaeuren = Schwarzlauge; Mg2+ statt Ca2+ fuer besseres Recycling</li><li>Sulfat-(Kraft-)Verfahren: ca. 96% Zellulose, white/green/black liquor im Kreislauf</li><li>Sulfat: Lignin-Herausloesung 12x schneller als Cellulosespaltung -> Kraftcellulose</li><li>Sulfat-Nebenprodukt: Alkali-Lignin</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 916,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:7ec686813077",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 8,
+      "sub": "VO8",
+      "subname": "VO8 Fasern und Farbstoffe",
+      "source": "VO8 Fasern und Farbstoffe",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe\n\nWelche Bleichverfahren fuer Zellstoff gibt es?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO8 Fasern und Farbstoffe. Quelle: VO8 Fasern und Farbstoffe<br><br><b>Pruefungsantwort zu Zellstoffbleichung:</b><ul><li>Ligninentfernendes Bleichen: oxidative Spaltung (z.B. Holländerbleiche Ca(OCl)2, Ozon, Peroxide) -> totalchlorfrei (TCF)</li><li>Ligninerhaltendes Bleichen: Chromophor-Oxidation oder -Reduktion (Cl2 vs. ClO2 -> elementarchlorfrei ECF)</li><li>Zweistufenverfahren mit Cl2: Vorbleiche (wasserloesliche Chlorlignine), Endbleiche mit Ca(OCl)2</li><li>Ziel: Entfaerbung durch Fortsetzung des Aufschlussprozesses</li></ul><span class='source'>Quelle: VO8 Fasern und Farbstoffe</span>",
+      "weight": 7,
+      "order": 917,
+      "tags": [
+        "Teil II Nachwachsende Rohstoffe"
+      ]
+    },
+    {
+      "id": "org:466268d777a8",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nAb welchem Molekulargewicht spricht man von einem Makromolekül und wie ist der Polymerisationsgrad definiert?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Molekulargewichtsgrenzen & Polymerisationsgrad (DP):</b><ul><li>Polymerisationsgrad DP = n = Zahl der Repetiereinheiten; DP = M(Polymer)/M(Monomer)</li><li>Absolute MW-Grenze hängt von der Hauptkettenzusammensetzung ab</li><li>Reine C-C-Kette: ≥ 10⁵ g mol⁻¹ (Bsp. PE, M = 28 → n ≥ 3,5k)</li><li>Kette mit Heteroatomen: ≥ 10⁴ g mol⁻¹ (Bsp. PET, M = 188 → n ≥ 60)</li><li>Oligomere: n = 2+ (Dimer n = 2, Trimer n = 3, …)</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 901,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:589e6d7b947c",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nNach welchen zwei Prinzipien werden Polymere benannt?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Polymerbenennung:</b><ul><li>1. Nach dem Monomer bei Kettenwachstumsreaktionen: 'Poly-' + Monomername</li><li>Bsp.: Polymer aus Ethylen = Polyethylen</li><li>2. Nach der entstandenen funktionellen Einheit bei Stufenwachstumsreaktionen: 'Poly-' + Name der funktionellen Gruppe</li><li>Bsp.: Dialkohol + Diisocyanat → Polyurethan (Urethangruppen entstehen bei der Reaktion)</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 902,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:a514c621cd34",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWelche Ebenen der räumlichen Polymerstruktur werden unterschieden?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu 3D-Struktur: Konfiguration vs. Konformation:</b><ul><li>1. Konfiguration: durch Bindungen festgelegt, z.B. Cis/trans-Isomere und Taktizität</li><li>Taktizität: ataktisch, isotaktisch, syndiotaktisch (gr. taktos = geordnet)</li><li>2. Konformation (Sekundärstruktur): intermolekulare nicht-kovalente Bindungen</li><li>Konformationen: statistisches Knäuel; gestreckt/gefaltet/Zick-Zack; Helix</li><li>3. Übermolekulare (supramolekulare) Struktur über intermolekulare nicht-kovalente Bindungen</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 903,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:40e6dc3f89b4",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWelche vier Viskositätstypen gibt es und wie verhalten sie sich unter Scherbelastung?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Vier Viskositätstypen von Fluiden:</b><ul><li>Newtonisch (idealviskos): scher-/geschwindigkeitsunabhängige Viskosität, z.B. Wasser, Öl</li><li>Dilatant: Viskosität steigt mit größerer Scherbelastung, z.B. Stärke/Wasser</li><li>Strukturviskos: Viskosität sinkt mit größerer Scherbelastung, z.B. Wandfarbe, Lack; am häufigsten für Makromoleküle</li><li>Bingham-Fluide: viskoses Verhalten tritt erst ab bestimmter Scherbelastung auf, z.B. Zahnpasta, Ketchup</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 904,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:dffb3ba1baff",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWas beschreibt die Viskosität eines Polymers und welche Faktoren beeinflussen sie?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Viskosität: Einflussfaktoren:</b><ul><li>Beschreibt das Fließverhalten in Lösung/Schmelze, d.h. den Widerstand gegen Scherkräfte</li><li>Höhere Konzentration, Molekulargewicht, Verzweigungen und intermolekulare Wechselwirkungen erhöhen die Viskosität</li><li>Höhere Temperatur senkt die Viskosität (dünnflüssiger)</li><li>Verschlaufungen der Ketten erhöhen die Viskosität</li><li>Bei Scherbelastung führt Entschlaufung zu strukturviskosem Verhalten</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 905,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:8869264b67a7",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWelche Verformungsbereiche und thermischen Übergänge zeigen Polymere?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Thermisch-mechanisches Verformungsverhalten:</b><ul><li>E-Modul = Materialkonstante, Maß für die elastische Verformbarkeit</li><li>Bereiche: Glasbereich (energie-elastisch), Gummibereich (entropie-elastisch), Fließbereich (plastisch verformbar)</li><li>Relaxation: lokale Kettensegment-Mobilität</li><li>Glasübergang: kooperative Kettensegment-Mobilität (Erweichen), in allen Polymeren, unterscheidet Elastomer/Duromer</li><li>Schmelzen: nur teilkristalline Polymere (Thermoplasten); Zersetzen: alle Polymere</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 906,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:5532e36f1991",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWelche thermodynamischen Voraussetzungen müssen für Polyreaktionen erfüllt sein?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Thermodynamik der Polyreaktionen & Ceiling-Temperatur:</b><ul><li>Polyreaktionen sind Gleichgewichtsreaktionen (nM ⇄ Mₙ); Voraussetzung ΔG < 0</li><li>ΔG = ΔH − T·ΔS</li><li>n Moleküle → 1 Molekül, daher typischerweise ΔS < 0, was ΔG erhöht</li><li>Deshalb muss die Reaktion exotherm sein (ΔH < 0)</li><li>Ceiling-Temperatur: Ausgleich von ΔS durch ΔH nicht mehr möglich, ΔG = 0, Hin- und Rückreaktion gleich schnell → makroskopisch keine Polyreaktion</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 907,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:505f7e6e170a",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_fact",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWie hängt der Polymerisationsgrad einer Stufenwachstumsreaktion von Stöchiometrie und Umsatz ab?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Carothers-Gleichung:</b><ul><li>Xₙ = Pn hängt vom stöchiometrischen Verhältnis r = A/B und vom Umsatz p ab</li><li>Allgemein: Xₙ = (1 + r) / (1 + r − 2·p·r)</li><li>Bei exakter Stöchiometrie (r = 1): Xₙ = 1 / (1 − p)</li><li>Stöchiometrisches Verhältnis bestimmt Polymerisationsgrad, Molekulargewicht und Endgruppen</li><li>Hohe Molekulargewichte erfordern nahezu vollständigen Umsatz</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 908,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:c31f6d03d00f",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_compare",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nVergleichen Sie Schmelz-, Lösungs- und Grenzflächenpolykondensation.",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Technische Kondensationsverfahren:</b><ul><li>Schmelzpolykondensation: häufigstes/wirtschaftlichstes Verfahren; Monomere aufschmelzen, niedermolekulare Bestandteile abdestillieren; T > 250 °C, oft Vakuum, lange Reaktionszeiten (Stöchiometrie kritisch)</li><li>Lösungspolykondensation: für besonders hochschmelzende Polymere; Wasser azeotrop abschleppen (z.B. + Toluol) oder HCl mit Säurefängern neutralisieren (z.B. NaOH in DMA)</li><li>Grenzflächenpolykondensation: Monomere in nicht-mischbaren LM (z.B. Disäurechlorid organisch + Diamin wässrig)</li><li>Grenzfläche: + schnell, niedrige Temperatur, weniger stöchiometrie-sensibel</li><li>Grenzfläche: − Säurechlorid teuer/nicht lagerstabil, LM-Regeneration und Salze als Nebenprodukte</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 909,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:5474e468eede",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWie werden Epoxidharze aufgebaut und ausgehärtet?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Epoxidharze (EP-Harze):</b><ul><li>Polyaddition: Epoxid-Präpolymere + Alkohole/Amine/Säuren (keine Abspaltung kleiner Moleküle)</li><li>Präpolymer-Herstellung über Glycidylgruppen; Präpolymer-Molmasse abhängig vom Molverhältnis</li><li>Aushärtung = eigentliche Additionsreaktion: coreaktiv (Kalthärtung mit Di-/Polyaminen; Heißhärtung > 100 °C mit Dicarbonsäureanhydriden) oder katalytisch (Alkoholaddition durch tertiäre Amine)</li><li>Eigenschaften: sehr gute Haftfestigkeit auf fast allen Werkstoffen, geringer Schwund, gute Chemikalien-/H₂O-Beständigkeit</li><li>Anwendung: 2K-Kleber (Uhu plus), Lack-/Gießharze, faserverstärkte Verbundstoffe</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 910,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:96f802a6f968",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_process",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWie verläuft die Insertionspolymerisation und wodurch entsteht die Taktizität?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Insertionspolymerisation: Mechanismus & Taktizität:</b><ul><li>Initiation: Metallkatalysator bildet mit Monomer einen Metallkomplex als aktives Kettenende (aktive Spezies = Komplex)</li><li>Kettenwachstum: weitere Monomere werden zwischen Kette und Metallkomplex insertiert</li><li>Termination: Lösen der Metall-Polymer-Bindung, meist nur als seltene Nebenreaktion</li><li>Klassische metallorganische Katalysatoren werden durch polare Monomere vergiftet → Monomere sind Olefine (z.B. Ethylen, Propylen)</li><li>Keine freie Drehbarkeit des Monomers nahe dem Katalysator; abwechselnde Koordinationsstellen führen zu Isotaktizität (bei prochiralem Monomer, vgl. PE vs. PP)</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 911,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
+    },
+    {
+      "id": "org:3162f118c49b",
+      "module": "organic",
+      "deck": "anki",
+      "kap": 9,
+      "sub": "VO9",
+      "subname": "VO9 Polymerchemie",
+      "source": "VO9 Polymerchemie und Polymerisation",
+      "kind": "exam_concept",
+      "q": "Kontext: Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation\n\nWie wird Polycarbonat hergestellt und wofür wird es verwendet?",
+      "a": "<b>Kontext:</b> Organische Chemie / VO9 Polymerchemie. Quelle: VO9 Polymerchemie und Polymerisation<br><br><b>Pruefungsantwort zu Polycarbonat (PC):</b><ul><li>Grenzflächenpolykondensation: Bisphenol A + Phosgen</li><li>Schmelzpolykondensation: Bisphenol A + Diphenylcarbonat</li><li>Eigenschaften: hart, fest, widerstandsfähig, beständig, transparent; Tg ≈ 150 °C, Schmelzpunkt 220–230 °C</li><li>Verarbeitung: alle gängigen thermoplastischen Verfahren</li><li>Anwendung: CD/DVD, Elektroteile, Brillengläser, optische Linsen, Leuchtenabdeckungen, Fenster</li></ul><span class='source'>Quelle: VO9 Polymerchemie und Polymerisation</span>",
+      "weight": 7,
+      "order": 912,
+      "tags": [
+        "Polymere",
+        "Teil III Polymerchemie"
+      ]
     }
   ],
   "coverage": [
@@ -13584,7 +15381,7 @@
       "module": "organic",
       "kap": 1,
       "name": "VO1 Fossile Rohstoffe: Grundlagen",
-      "anki": 47,
+      "anki": 55,
       "sources": [
         "VO1 Einfuehrung, Fossile Rohstoffe"
       ]
@@ -13593,7 +15390,7 @@
       "module": "organic",
       "kap": 2,
       "name": "VO2 Raffinerie und Kohleveredelung",
-      "anki": 48,
+      "anki": 57,
       "sources": [
         "VO2 Raffinerieprozesse"
       ]
@@ -13602,7 +15399,7 @@
       "module": "organic",
       "kap": 3,
       "name": "VO3 Raffinerieprozesse (Vertiefung)",
-      "anki": 39,
+      "anki": 59,
       "sources": [
         "VO3 Raffinerieprozesse (Gastvortrag)"
       ]
@@ -13620,7 +15417,7 @@
       "module": "organic",
       "kap": 5,
       "name": "VO5 Fette und Oele",
-      "anki": 43,
+      "anki": 48,
       "sources": [
         "VO5 Nachwachsende Rohstoffe, Fette und Oele"
       ]
@@ -13629,7 +15426,7 @@
       "module": "organic",
       "kap": 6,
       "name": "VO6 Kohlenhydrate und Staerke",
-      "anki": 44,
+      "anki": 58,
       "sources": [
         "VO6 Kohlenhydrate, Staerke"
       ]
@@ -13638,7 +15435,7 @@
       "module": "organic",
       "kap": 7,
       "name": "VO7 Holz, Cellulose und Papier",
-      "anki": 39,
+      "anki": 59,
       "sources": [
         "VO7 Holz, Cellulose und Papier"
       ]
@@ -13647,7 +15444,7 @@
       "module": "organic",
       "kap": 8,
       "name": "VO8 Fasern und Farbstoffe",
-      "anki": 43,
+      "anki": 60,
       "sources": [
         "VO8 Fasern und Farbstoffe"
       ]
@@ -13656,7 +15453,7 @@
       "module": "organic",
       "kap": 9,
       "name": "VO9 Polymerchemie",
-      "anki": 55,
+      "anki": 67,
       "sources": [
         "VO9 Polymerchemie und Polymerisation"
       ]
