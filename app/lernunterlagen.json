@@ -884,8 +884,8 @@
    "title": "VO1 Fossile Rohstoffe: Grundlagen",
    "file": "organic-01.pdf",
    "pages": 55,
-   "cards_total": 47,
-   "cards_anchored": 45,
+   "cards_total": 55,
+   "cards_anchored": 53,
    "page_cards": {
     "3": [
      "org:b8e0ff0efaa2"
@@ -896,12 +896,21 @@
      "org:9656b74442c8",
      "org:9545a638171e"
     ],
+    "5": [
+     "org:007e34747c29"
+    ],
     "7": [
      "org:d65e62d08f6b"
+    ],
+    "8": [
+     "org:60e48f85fd8a"
     ],
     "9": [
      "org:0bfffd88c52c",
      "org:d3d77f801088"
+    ],
+    "10": [
+     "org:827322c49e70"
     ],
     "11": [
      "org:204bcbeda3b3",
@@ -933,7 +942,8 @@
      "org:a48b519e836b"
     ],
     "19": [
-     "org:f5f2d288bb30"
+     "org:f5f2d288bb30",
+     "org:9cfcc20a687b"
     ],
     "21": [
      "org:32178dac7d93",
@@ -943,16 +953,23 @@
     "22": [
      "org:6cd4cacea5aa"
     ],
+    "27": [
+     "org:ae04b1d91901"
+    ],
     "30": [
      "org:ab3b372e551d"
     ],
     "32": [
      "org:72136948d33e"
     ],
+    "33": [
+     "org:3a0e8ca6aa03"
+    ],
     "35": [
      "org:10ecec59973d",
      "org:100eedf851c3",
-     "org:350ba668f2ea"
+     "org:350ba668f2ea",
+     "org:4488940852bb"
     ],
     "37": [
      "org:155f2b0d70d5"
@@ -966,7 +983,8 @@
      "org:de8afb554a6e",
      "org:6e8fd7fd5992",
      "org:e848c44bf412",
-     "org:b4c490416df9"
+     "org:b4c490416df9",
+     "org:fad14ee11293"
     ],
     "45": [
      "org:c453a7b0054b"
@@ -986,12 +1004,13 @@
    "title": "VO2 Raffinerie und Kohleveredelung",
    "file": "organic-02.pdf",
    "pages": 54,
-   "cards_total": 48,
-   "cards_anchored": 48,
+   "cards_total": 57,
+   "cards_anchored": 57,
    "page_cards": {
     "16": [
      "org:765ec526828b",
-     "org:062c211fc2a9"
+     "org:062c211fc2a9",
+     "org:92bb673fc3a9"
     ],
     "33": [
      "org:e61c0455ec2b"
@@ -1010,7 +1029,13 @@
      "org:16f9440f1584",
      "org:bf65361dd4d5",
      "org:a28dda26a41c",
-     "org:56b50a7cad52"
+     "org:56b50a7cad52",
+     "org:a8b10006ba79",
+     "org:b5887bd497f2",
+     "org:8e96975257eb",
+     "org:1ac68919a53c",
+     "org:041c6912db62",
+     "org:d3b1ea426aa3"
     ],
     "37": [
      "org:9927ec87c81d",
@@ -1038,7 +1063,8 @@
     ],
     "41": [
      "org:bc939a36cb50",
-     "org:56b8ee30ed6a"
+     "org:56b8ee30ed6a",
+     "org:b35e57a644e5"
     ],
     "42": [
      "org:631d39d8aa05",
@@ -1050,7 +1076,8 @@
      "org:62a02f2cecaf",
      "org:7d1bd21bb1e0",
      "org:6a7c978e1b33",
-     "org:ff44ae966077"
+     "org:ff44ae966077",
+     "org:f7ccb2f6a1be"
     ],
     "50": [
      "org:42ab325e6e9c",
@@ -1074,20 +1101,27 @@
    "title": "VO3 Raffinerieprozesse (Vertiefung)",
    "file": "organic-03.pdf",
    "pages": 33,
-   "cards_total": 39,
-   "cards_anchored": 31,
+   "cards_total": 59,
+   "cards_anchored": 51,
    "page_cards": {
     "5": [
      "org:de10f06ebc16",
-     "org:4b39e14821dd"
+     "org:4b39e14821dd",
+     "org:4b2746f22a54"
+    ],
+    "6": [
+     "org:4c49fca4400c"
     ],
     "8": [
      "org:5b137e96a941",
      "org:b5c311cc5d77",
-     "org:33d36c735573"
+     "org:33d36c735573",
+     "org:fd63489a78b4"
     ],
     "9": [
-     "org:3788f071c41e"
+     "org:3788f071c41e",
+     "org:735561a83f03",
+     "org:079a540fd20f"
     ],
     "10": [
      "org:f990804407d8",
@@ -1101,7 +1135,11 @@
     "12": [
      "org:dede28b041b2",
      "org:711d6041b0d5",
-     "org:1d25747c47f9"
+     "org:1d25747c47f9",
+     "org:f3e421c8b08c"
+    ],
+    "13": [
+     "org:1dc6a1fd0da9"
     ],
     "14": [
      "org:d52959288e70",
@@ -1113,12 +1151,25 @@
      "org:b4a3bc7f8047"
     ],
     "17": [
-     "org:c00a5acdf88f"
+     "org:c00a5acdf88f",
+     "org:aba5dd50f6ee",
+     "org:032e507a02d8"
+    ],
+    "18": [
+     "org:84db082b5f9f",
+     "org:6e2b22c4382d"
     ],
     "19": [
      "org:5948e1bddbbc",
      "org:7c812c1d30f1",
-     "org:ee3681e8e204"
+     "org:ee3681e8e204",
+     "org:8c91aa77f796"
+    ],
+    "20": [
+     "org:0e7fdce4203e"
+    ],
+    "21": [
+     "org:d14e2dcf4c6c"
     ],
     "22": [
      "org:41a04d4666d6",
@@ -1128,11 +1179,27 @@
      "org:104cc8e6ec12",
      "org:987d3d49b28b"
     ],
+    "24": [
+     "org:83a5c47a690b"
+    ],
+    "25": [
+     "org:846254493d1b"
+    ],
     "26": [
-     "org:9dc2b3e43cbf"
+     "org:9dc2b3e43cbf",
+     "org:d48a72b05f15"
+    ],
+    "27": [
+     "org:00121f555ee4"
     ],
     "28": [
      "org:ba9ce21816ce"
+    ],
+    "29": [
+     "org:a0cfb50dd078"
+    ],
+    "30": [
+     "org:452a854a67d8"
     ]
    },
    "unanchored": [
@@ -1231,8 +1298,8 @@
    "title": "VO5 Fette und Oele",
    "file": "organic-05.pdf",
    "pages": 39,
-   "cards_total": 43,
-   "cards_anchored": 43,
+   "cards_total": 48,
+   "cards_anchored": 48,
    "page_cards": {
     "5": [
      "org:5462ee815d7e",
@@ -1263,10 +1330,21 @@
      "org:365042b4b082",
      "org:a5579445300a",
      "org:3700b97b7cd6",
-     "org:e051cd0c063d"
+     "org:e051cd0c063d",
+     "org:ce28334fb896"
+    ],
+    "9": [
+     "org:cbc9ded33f37"
+    ],
+    "15": [
+     "org:3739b9291189"
     ],
     "17": [
      "org:10fe4bab443b"
+    ],
+    "18": [
+     "org:2ab2b969925e",
+     "org:8eda4a4b2620"
     ],
     "23": [
      "org:3f29e72fd612",
@@ -1302,8 +1380,8 @@
    "title": "VO6 Kohlenhydrate und Staerke",
    "file": "organic-06.pdf",
    "pages": 29,
-   "cards_total": 44,
-   "cards_anchored": 31,
+   "cards_total": 58,
+   "cards_anchored": 45,
    "page_cards": {
     "4": [
      "org:ba30431ba6a4",
@@ -1323,7 +1401,9 @@
      "org:34235b877291",
      "org:7a9e298e57ca",
      "org:0b0cf41aac18",
-     "org:d8e9b64c0264"
+     "org:d8e9b64c0264",
+     "org:5b6f1e8bad4e",
+     "org:aaa9e37e5fca"
     ],
     "8": [
      "org:d6085c1d42ac",
@@ -1332,7 +1412,8 @@
     ],
     "9": [
      "org:a785eea717a2",
-     "org:9f9ef9e234b9"
+     "org:9f9ef9e234b9",
+     "org:10419e47f21a"
     ],
     "13": [
      "org:c8356851ac95",
@@ -1343,20 +1424,35 @@
     ],
     "16": [
      "org:a3fe091c6e39",
-     "org:185c59d7a2e5"
+     "org:185c59d7a2e5",
+     "org:edc337629b41"
     ],
     "19": [
-     "org:4e14f40491a9"
+     "org:4e14f40491a9",
+     "org:3ba959d0fc33",
+     "org:5b917a83fcc1",
+     "org:73718fb6ae2c",
+     "org:4141589e6a83"
     ],
     "20": [
-     "org:6306cbedb247"
+     "org:6306cbedb247",
+     "org:7a715c6733d8",
+     "org:12eefe978c43"
+    ],
+    "21": [
+     "org:7c2a39873b5d",
+     "org:b3d978bdf44e"
+    ],
+    "22": [
+     "org:7852edffb806"
     ],
     "24": [
      "org:6314d5b4009d"
     ],
     "25": [
      "org:2712fdfa1668",
-     "org:fb780023f832"
+     "org:fb780023f832",
+     "org:c3dab2d735f4"
     ]
    },
    "unanchored": [
@@ -1381,9 +1477,12 @@
    "title": "VO7 Holz, Cellulose und Papier",
    "file": "organic-07.pdf",
    "pages": 78,
-   "cards_total": 39,
-   "cards_anchored": 39,
+   "cards_total": 59,
+   "cards_anchored": 59,
    "page_cards": {
+    "4": [
+     "org:8ac04bbbfd26"
+    ],
     "7": [
      "org:51b138784c1c",
      "org:bed158f569d7",
@@ -1417,19 +1516,58 @@
      "org:9e189619c4a7",
      "org:6494c08be238",
      "org:97aff1446f65",
-     "org:1dd2f379cf11"
+     "org:1dd2f379cf11",
+     "org:9e0ff6ce51de",
+     "org:d55c3fcf5a08",
+     "org:295978c6d69a"
+    ],
+    "8": [
+     "org:beda502742fc"
     ],
     "10": [
      "org:93663d1b7510",
-     "org:ad0c5e10aaf6"
+     "org:ad0c5e10aaf6",
+     "org:56bf8620915a",
+     "org:313d9e8fbb2f",
+     "org:1a2a1e27ac53"
+    ],
+    "26": [
+     "org:aa0b5427b437"
+    ],
+    "29": [
+     "org:849fbf244e1b"
+    ],
+    "31": [
+     "org:5511cb76a1eb"
+    ],
+    "32": [
+     "org:9422c806df28"
     ],
     "33": [
      "org:e4cb893cea72",
-     "org:6fb359f23f16"
+     "org:6fb359f23f16",
+     "org:e758c66c5ff6"
+    ],
+    "35": [
+     "org:191606340725"
     ],
     "40": [
      "org:577c04462584",
-     "org:6ac69f7ebb81"
+     "org:6ac69f7ebb81",
+     "org:61e70d2e11f1",
+     "org:5e2f68187d68"
+    ],
+    "41": [
+     "org:35aa533c5e59"
+    ],
+    "53": [
+     "org:15fafd5a5223"
+    ],
+    "63": [
+     "org:b840e5bcfc1c"
+    ],
+    "71": [
+     "org:ba98f5136be2"
     ]
    },
    "unanchored": []
@@ -1440,8 +1578,8 @@
    "title": "VO8 Fasern und Farbstoffe",
    "file": "organic-08.pdf",
    "pages": 40,
-   "cards_total": 43,
-   "cards_anchored": 43,
+   "cards_total": 60,
+   "cards_anchored": 60,
    "page_cards": {
     "5": [
      "org:74a6de5c0676",
@@ -1476,8 +1614,39 @@
      "org:51d512138a92",
      "org:0e1bffbe0b48"
     ],
+    "11": [
+     "org:959ccd87df10"
+    ],
+    "12": [
+     "org:6f4de420c899"
+    ],
+    "16": [
+     "org:e17008d70a15"
+    ],
+    "17": [
+     "org:7ec686813077"
+    ],
+    "19": [
+     "org:dcc9c5eff1a3"
+    ],
+    "20": [
+     "org:07963a121661"
+    ],
+    "21": [
+     "org:d3d34c5587db"
+    ],
+    "22": [
+     "org:12b0f8fceede"
+    ],
+    "26": [
+     "org:2335ccda5734"
+    ],
+    "30": [
+     "org:60dacc1abc88"
+    ],
     "32": [
-     "org:a5ef3963948b"
+     "org:a5ef3963948b",
+     "org:1ddfda82925d"
     ],
     "33": [
      "org:56fe6cb0e679",
@@ -1491,6 +1660,18 @@
      "org:bcc4835e176a",
      "org:333c618e6354",
      "org:daf518d1a596"
+    ],
+    "37": [
+     "org:533cae96d834"
+    ],
+    "38": [
+     "org:dd95f756d7e9",
+     "org:c04600f8ce1c",
+     "org:52f66af84f40"
+    ],
+    "39": [
+     "org:b05f5d065973",
+     "org:8b04ee88c852"
     ]
    },
    "unanchored": []
@@ -1501,8 +1682,8 @@
    "title": "VO9 Polymerchemie",
    "file": "organic-09.pdf",
    "pages": 76,
-   "cards_total": 55,
-   "cards_anchored": 54,
+   "cards_total": 67,
+   "cards_anchored": 66,
    "page_cards": {
     "4": [
      "org:0ff4af8f8e8f",
@@ -1517,6 +1698,9 @@
      "org:5b8d655aa438",
      "org:6995b7fed891"
     ],
+    "9": [
+     "org:466268d777a8"
+    ],
     "10": [
      "org:d63ecca60add"
     ],
@@ -1524,12 +1708,23 @@
      "org:b9c1d04cde3c"
     ],
     "13": [
-     "org:54bbec151936"
+     "org:54bbec151936",
+     "org:589e6d7b947c"
+    ],
+    "14": [
+     "org:a514c621cd34"
     ],
     "15": [
      "org:b632b152c3a9",
      "org:f1678b7b366d",
      "org:d63ace7c7bd8"
+    ],
+    "16": [
+     "org:40e6dc3f89b4",
+     "org:dffb3ba1baff"
+    ],
+    "18": [
+     "org:8869264b67a7"
     ],
     "19": [
      "org:bb61de28a79d",
@@ -1537,6 +1732,9 @@
     ],
     "22": [
      "org:02b168cf07ff"
+    ],
+    "24": [
+     "org:5532e36f1991"
     ],
     "33": [
      "org:5a86728be9c6"
@@ -1546,18 +1744,33 @@
      "org:6c268e6e5c97",
      "org:0e408f228dbf"
     ],
+    "36": [
+     "org:505f7e6e170a"
+    ],
     "39": [
      "org:afeb3948fbf1"
+    ],
+    "40": [
+     "org:c31f6d03d00f"
     ],
     "44": [
      "org:1c301622e2ff",
      "org:8ea210665551"
     ],
+    "45": [
+     "org:3162f118c49b"
+    ],
     "49": [
      "org:0c6c5732d9a0"
     ],
+    "53": [
+     "org:5474e468eede"
+    ],
     "58": [
      "org:14000df95b23"
+    ],
+    "62": [
+     "org:96f802a6f968"
     ],
     "63": [
      "org:08c39ab22ac6"
@@ -4251,6 +4464,54 @@
    "page": 15,
    "score": 1.6
   },
+  "org:827322c49e70": {
+   "module": "organic",
+   "kap": 1,
+   "page": 10,
+   "score": 6.13
+  },
+  "org:007e34747c29": {
+   "module": "organic",
+   "kap": 1,
+   "page": 5,
+   "score": 12.12
+  },
+  "org:60e48f85fd8a": {
+   "module": "organic",
+   "kap": 1,
+   "page": 8,
+   "score": 2.69
+  },
+  "org:ae04b1d91901": {
+   "module": "organic",
+   "kap": 1,
+   "page": 27,
+   "score": 6.32
+  },
+  "org:3a0e8ca6aa03": {
+   "module": "organic",
+   "kap": 1,
+   "page": 33,
+   "score": 5.74
+  },
+  "org:9cfcc20a687b": {
+   "module": "organic",
+   "kap": 1,
+   "page": 19,
+   "score": 8.26
+  },
+  "org:fad14ee11293": {
+   "module": "organic",
+   "kap": 1,
+   "page": 39,
+   "score": 12.08
+  },
+  "org:4488940852bb": {
+   "module": "organic",
+   "kap": 1,
+   "page": 35,
+   "score": 4.31
+  },
   "org:42ab325e6e9c": {
    "module": "organic",
    "kap": 2,
@@ -4539,6 +4800,60 @@
    "page": 43,
    "score": 2.75
   },
+  "org:a8b10006ba79": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 5.88
+  },
+  "org:b5887bd497f2": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 3.05
+  },
+  "org:8e96975257eb": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 3.05
+  },
+  "org:1ac68919a53c": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 1.85
+  },
+  "org:92bb673fc3a9": {
+   "module": "organic",
+   "kap": 2,
+   "page": 16,
+   "score": 1.27
+  },
+  "org:041c6912db62": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 3.4
+  },
+  "org:d3b1ea426aa3": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 2.92
+  },
+  "org:b35e57a644e5": {
+   "module": "organic",
+   "kap": 2,
+   "page": 41,
+   "score": 4.84
+  },
+  "org:f7ccb2f6a1be": {
+   "module": "organic",
+   "kap": 2,
+   "page": 43,
+   "score": 3.08
+  },
   "org:41a04d4666d6": {
    "module": "organic",
    "kap": 3,
@@ -4724,6 +5039,126 @@
    "kap": 3,
    "page": 16,
    "score": 1.38
+  },
+  "org:4b2746f22a54": {
+   "module": "organic",
+   "kap": 3,
+   "page": 5,
+   "score": 7.46
+  },
+  "org:4c49fca4400c": {
+   "module": "organic",
+   "kap": 3,
+   "page": 6,
+   "score": 6.79
+  },
+  "org:fd63489a78b4": {
+   "module": "organic",
+   "kap": 3,
+   "page": 8,
+   "score": 8.14
+  },
+  "org:735561a83f03": {
+   "module": "organic",
+   "kap": 3,
+   "page": 9,
+   "score": 7.62
+  },
+  "org:079a540fd20f": {
+   "module": "organic",
+   "kap": 3,
+   "page": 9,
+   "score": 4.51
+  },
+  "org:f3e421c8b08c": {
+   "module": "organic",
+   "kap": 3,
+   "page": 12,
+   "score": 6.03
+  },
+  "org:1dc6a1fd0da9": {
+   "module": "organic",
+   "kap": 3,
+   "page": 13,
+   "score": 5.63
+  },
+  "org:84db082b5f9f": {
+   "module": "organic",
+   "kap": 3,
+   "page": 18,
+   "score": 3.14
+  },
+  "org:aba5dd50f6ee": {
+   "module": "organic",
+   "kap": 3,
+   "page": 17,
+   "score": 2.57
+  },
+  "org:032e507a02d8": {
+   "module": "organic",
+   "kap": 3,
+   "page": 17,
+   "score": 8.1
+  },
+  "org:6e2b22c4382d": {
+   "module": "organic",
+   "kap": 3,
+   "page": 18,
+   "score": 6.26
+  },
+  "org:0e7fdce4203e": {
+   "module": "organic",
+   "kap": 3,
+   "page": 20,
+   "score": 8.22
+  },
+  "org:d14e2dcf4c6c": {
+   "module": "organic",
+   "kap": 3,
+   "page": 21,
+   "score": 6.64
+  },
+  "org:8c91aa77f796": {
+   "module": "organic",
+   "kap": 3,
+   "page": 19,
+   "score": 5.9
+  },
+  "org:a0cfb50dd078": {
+   "module": "organic",
+   "kap": 3,
+   "page": 29,
+   "score": 5.54
+  },
+  "org:83a5c47a690b": {
+   "module": "organic",
+   "kap": 3,
+   "page": 24,
+   "score": 8.37
+  },
+  "org:846254493d1b": {
+   "module": "organic",
+   "kap": 3,
+   "page": 25,
+   "score": 8.27
+  },
+  "org:d48a72b05f15": {
+   "module": "organic",
+   "kap": 3,
+   "page": 26,
+   "score": 9.15
+  },
+  "org:00121f555ee4": {
+   "module": "organic",
+   "kap": 3,
+   "page": 27,
+   "score": 9.24
+  },
+  "org:452a854a67d8": {
+   "module": "organic",
+   "kap": 3,
+   "page": 30,
+   "score": 8.89
   },
   "org:567a9e11bff5": {
    "module": "organic",
@@ -5253,6 +5688,36 @@
    "page": 5,
    "score": 2.36
   },
+  "org:ce28334fb896": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 7.29
+  },
+  "org:cbc9ded33f37": {
+   "module": "organic",
+   "kap": 5,
+   "page": 9,
+   "score": 4.36
+  },
+  "org:2ab2b969925e": {
+   "module": "organic",
+   "kap": 5,
+   "page": 18,
+   "score": 6.67
+  },
+  "org:8eda4a4b2620": {
+   "module": "organic",
+   "kap": 5,
+   "page": 18,
+   "score": 2.25
+  },
+  "org:3739b9291189": {
+   "module": "organic",
+   "kap": 5,
+   "page": 15,
+   "score": 3.02
+  },
   "org:9d5158daa5ff": {
    "module": "organic",
    "kap": 6,
@@ -5438,6 +5903,90 @@
    "kap": 6,
    "page": 8,
    "score": 2.45
+  },
+  "org:5b6f1e8bad4e": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 4.87
+  },
+  "org:10419e47f21a": {
+   "module": "organic",
+   "kap": 6,
+   "page": 9,
+   "score": 4.04
+  },
+  "org:aaa9e37e5fca": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 2.09
+  },
+  "org:3ba959d0fc33": {
+   "module": "organic",
+   "kap": 6,
+   "page": 19,
+   "score": 5.37
+  },
+  "org:5b917a83fcc1": {
+   "module": "organic",
+   "kap": 6,
+   "page": 19,
+   "score": 3.22
+  },
+  "org:7a715c6733d8": {
+   "module": "organic",
+   "kap": 6,
+   "page": 20,
+   "score": 3.75
+  },
+  "org:12eefe978c43": {
+   "module": "organic",
+   "kap": 6,
+   "page": 20,
+   "score": 3.68
+  },
+  "org:73718fb6ae2c": {
+   "module": "organic",
+   "kap": 6,
+   "page": 19,
+   "score": 3.12
+  },
+  "org:7c2a39873b5d": {
+   "module": "organic",
+   "kap": 6,
+   "page": 21,
+   "score": 1.33
+  },
+  "org:b3d978bdf44e": {
+   "module": "organic",
+   "kap": 6,
+   "page": 21,
+   "score": 3.95
+  },
+  "org:7852edffb806": {
+   "module": "organic",
+   "kap": 6,
+   "page": 22,
+   "score": 4.24
+  },
+  "org:c3dab2d735f4": {
+   "module": "organic",
+   "kap": 6,
+   "page": 25,
+   "score": 6.72
+  },
+  "org:edc337629b41": {
+   "module": "organic",
+   "kap": 6,
+   "page": 16,
+   "score": 5.98
+  },
+  "org:4141589e6a83": {
+   "module": "organic",
+   "kap": 6,
+   "page": 19,
+   "score": 2.8
   },
   "org:51b138784c1c": {
    "module": "organic",
@@ -5672,6 +6221,126 @@
    "kap": 7,
    "page": 7,
    "score": 2.14
+  },
+  "org:8ac04bbbfd26": {
+   "module": "organic",
+   "kap": 7,
+   "page": 4,
+   "score": 2.76
+  },
+  "org:9e0ff6ce51de": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.23
+  },
+  "org:d55c3fcf5a08": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.91
+  },
+  "org:beda502742fc": {
+   "module": "organic",
+   "kap": 7,
+   "page": 8,
+   "score": 2.7
+  },
+  "org:56bf8620915a": {
+   "module": "organic",
+   "kap": 7,
+   "page": 10,
+   "score": 3.29
+  },
+  "org:313d9e8fbb2f": {
+   "module": "organic",
+   "kap": 7,
+   "page": 10,
+   "score": 2.36
+  },
+  "org:5511cb76a1eb": {
+   "module": "organic",
+   "kap": 7,
+   "page": 31,
+   "score": 3.0
+  },
+  "org:9422c806df28": {
+   "module": "organic",
+   "kap": 7,
+   "page": 32,
+   "score": 4.08
+  },
+  "org:e758c66c5ff6": {
+   "module": "organic",
+   "kap": 7,
+   "page": 33,
+   "score": 3.05
+  },
+  "org:191606340725": {
+   "module": "organic",
+   "kap": 7,
+   "page": 35,
+   "score": 3.29
+  },
+  "org:61e70d2e11f1": {
+   "module": "organic",
+   "kap": 7,
+   "page": 40,
+   "score": 8.91
+  },
+  "org:35aa533c5e59": {
+   "module": "organic",
+   "kap": 7,
+   "page": 41,
+   "score": 2.51
+  },
+  "org:15fafd5a5223": {
+   "module": "organic",
+   "kap": 7,
+   "page": 53,
+   "score": 3.75
+  },
+  "org:295978c6d69a": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 5.17
+  },
+  "org:b840e5bcfc1c": {
+   "module": "organic",
+   "kap": 7,
+   "page": 63,
+   "score": 3.87
+  },
+  "org:ba98f5136be2": {
+   "module": "organic",
+   "kap": 7,
+   "page": 71,
+   "score": 3.45
+  },
+  "org:aa0b5427b437": {
+   "module": "organic",
+   "kap": 7,
+   "page": 26,
+   "score": 2.73
+  },
+  "org:5e2f68187d68": {
+   "module": "organic",
+   "kap": 7,
+   "page": 40,
+   "score": 2.31
+  },
+  "org:1a2a1e27ac53": {
+   "module": "organic",
+   "kap": 7,
+   "page": 10,
+   "score": 1.93
+  },
+  "org:849fbf244e1b": {
+   "module": "organic",
+   "kap": 7,
+   "page": 29,
+   "score": 2.31
   },
   "org:a5ef3963948b": {
    "module": "organic",
@@ -5930,6 +6599,108 @@
    "kap": 8,
    "page": 33,
    "score": 3.99
+  },
+  "org:1ddfda82925d": {
+   "module": "organic",
+   "kap": 8,
+   "page": 32,
+   "score": 5.91
+  },
+  "org:533cae96d834": {
+   "module": "organic",
+   "kap": 8,
+   "page": 37,
+   "score": 7.06
+  },
+  "org:dd95f756d7e9": {
+   "module": "organic",
+   "kap": 8,
+   "page": 38,
+   "score": 4.48
+  },
+  "org:c04600f8ce1c": {
+   "module": "organic",
+   "kap": 8,
+   "page": 38,
+   "score": 6.77
+  },
+  "org:52f66af84f40": {
+   "module": "organic",
+   "kap": 8,
+   "page": 38,
+   "score": 5.1
+  },
+  "org:b05f5d065973": {
+   "module": "organic",
+   "kap": 8,
+   "page": 39,
+   "score": 5.71
+  },
+  "org:8b04ee88c852": {
+   "module": "organic",
+   "kap": 8,
+   "page": 39,
+   "score": 4.56
+  },
+  "org:dcc9c5eff1a3": {
+   "module": "organic",
+   "kap": 8,
+   "page": 19,
+   "score": 4.9
+  },
+  "org:07963a121661": {
+   "module": "organic",
+   "kap": 8,
+   "page": 20,
+   "score": 5.21
+  },
+  "org:d3d34c5587db": {
+   "module": "organic",
+   "kap": 8,
+   "page": 21,
+   "score": 6.36
+  },
+  "org:12b0f8fceede": {
+   "module": "organic",
+   "kap": 8,
+   "page": 22,
+   "score": 5.53
+  },
+  "org:2335ccda5734": {
+   "module": "organic",
+   "kap": 8,
+   "page": 26,
+   "score": 4.18
+  },
+  "org:60dacc1abc88": {
+   "module": "organic",
+   "kap": 8,
+   "page": 30,
+   "score": 4.01
+  },
+  "org:959ccd87df10": {
+   "module": "organic",
+   "kap": 8,
+   "page": 11,
+   "score": 3.84
+  },
+  "org:6f4de420c899": {
+   "module": "organic",
+   "kap": 8,
+   "page": 12,
+   "score": 3.94
+  },
+  "org:e17008d70a15": {
+   "module": "organic",
+   "kap": 8,
+   "page": 16,
+   "score": 4.85
+  },
+  "org:7ec686813077": {
+   "module": "organic",
+   "kap": 8,
+   "page": 17,
+   "score": 6.93
   },
   "org:0ff4af8f8e8f": {
    "module": "organic",
@@ -6254,6 +7025,78 @@
    "kap": 9,
    "page": 73,
    "score": 1.45
+  },
+  "org:466268d777a8": {
+   "module": "organic",
+   "kap": 9,
+   "page": 9,
+   "score": 4.36
+  },
+  "org:589e6d7b947c": {
+   "module": "organic",
+   "kap": 9,
+   "page": 13,
+   "score": 6.76
+  },
+  "org:a514c621cd34": {
+   "module": "organic",
+   "kap": 9,
+   "page": 14,
+   "score": 9.08
+  },
+  "org:40e6dc3f89b4": {
+   "module": "organic",
+   "kap": 9,
+   "page": 16,
+   "score": 9.11
+  },
+  "org:dffb3ba1baff": {
+   "module": "organic",
+   "kap": 9,
+   "page": 16,
+   "score": 4.29
+  },
+  "org:8869264b67a7": {
+   "module": "organic",
+   "kap": 9,
+   "page": 18,
+   "score": 9.88
+  },
+  "org:5532e36f1991": {
+   "module": "organic",
+   "kap": 9,
+   "page": 24,
+   "score": 6.4
+  },
+  "org:505f7e6e170a": {
+   "module": "organic",
+   "kap": 9,
+   "page": 36,
+   "score": 5.42
+  },
+  "org:c31f6d03d00f": {
+   "module": "organic",
+   "kap": 9,
+   "page": 40,
+   "score": 5.75
+  },
+  "org:5474e468eede": {
+   "module": "organic",
+   "kap": 9,
+   "page": 53,
+   "score": 4.78
+  },
+  "org:96f802a6f968": {
+   "module": "organic",
+   "kap": 9,
+   "page": 62,
+   "score": 5.77
+  },
+  "org:3162f118c49b": {
+   "module": "organic",
+   "kap": 9,
+   "page": 45,
+   "score": 6.38
   },
   "org:2a060c10e57a": {
    "module": "organic",
