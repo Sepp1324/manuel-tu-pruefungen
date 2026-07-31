@@ -106,6 +106,13 @@ jobs:
             *":$TAG") echo "Image korrekt gesetzt." ;;
             *) echo "FEHLER: Deployment-Image ist '$live', erwartet Tag '$TAG'"; exit 1 ;;
           esac
+          # IMMER einen echten Rollout erzwingen. Wenn die Spec schon auf $TAG steht
+          # (z.B. Re-Run desselben Commits), waere `set image` ein No-op und der alte
+          # Pod liefe weiter -> `rollout status` meldet instant "success", aber der
+          # laufende Pod bleibt alt. `rollout restart` setzt eine restartedAt-Annotation
+          # -> neue ReplicaSet -> frischer Pod aus der aktuellen Spec ($TAG). Damit
+          # endet Produktion garantiert auf $TAG, unabhaengig vom Ausgangszustand.
+          kubectl -n "$NAMESPACE" rollout restart deployment/organicsr
 
       - name: Rollout abwarten
         run: |
