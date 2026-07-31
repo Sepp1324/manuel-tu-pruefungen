@@ -1051,6 +1051,27 @@ function Study({ session, setSession, finish }) {
     ? pct(session.idx, Math.max(cards.length, 1))
     : pct(masteredUnique, Math.max(totalUnique, 1));
 
+  // Segmentierte Fortschrittsleiste im Wiederhol-Modus (StudySmarter-Stil):
+  // ein Segment je EINZIGARTIGER Karte, gefaerbt nach der zuletzt gegebenen Bewertung.
+  // Reihenfolge = erste Vorkommnisse in cards (Requeues fuegen nur bereits vorhandene
+  // Karten wieder ein, nie neue -> stabile Ausgangsreihenfolge).
+  let segments = null;
+  if (!isExam) {
+    const seen = new Set();
+    const order = [];
+    for (const c of cards) { if (!seen.has(c.id)) { seen.add(c.id); order.push(c.id); } }
+    const latest = {};
+    for (const r of (session.results || [])) latest[r.card_id] = r.rating;
+    const curId = card?.id;
+    const stateFor = (id) => {
+      if (id === curId) return "current";
+      const rt = latest[id];
+      if (rt === undefined) return "unseen";
+      return { 1: "again", 2: "ok", 3: "good", 4: "perfect" }[rt] || "good";
+    };
+    segments = order.map((id) => stateFor(id));
+  }
+
   useEffect(() => {
     setRevealed(false);
     setPreview({});
@@ -1361,7 +1382,13 @@ function Study({ session, setSession, finish }) {
     <section className="study">
       <div className="study-top">
         <button onClick={finish}><ArrowLeft size={16} /> Zurueck</button>
-        <div className="progress"><span style={{ width: `${progress}%` }} /></div>
+        {isExam ? (
+          <div className="progress"><span style={{ width: `${progress}%` }} /></div>
+        ) : (
+          <div className="seg-progress" role="progressbar" aria-valuemin={0} aria-valuemax={totalUnique} aria-valuenow={masteredUnique} title={`${masteredUnique}/${totalUnique} gemeistert`}>
+            {segments.map((s, i) => <span key={i} className={`seg seg-${s}`} />)}
+          </div>
+        )}
         <span>{isExam ? `${session.idx + 1}/${cards.length}` : `${masteredUnique}/${totalUnique} gelernt · noch ${remaining}`}</span>
         {isTimedExam && <span className={`study-timer ${secondsLeft <= 60 ? "urgent" : ""}`}>{formatSeconds(secondsLeft)}</span>}
         <button onClick={startEdit}><Edit3 size={16} /> Bearbeiten</button>
