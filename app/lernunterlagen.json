@@ -1,0 +1,6403 @@
+{
+ "chapters": [
+  {
+   "module": "inorganic",
+   "kap": 1,
+   "title": "Einheit 01 Einfuehrung",
+   "file": "inorganic-01.pdf",
+   "pages": 34,
+   "cards_total": 29,
+   "cards_anchored": 19,
+   "page_cards": {
+    "3": [
+     "inorg:07d3559670b4",
+     "inorg:9657c4c91a1e",
+     "inorg:4820cf0241bb",
+     "inorg:a353fe700671",
+     "inorg:6deb0d5f3163"
+    ],
+    "5": [
+     "inorg:7cc13d9898ad"
+    ],
+    "9": [
+     "inorg:d3880af7ccb0"
+    ],
+    "10": [
+     "inorg:9074236ac6a8"
+    ],
+    "11": [
+     "inorg:6e48d375a037",
+     "inorg:d262326066ee",
+     "inorg:da8ca19a64f8"
+    ],
+    "12": [
+     "inorg:5e5805013f10"
+    ],
+    "14": [
+     "inorg:c72d2b1a3670",
+     "inorg:86d2dd0aac29"
+    ],
+    "25": [
+     "inorg:ad57fabc8cbf"
+    ],
+    "26": [
+     "inorg:090bf2048805",
+     "inorg:857e5e27a4be"
+    ],
+    "33": [
+     "inorg:ad347082741f",
+     "inorg:c0f8a68b51c6"
+    ]
+   },
+   "unanchored": [
+    "inorg:be4059f2cde3",
+    "inorg:03ab8d9178db",
+    "inorg:db60b6144c53",
+    "inorg:ef6c431e048b",
+    "inorg:933ea0b34360",
+    "inorg:5822729967d0",
+    "inorg:9accb927f7ab",
+    "inorg:296478b8b664",
+    "inorg:dcac1c5ef77c",
+    "inorg:030b9a3a6591"
+   ]
+  },
+  {
+   "module": "inorganic",
+   "kap": 2,
+   "title": "Einheit 02 Rohstoffe",
+   "file": "inorganic-02.pdf",
+   "pages": 38,
+   "cards_total": 34,
+   "cards_anchored": 31,
+   "page_cards": {
+    "4": [
+     "inorg:a8b9c5a9de38"
+    ],
+    "7": [
+     "inorg:d22ff2f40f93"
+    ],
+    "10": [
+     "inorg:da1f84bc0bb0"
+    ],
+    "11": [
+     "inorg:82d97187f57c",
+     "inorg:71035a83d497"
+    ],
+    "12": [
+     "inorg:4eb970ef44d4",
+     "inorg:01c5a55b761d",
+     "inorg:0fed3b35454a"
+    ],
+    "16": [
+     "inorg:4ac666733d80",
+     "inorg:b35f71373896",
+     "inorg:d358d8662978",
+     "inorg:eef4d90b186c",
+     "inorg:1c46cfb90f3a",
+     "inorg:caef1c748b8f"
+    ],
+    "20": [
+     "inorg:4ce94476a21d"
+    ],
+    "25": [
+     "inorg:d2f5a7efb53e",
+     "inorg:7a09be9e81fc"
+    ],
+    "30": [
+     "inorg:d1a6ec910986",
+     "inorg:2a37b25e271d"
+    ],
+    "31": [
+     "inorg:9177472d9e6f",
+     "inorg:13af1275f755"
+    ],
+    "33": [
+     "inorg:0f794d78eae4",
+     "inorg:ae0a2caf9585",
+     "inorg:1b6f9fcd28e0",
+     "inorg:3d7baa6b497c"
+    ],
+    "37": [
+     "inorg:46c5c425f6ac",
+     "inorg:73d69070bc87",
+     "inorg:deac6b17a269",
+     "inorg:33755556b1ed",
+     "inorg:fc6789f5af8b",
+     "inorg:031df21927e8"
+    ]
+   },
+   "unanchored": [
+    "inorg:7d3f00b26dd0",
+    "inorg:46b70464e4ef",
+    "inorg:34b11e6a6285"
+   ]
+  },
+  {
+   "module": "inorganic",
+   "kap": 3,
+   "title": "Einheit 03 Einleitung Metallurgie",
+   "file": "inorganic-03.pdf",
+   "pages": 44,
+   "cards_total": 42,
+   "cards_anchored": 41,
+   "page_cards": {
+    "4": [
+     "inorg:1ba5b3bdc9b8"
+    ],
+    "5": [
+     "inorg:c45023e84285"
+    ],
+    "6": [
+     "inorg:7c2e22e6b795",
+     "inorg:83a59af3181b"
+    ],
+    "10": [
+     "inorg:8936da156b9f",
+     "inorg:2a71184e85fb",
+     "inorg:5c44adbf33ea"
+    ],
+    "11": [
+     "inorg:8f3511f6a243"
+    ],
+    "13": [
+     "inorg:97496004ac92",
+     "inorg:fb1226518a6e"
+    ],
+    "17": [
+     "inorg:f5567f87dee9",
+     "inorg:83f8e64fc502",
+     "inorg:9cd98be5bc0e"
+    ],
+    "20": [
+     "inorg:9c1c02d7e16b",
+     "inorg:ba1aa4693210"
+    ],
+    "21": [
+     "inorg:9a7b611d669d"
+    ],
+    "22": [
+     "inorg:2f7210a29175"
+    ],
+    "23": [
+     "inorg:25d435f923f8"
+    ],
+    "24": [
+     "inorg:65df4a81da47",
+     "inorg:dc0cf394a91f"
+    ],
+    "25": [
+     "inorg:da35dadea3ad",
+     "inorg:80ebb3a8f2f8",
+     "inorg:4a42114b2d49",
+     "inorg:7d18a67978ff",
+     "inorg:5c23aff38f31",
+     "inorg:068b1b504aaf",
+     "inorg:6fcdb90be447",
+     "inorg:6b7ca789925b"
+    ],
+    "27": [
+     "inorg:0e303bc7fbb2"
+    ],
+    "28": [
+     "inorg:f313b501daaa",
+     "inorg:24f18959b589",
+     "inorg:7cf32592a04e"
+    ],
+    "29": [
+     "inorg:1a0896553bd4"
+    ],
+    "34": [
+     "inorg:29a5d08fc831",
+     "inorg:a62367495d1f",
+     "inorg:593b513aabfb",
+     "inorg:3079610773e4"
+    ],
+    "38": [
+     "inorg:f4fa06583b28",
+     "inorg:4cee786b564f"
+    ],
+    "42": [
+     "inorg:6499e8fc9371"
+    ],
+    "43": [
+     "inorg:0347f0f40b2c"
+    ]
+   },
+   "unanchored": [
+    "inorg:e83a374e94aa"
+   ]
+  },
+  {
+   "module": "inorganic",
+   "kap": 4,
+   "title": "Einheit 04 Tools der Metallurgie",
+   "file": "inorganic-04.pdf",
+   "pages": 23,
+   "cards_total": 29,
+   "cards_anchored": 26,
+   "page_cards": {
+    "1": [
+     "inorg:71fb2ac6d6da",
+     "inorg:9081c4e4e36a",
+     "inorg:b26724f91b1b",
+     "inorg:21b3fed29dfc",
+     "inorg:5e8248493abf",
+     "inorg:1d4670fa28cd",
+     "inorg:ae30b53fae24",
+     "inorg:9e7bedb58b6f",
+     "inorg:f568f1052b17"
+    ],
+    "5": [
+     "inorg:974137cd2916"
+    ],
+    "11": [
+     "inorg:d796cee7235c",
+     "inorg:2b12d6cc3c4d"
+    ],
+    "12": [
+     "inorg:53abbd806496",
+     "inorg:3908e1b375eb"
+    ],
+    "17": [
+     "inorg:4a6ea78a1a2a",
+     "inorg:ea564d0f5147",
+     "inorg:b6e581a1cb0c",
+     "inorg:b468f4afe82b"
+    ],
+    "18": [
+     "inorg:b8e582b531e5",
+     "inorg:54f2390fe469"
+    ],
+    "21": [
+     "inorg:8d4ae0d408ed",
+     "inorg:4a6852f87999"
+    ],
+    "22": [
+     "inorg:135c474fdef3",
+     "inorg:407b61372184",
+     "inorg:08c79c01e530",
+     "inorg:c701e8d95540"
+    ]
+   },
+   "unanchored": [
+    "inorg:01e8f4901d63",
+    "inorg:5d2a0a65c590",
+    "inorg:9647cd9c04c0"
+   ]
+  },
+  {
+   "module": "inorganic",
+   "kap": 5,
+   "title": "Einheit 05 Eisen und Stahl",
+   "file": "inorganic-05.pdf",
+   "pages": 53,
+   "cards_total": 54,
+   "cards_anchored": 54,
+   "page_cards": {
+    "3": [
+     "inorg:f893352c75b2"
+    ],
+    "7": [
+     "inorg:ee642c5540f1"
+    ],
+    "8": [
+     "inorg:f279ba050da3"
+    ],
+    "9": [
+     "inorg:cce6c9fc70c0",
+     "inorg:93863c3c5226",
+     "inorg:10be2b73f8d6"
+    ],
+    "11": [
+     "inorg:9d13320d4910",
+     "inorg:576e9c77e8db",
+     "inorg:e688df099c8d",
+     "inorg:dbc3dbe76d31",
+     "inorg:da2e76f5f8dd"
+    ],
+    "13": [
+     "inorg:252410a20c2c"
+    ],
+    "14": [
+     "inorg:24f93353ea15",
+     "inorg:651f7c6c981a"
+    ],
+    "15": [
+     "inorg:30e111f3c0da",
+     "inorg:8387899398d1",
+     "inorg:1ff691c8be32"
+    ],
+    "17": [
+     "inorg:1493da682738",
+     "inorg:d811ca0bfd69"
+    ],
+    "20": [
+     "inorg:23a911d3c057",
+     "inorg:090e9025542e"
+    ],
+    "23": [
+     "inorg:a104f091341c",
+     "inorg:713653d6c666"
+    ],
+    "24": [
+     "inorg:719939fbdc85"
+    ],
+    "26": [
+     "inorg:483d2134623c",
+     "inorg:2de99e89e6ae"
+    ],
+    "28": [
+     "inorg:280100936331",
+     "inorg:d9e55e2f1cd4",
+     "inorg:d46ab504f106",
+     "inorg:a4c4012f2c10",
+     "inorg:9ab4a9ad9291",
+     "inorg:b1775cd80fdf",
+     "inorg:3c5350d36122",
+     "inorg:6a040ee5afec",
+     "inorg:bd5d22ffc578"
+    ],
+    "30": [
+     "inorg:7aa71fac8e08"
+    ],
+    "32": [
+     "inorg:b36212801e65",
+     "inorg:df5d22979018",
+     "inorg:635c0c1a7c0a",
+     "inorg:f199c86fb031",
+     "inorg:c0977ad29f7f"
+    ],
+    "34": [
+     "inorg:4bdbef114e23"
+    ],
+    "35": [
+     "inorg:4416fbe8ecf8"
+    ],
+    "37": [
+     "inorg:9aad99948088",
+     "inorg:27bb7fad8128"
+    ],
+    "40": [
+     "inorg:04951e9aaa06"
+    ],
+    "41": [
+     "inorg:c3aec02fdfcd"
+    ],
+    "42": [
+     "inorg:e1f9a0909ab9"
+    ],
+    "44": [
+     "inorg:fcb9ed251951",
+     "inorg:4fa604622186"
+    ],
+    "47": [
+     "inorg:0fbe8acad666"
+    ],
+    "49": [
+     "inorg:667f61b78e88",
+     "inorg:d9c51cd5ad45",
+     "inorg:5fc1fe90e5ec"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "inorganic",
+   "kap": 6,
+   "title": "Einheit 06 Kupfer und Aluminium",
+   "file": "inorganic-06.pdf",
+   "pages": 40,
+   "cards_total": 42,
+   "cards_anchored": 42,
+   "page_cards": {
+    "3": [
+     "inorg:f534d7deecbd",
+     "inorg:108d5c528c89",
+     "inorg:318cd9a649c9",
+     "inorg:fcd14bc6cd19"
+    ],
+    "4": [
+     "inorg:ce3f336e12b9",
+     "inorg:9a11de6e8e5c",
+     "inorg:2a76e2215763",
+     "inorg:366d6168ca72"
+    ],
+    "6": [
+     "inorg:989f1354d5fe"
+    ],
+    "7": [
+     "inorg:7fb3504643ad"
+    ],
+    "8": [
+     "inorg:69a584b817dd"
+    ],
+    "9": [
+     "inorg:8e5fe3a30cd0",
+     "inorg:944571c23ad5"
+    ],
+    "10": [
+     "inorg:a177f6655ff2"
+    ],
+    "14": [
+     "inorg:d2ed7bee73c5",
+     "inorg:7ea142704091",
+     "inorg:910f824ffc02"
+    ],
+    "17": [
+     "inorg:4f827637575a",
+     "inorg:d475da34cca9"
+    ],
+    "18": [
+     "inorg:31dc667f10a3"
+    ],
+    "19": [
+     "inorg:cea12e16ecfc"
+    ],
+    "20": [
+     "inorg:df7073399ae0"
+    ],
+    "25": [
+     "inorg:595766ba0b61",
+     "inorg:fd7eca2b1eab"
+    ],
+    "29": [
+     "inorg:bd9b833c1ea3"
+    ],
+    "32": [
+     "inorg:999c44152cbf"
+    ],
+    "37": [
+     "inorg:1fdae04129b6"
+    ],
+    "38": [
+     "inorg:dd0bc3e39df5",
+     "inorg:dbc4fa65377d",
+     "inorg:469acfa7c749",
+     "inorg:b1bafaaa633c",
+     "inorg:9c714fb9ba1e",
+     "inorg:fab00d341491",
+     "inorg:605f32c418e2",
+     "inorg:57ddbab0dd07",
+     "inorg:8c8b9e38ea5a",
+     "inorg:42f5f33979de",
+     "inorg:d98a08bc564a",
+     "inorg:b9837d6de960",
+     "inorg:5752d30ed912",
+     "inorg:60b7e2165df8",
+     "inorg:b6aab4e8116a"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "inorganic",
+   "kap": 7,
+   "title": "Einheit 07 Grosschemie Stickstoff",
+   "file": "inorganic-07.pdf",
+   "pages": 25,
+   "cards_total": 41,
+   "cards_anchored": 35,
+   "page_cards": {
+    "2": [
+     "inorg:63d4510851ef",
+     "inorg:8b0ec836fcfc",
+     "inorg:2bd9115db906"
+    ],
+    "6": [
+     "inorg:6029f8e7e349",
+     "inorg:640e52f4688c",
+     "inorg:4af0e28aa875",
+     "inorg:1aed33d8bbe4"
+    ],
+    "7": [
+     "inorg:656f84fcad85"
+    ],
+    "10": [
+     "inorg:a0217354bca1"
+    ],
+    "11": [
+     "inorg:34a348b766e8",
+     "inorg:7611e76e0e44",
+     "inorg:7783068fb588"
+    ],
+    "12": [
+     "inorg:b40e0de7acc6",
+     "inorg:82d315cfdb10"
+    ],
+    "14": [
+     "inorg:4ed28b28a301"
+    ],
+    "15": [
+     "inorg:1b12062a2250",
+     "inorg:90d16c635087",
+     "inorg:537635e5a7c6"
+    ],
+    "16": [
+     "inorg:ec6700e4911a",
+     "inorg:88db624d2c6b",
+     "inorg:56f15c3b0bad"
+    ],
+    "17": [
+     "inorg:a6c8d312bad2"
+    ],
+    "18": [
+     "inorg:7b7713232fc5",
+     "inorg:df053f818219"
+    ],
+    "19": [
+     "inorg:f0349e30e62f"
+    ],
+    "21": [
+     "inorg:0f89fef5e47b",
+     "inorg:cf55f9cafcdd",
+     "inorg:4e513f4a1560"
+    ],
+    "22": [
+     "inorg:2bc5f0ce3fe0"
+    ],
+    "23": [
+     "inorg:122b6b60c3dd",
+     "inorg:96bf3fe1fdee",
+     "inorg:97be9257758f",
+     "inorg:dd0877157054",
+     "inorg:f155a5c4f577",
+     "inorg:060d8b4d881d"
+    ]
+   },
+   "unanchored": [
+    "inorg:b9e1fa38e59f",
+    "inorg:551bcba60329",
+    "inorg:8a771885f8e7",
+    "inorg:380b4da138bc",
+    "inorg:0851a0af84ff",
+    "inorg:bb3b93d3388f"
+   ]
+  },
+  {
+   "module": "inorganic",
+   "kap": 8,
+   "title": "Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda",
+   "file": "inorganic-08.pdf",
+   "pages": 24,
+   "cards_total": 35,
+   "cards_anchored": 35,
+   "page_cards": {
+    "1": [
+     "inorg:c243511c0d86",
+     "inorg:07e9d98a6169",
+     "inorg:05b3f4942920",
+     "inorg:ec061fba0b82",
+     "inorg:7dbbdb07ab90"
+    ],
+    "2": [
+     "inorg:8ed4d816f7e1",
+     "inorg:d0ceb77e7327"
+    ],
+    "10": [
+     "inorg:191b391ebd38"
+    ],
+    "11": [
+     "inorg:c607d76e2178",
+     "inorg:a32a7cd27f20",
+     "inorg:d0b0e5976e82",
+     "inorg:4e020163c284",
+     "inorg:317515f82840",
+     "inorg:4da5a77f0aed",
+     "inorg:343b92671226"
+    ],
+    "12": [
+     "inorg:38a740aedace",
+     "inorg:6a5c0cced6ae"
+    ],
+    "13": [
+     "inorg:d69983894f3c",
+     "inorg:f1e67c9742a4",
+     "inorg:bf79d4605d9d",
+     "inorg:d1537732814c"
+    ],
+    "15": [
+     "inorg:e4413a0a1edd",
+     "inorg:2512ce5bd7bc",
+     "inorg:82deafb8fdc8",
+     "inorg:2b10a63dffae",
+     "inorg:a1ad28ded1a8",
+     "inorg:b03833ed3c45",
+     "inorg:e69b97335d3e"
+    ],
+    "16": [
+     "inorg:8560f272ac91"
+    ],
+    "19": [
+     "inorg:aa773f29dfe9"
+    ],
+    "20": [
+     "inorg:98e68dfd0cf3",
+     "inorg:7b2322d426ee",
+     "inorg:4d616c86cce8",
+     "inorg:9390ff82f195"
+    ],
+    "21": [
+     "inorg:9276be208b18"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "inorganic",
+   "kap": 9,
+   "title": "Einheit 09 Grosschemie Schwefel",
+   "file": "inorganic-09.pdf",
+   "pages": 15,
+   "cards_total": 36,
+   "cards_anchored": 34,
+   "page_cards": {
+    "1": [
+     "inorg:20f95a6acc10",
+     "inorg:e72fb14f75cf"
+    ],
+    "2": [
+     "inorg:13a574f0849f",
+     "inorg:6ab291dee8d7"
+    ],
+    "3": [
+     "inorg:2a344a7ad097",
+     "inorg:d4e26198879a",
+     "inorg:099181e7a8bd",
+     "inorg:d921ac3d7653"
+    ],
+    "4": [
+     "inorg:8187270f5b09"
+    ],
+    "6": [
+     "inorg:d770ef6eae9f"
+    ],
+    "8": [
+     "inorg:9e6d20711a50"
+    ],
+    "9": [
+     "inorg:81ffa439f545",
+     "inorg:be6ae811225b",
+     "inorg:7f2d8ed63a9f",
+     "inorg:55b4e2ce1724",
+     "inorg:50783d5632f3",
+     "inorg:60e12e3c2f55",
+     "inorg:0888205b2dc7"
+    ],
+    "12": [
+     "inorg:6bfde1794dd9",
+     "inorg:eeb830f0276a",
+     "inorg:480b26224e6b",
+     "inorg:532cd99a883f",
+     "inorg:d3b203caacb8",
+     "inorg:075d13269580"
+    ],
+    "13": [
+     "inorg:d0ca744809b7",
+     "inorg:4099ed6a263e",
+     "inorg:de4e059861a3",
+     "inorg:20a4a89604dd",
+     "inorg:e93a1f1b64eb"
+    ],
+    "14": [
+     "inorg:1b9164795a11",
+     "inorg:5575ceab8657",
+     "inorg:6f5b567f5907",
+     "inorg:5abed9e0d67e",
+     "inorg:e86d4933ed60"
+    ]
+   },
+   "unanchored": [
+    "inorg:33b85e21c5ce",
+    "inorg:51f738b59b3d"
+   ]
+  },
+  {
+   "module": "inorganic",
+   "kap": 10,
+   "title": "Einheit 10 Anorganische Bindemittel",
+   "file": "inorganic-10.pdf",
+   "pages": 38,
+   "cards_total": 37,
+   "cards_anchored": 36,
+   "page_cards": {
+    "3": [
+     "inorg:003e5e67aee0",
+     "inorg:7298c620889e"
+    ],
+    "4": [
+     "inorg:9f1ebb96eeef"
+    ],
+    "5": [
+     "inorg:e9dcaf4cae04"
+    ],
+    "7": [
+     "inorg:a36cee89c187",
+     "inorg:541e3e43ffa0"
+    ],
+    "13": [
+     "inorg:dd49bc4064c8"
+    ],
+    "15": [
+     "inorg:c5c2861986b7"
+    ],
+    "16": [
+     "inorg:65b95dc9ab1e",
+     "inorg:aa3ae3e5b901"
+    ],
+    "19": [
+     "inorg:283bbef9622d"
+    ],
+    "21": [
+     "inorg:1c5ff8c456b6",
+     "inorg:fa096b4e289d",
+     "inorg:35b849e2edca"
+    ],
+    "23": [
+     "inorg:3e9390ce1d53"
+    ],
+    "24": [
+     "inorg:34d57564a665",
+     "inorg:a6f494471e86",
+     "inorg:2765477e0a6a"
+    ],
+    "27": [
+     "inorg:81b35209113f"
+    ],
+    "30": [
+     "inorg:0e6385506aba"
+    ],
+    "31": [
+     "inorg:ce1bd1325b63",
+     "inorg:b4526323c186"
+    ],
+    "33": [
+     "inorg:6c52d8cd467f",
+     "inorg:0846f02a8c23",
+     "inorg:ca6a274a5607",
+     "inorg:a2d7243d7ca8",
+     "inorg:2ddd5cf5f66e",
+     "inorg:090fb2878ccc"
+    ],
+    "34": [
+     "inorg:8f5c28a407c8",
+     "inorg:8741db81c2a6",
+     "inorg:70bec41abdb3",
+     "inorg:3a10d3f25775",
+     "inorg:9bd5ebf48473",
+     "inorg:f96ed7f2c7d9"
+    ],
+    "36": [
+     "inorg:6e2f7a280554",
+     "inorg:ff3c626f32d9"
+    ]
+   },
+   "unanchored": [
+    "inorg:9b7184795c6b"
+   ]
+  },
+  {
+   "module": "inorganic",
+   "kap": 11,
+   "title": "Einheit 11 Glas und Keramik",
+   "file": "inorganic-11.pdf",
+   "pages": 43,
+   "cards_total": 36,
+   "cards_anchored": 36,
+   "page_cards": {
+    "2": [
+     "inorg:3c3c11068ea1",
+     "inorg:35f15819b81a"
+    ],
+    "4": [
+     "inorg:5e50f5820c0a"
+    ],
+    "5": [
+     "inorg:4d7944a4da31",
+     "inorg:1fed7bdbb519",
+     "inorg:6a5782611176"
+    ],
+    "6": [
+     "inorg:0d905ee0f369",
+     "inorg:21eb64df8dbb",
+     "inorg:666d693ad8d5",
+     "inorg:c4ae9782a2e1",
+     "inorg:f74cfc8b290b"
+    ],
+    "9": [
+     "inorg:f0074f408c5f"
+    ],
+    "10": [
+     "inorg:40265d43f9fa",
+     "inorg:dc8526b16e76"
+    ],
+    "12": [
+     "inorg:a7de3e688ebc",
+     "inorg:0957d59426ec"
+    ],
+    "18": [
+     "inorg:f7df94a81506",
+     "inorg:d6b34a0ac407"
+    ],
+    "19": [
+     "inorg:13db39650238",
+     "inorg:3226e2bf1f37"
+    ],
+    "23": [
+     "inorg:aeca5e2b50e0"
+    ],
+    "24": [
+     "inorg:cf0b1887afbb",
+     "inorg:a5c1beae128f"
+    ],
+    "30": [
+     "inorg:0c2a4714c6c0"
+    ],
+    "31": [
+     "inorg:98d2e11c9d48"
+    ],
+    "32": [
+     "inorg:e718051fb8c9",
+     "inorg:59985d59a960",
+     "inorg:52faef574e8c",
+     "inorg:c531047a6b1d",
+     "inorg:764c8d12a2d9",
+     "inorg:9656866bc0ce",
+     "inorg:9c790571d810"
+    ],
+    "34": [
+     "inorg:bceff8be7b5e"
+    ],
+    "36": [
+     "inorg:4d9a3f8c9d50",
+     "inorg:b9840257a111"
+    ],
+    "41": [
+     "inorg:47e74ed681f9"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "organic",
+   "kap": 1,
+   "title": "VO1 Fossile Rohstoffe: Grundlagen",
+   "file": "organic-01.pdf",
+   "pages": 55,
+   "cards_total": 47,
+   "cards_anchored": 45,
+   "page_cards": {
+    "3": [
+     "org:b8e0ff0efaa2"
+    ],
+    "4": [
+     "org:372915ff992e",
+     "org:7abd2906c1bf",
+     "org:9656b74442c8",
+     "org:9545a638171e"
+    ],
+    "7": [
+     "org:d65e62d08f6b"
+    ],
+    "9": [
+     "org:0bfffd88c52c",
+     "org:d3d77f801088"
+    ],
+    "11": [
+     "org:204bcbeda3b3",
+     "org:d3eb764da661",
+     "org:cf1ef9a099a6",
+     "org:d4bdee086d1c",
+     "org:661f7c9c99f6",
+     "org:aa02ba3a4f37"
+    ],
+    "12": [
+     "org:553ef29049c0",
+     "org:1157eead7fae",
+     "org:15521fe5583d",
+     "org:a6d438bd3fd1",
+     "org:c06ab64b98b9"
+    ],
+    "14": [
+     "org:1398de0fcced"
+    ],
+    "15": [
+     "org:878a36d17308",
+     "org:8b6e81051b32"
+    ],
+    "16": [
+     "org:2f751c4d01fe",
+     "org:6e36bb66b2f2"
+    ],
+    "18": [
+     "org:a48b519e836b"
+    ],
+    "19": [
+     "org:f5f2d288bb30"
+    ],
+    "21": [
+     "org:32178dac7d93",
+     "org:91a99ef8624f",
+     "org:4f1c3940e7cf"
+    ],
+    "22": [
+     "org:6cd4cacea5aa"
+    ],
+    "30": [
+     "org:ab3b372e551d"
+    ],
+    "32": [
+     "org:72136948d33e"
+    ],
+    "35": [
+     "org:10ecec59973d",
+     "org:100eedf851c3",
+     "org:350ba668f2ea"
+    ],
+    "37": [
+     "org:155f2b0d70d5"
+    ],
+    "38": [
+     "org:fb2ddde0f21b",
+     "org:f289c45834e8",
+     "org:f08ec5af9165"
+    ],
+    "39": [
+     "org:de8afb554a6e",
+     "org:6e8fd7fd5992",
+     "org:e848c44bf412",
+     "org:b4c490416df9"
+    ],
+    "45": [
+     "org:c453a7b0054b"
+    ],
+    "49": [
+     "org:30b979e69e62"
+    ]
+   },
+   "unanchored": [
+    "org:a1672aa362b1",
+    "org:a1e08c5480b7"
+   ]
+  },
+  {
+   "module": "organic",
+   "kap": 2,
+   "title": "VO2 Raffinerie und Kohleveredelung",
+   "file": "organic-02.pdf",
+   "pages": 54,
+   "cards_total": 48,
+   "cards_anchored": 48,
+   "page_cards": {
+    "16": [
+     "org:765ec526828b",
+     "org:062c211fc2a9"
+    ],
+    "33": [
+     "org:e61c0455ec2b"
+    ],
+    "34": [
+     "org:e7aaccaa5f04"
+    ],
+    "35": [
+     "org:5113e265fc2d",
+     "org:e9c6cc477cc4",
+     "org:2c11815111b8",
+     "org:945d0baf11d0"
+    ],
+    "36": [
+     "org:294e7cc80e6b",
+     "org:16f9440f1584",
+     "org:bf65361dd4d5",
+     "org:a28dda26a41c",
+     "org:56b50a7cad52"
+    ],
+    "37": [
+     "org:9927ec87c81d",
+     "org:60dac5cc6ee7",
+     "org:3a01149eae53"
+    ],
+    "39": [
+     "org:b4406dd7bd71"
+    ],
+    "40": [
+     "org:d338672e3131",
+     "org:6609049be5fa",
+     "org:b47c8eb5f313",
+     "org:a06b975a8c54",
+     "org:b7cf3ea3e5e0",
+     "org:1a068aeef4bb",
+     "org:d91efbebc756",
+     "org:c11128da3643",
+     "org:356f4edc0c04",
+     "org:e241b4818b53",
+     "org:35cd7785a169",
+     "org:eafc6c3be331",
+     "org:ac09bda7ca3d",
+     "org:c58df4f091d4"
+    ],
+    "41": [
+     "org:bc939a36cb50",
+     "org:56b8ee30ed6a"
+    ],
+    "42": [
+     "org:631d39d8aa05",
+     "org:1002210c545f"
+    ],
+    "43": [
+     "org:73e162f13dca",
+     "org:eb99bfc6c439",
+     "org:62a02f2cecaf",
+     "org:7d1bd21bb1e0",
+     "org:6a7c978e1b33",
+     "org:ff44ae966077"
+    ],
+    "50": [
+     "org:42ab325e6e9c",
+     "org:c966b3dc54dd",
+     "org:59a2d8531683",
+     "org:4d0677ea6d34",
+     "org:383cdd6c423a"
+    ],
+    "51": [
+     "org:4e633639b6b6"
+    ],
+    "53": [
+     "org:3077b5a80055"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "organic",
+   "kap": 3,
+   "title": "VO3 Raffinerieprozesse (Vertiefung)",
+   "file": "organic-03.pdf",
+   "pages": 33,
+   "cards_total": 39,
+   "cards_anchored": 31,
+   "page_cards": {
+    "5": [
+     "org:de10f06ebc16",
+     "org:4b39e14821dd"
+    ],
+    "8": [
+     "org:5b137e96a941",
+     "org:b5c311cc5d77",
+     "org:33d36c735573"
+    ],
+    "9": [
+     "org:3788f071c41e"
+    ],
+    "10": [
+     "org:f990804407d8",
+     "org:c418dede71e9",
+     "org:1b85aeb5526f"
+    ],
+    "11": [
+     "org:9c8f5823c16d",
+     "org:074b95eff682"
+    ],
+    "12": [
+     "org:dede28b041b2",
+     "org:711d6041b0d5",
+     "org:1d25747c47f9"
+    ],
+    "14": [
+     "org:d52959288e70",
+     "org:5209ee227d71"
+    ],
+    "16": [
+     "org:18cf08bec4cc",
+     "org:3b707d6543b7",
+     "org:b4a3bc7f8047"
+    ],
+    "17": [
+     "org:c00a5acdf88f"
+    ],
+    "19": [
+     "org:5948e1bddbbc",
+     "org:7c812c1d30f1",
+     "org:ee3681e8e204"
+    ],
+    "22": [
+     "org:41a04d4666d6",
+     "org:8b108e767413",
+     "org:1001a5ab2b70",
+     "org:733d29ffd622",
+     "org:104cc8e6ec12",
+     "org:987d3d49b28b"
+    ],
+    "26": [
+     "org:9dc2b3e43cbf"
+    ],
+    "28": [
+     "org:ba9ce21816ce"
+    ]
+   },
+   "unanchored": [
+    "org:bb9155b5849c",
+    "org:6225e10e6ff6",
+    "org:a2745c93b927",
+    "org:dabbc5904343",
+    "org:4691b44253d8",
+    "org:27e7b3c35d12",
+    "org:fc270626b1b3",
+    "org:035424896ff5"
+   ]
+  },
+  {
+   "module": "organic",
+   "kap": 4,
+   "title": "VO4 Petrochemie und Midstream",
+   "file": "organic-04.pdf",
+   "pages": 51,
+   "cards_total": 45,
+   "cards_anchored": 45,
+   "page_cards": {
+    "13": [
+     "org:a98869ba409a"
+    ],
+    "18": [
+     "org:fd149dd00535",
+     "org:ef018cbfe685"
+    ],
+    "20": [
+     "org:ae5d4c532159",
+     "org:2f6bb14957be",
+     "org:11c54783a1fe",
+     "org:70221a1a9e16",
+     "org:86c4ecb0deac",
+     "org:558ac6b75695",
+     "org:30e42626d7c1",
+     "org:043bab729b1e",
+     "org:bd25b07cca7d",
+     "org:cafbadfd7277",
+     "org:42ca2391227d",
+     "org:04b9dfdcd129",
+     "org:722ab9714b21",
+     "org:632469c2c1fa",
+     "org:52b014bdbf63",
+     "org:599e84f2ac32",
+     "org:6d822c4e8e89",
+     "org:1aa5af9f280b",
+     "org:730f70fbfc79",
+     "org:7646c9b66466",
+     "org:e08ffe4f87b7",
+     "org:227cf915a129",
+     "org:9aca780c9d85",
+     "org:3663a3affa30",
+     "org:e1aba1f47414"
+    ],
+    "21": [
+     "org:bda0bac60d58",
+     "org:d3509b4bbde4"
+    ],
+    "22": [
+     "org:567a9e11bff5",
+     "org:dd87a067c446",
+     "org:ceef5dccb948",
+     "org:5a57681b8b23",
+     "org:860de491ac86",
+     "org:ee804f5f6c3f",
+     "org:f14a0e97c00c",
+     "org:2616bfa97fa3"
+    ],
+    "26": [
+     "org:3d267ba55d7a"
+    ],
+    "33": [
+     "org:1684a4cfb8d6"
+    ],
+    "36": [
+     "org:25139e8cde4c"
+    ],
+    "40": [
+     "org:cf071411cb16",
+     "org:4c9177242935"
+    ],
+    "41": [
+     "org:b3017f35449e"
+    ],
+    "45": [
+     "org:94499be3fef6"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "organic",
+   "kap": 5,
+   "title": "VO5 Fette und Oele",
+   "file": "organic-05.pdf",
+   "pages": 39,
+   "cards_total": 43,
+   "cards_anchored": 43,
+   "page_cards": {
+    "5": [
+     "org:5462ee815d7e",
+     "org:b341d414db3a",
+     "org:fc8672d438ac",
+     "org:95f9e75be8e8",
+     "org:aed5d2a43261",
+     "org:f8b48faef82e",
+     "org:fa7cdb3c21e3",
+     "org:366e445ce1f5",
+     "org:ff12c7af75c9",
+     "org:13e60ecc067e",
+     "org:803ba6cb4ef6",
+     "org:3549cd59b906",
+     "org:d3c3059c98e7",
+     "org:565dfa16acbc",
+     "org:3be823ae84be",
+     "org:37e44282f742",
+     "org:0f343e57709d",
+     "org:c837eb474d0d",
+     "org:4a8fd645e285",
+     "org:ab82bb0e96b0",
+     "org:29de2cd68f22",
+     "org:6b439abfd531",
+     "org:5584dcb7c213",
+     "org:ff1f40c001ae",
+     "org:5261c76ec4a8",
+     "org:365042b4b082",
+     "org:a5579445300a",
+     "org:3700b97b7cd6",
+     "org:e051cd0c063d"
+    ],
+    "17": [
+     "org:10fe4bab443b"
+    ],
+    "23": [
+     "org:3f29e72fd612",
+     "org:d0b13f0b2cb3",
+     "org:190dca499c95"
+    ],
+    "24": [
+     "org:822eb08ecc90",
+     "org:8459a5ab8bf3",
+     "org:e82c0bc6ff12"
+    ],
+    "27": [
+     "org:a095b1421eb3"
+    ],
+    "28": [
+     "org:3e9b5b3d3a3d"
+    ],
+    "31": [
+     "org:00a8785e325e",
+     "org:0f1ae349b44b",
+     "org:65b19f21b556",
+     "org:14d661b4e8bb"
+    ],
+    "32": [
+     "org:4c6e5373e9b1"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "organic",
+   "kap": 6,
+   "title": "VO6 Kohlenhydrate und Staerke",
+   "file": "organic-06.pdf",
+   "pages": 29,
+   "cards_total": 44,
+   "cards_anchored": 31,
+   "page_cards": {
+    "4": [
+     "org:ba30431ba6a4",
+     "org:76d3bf8d40e9",
+     "org:f02d684a98e6",
+     "org:348ef0b23d20",
+     "org:07e80c6f9058"
+    ],
+    "6": [
+     "org:87b11aaf059d"
+    ],
+    "7": [
+     "org:9d5158daa5ff",
+     "org:3a7fda1a5d53",
+     "org:549b1488e486",
+     "org:1a102bc08f58",
+     "org:34235b877291",
+     "org:7a9e298e57ca",
+     "org:0b0cf41aac18",
+     "org:d8e9b64c0264"
+    ],
+    "8": [
+     "org:d6085c1d42ac",
+     "org:0b89afb95b4b",
+     "org:86490a75dd8c"
+    ],
+    "9": [
+     "org:a785eea717a2",
+     "org:9f9ef9e234b9"
+    ],
+    "13": [
+     "org:c8356851ac95",
+     "org:5c251a1da7f2",
+     "org:a538b061dc0c",
+     "org:f17ece4106d8",
+     "org:289af3db776e"
+    ],
+    "16": [
+     "org:a3fe091c6e39",
+     "org:185c59d7a2e5"
+    ],
+    "19": [
+     "org:4e14f40491a9"
+    ],
+    "20": [
+     "org:6306cbedb247"
+    ],
+    "24": [
+     "org:6314d5b4009d"
+    ],
+    "25": [
+     "org:2712fdfa1668",
+     "org:fb780023f832"
+    ]
+   },
+   "unanchored": [
+    "org:f2cacfc979e2",
+    "org:a27efc2da458",
+    "org:a26f5469c517",
+    "org:212338e701b5",
+    "org:b9a5f3dbcb1c",
+    "org:3871d6f0a293",
+    "org:83a51b77221f",
+    "org:da62f56649bf",
+    "org:3b3bd816e4ed",
+    "org:e92afb17ba3c",
+    "org:d1326c5364d0",
+    "org:00832740a02c",
+    "org:84ce32eab000"
+   ]
+  },
+  {
+   "module": "organic",
+   "kap": 7,
+   "title": "VO7 Holz, Cellulose und Papier",
+   "file": "organic-07.pdf",
+   "pages": 78,
+   "cards_total": 39,
+   "cards_anchored": 39,
+   "page_cards": {
+    "7": [
+     "org:51b138784c1c",
+     "org:bed158f569d7",
+     "org:a548e7ac8ffa",
+     "org:eb203fcae31c",
+     "org:d142093a780d",
+     "org:b01a5b9cb599",
+     "org:2939f8f9cbf5",
+     "org:8eae0aa2eb09",
+     "org:364d0734698a",
+     "org:9c831f6986f6",
+     "org:294d869148d9",
+     "org:99d021d11f8d",
+     "org:5d2ffd5c9e8c",
+     "org:0be1a457ca86",
+     "org:e7eb63dbf309",
+     "org:96afb7a61bb7",
+     "org:9119e0b8f2d6",
+     "org:70467af67062",
+     "org:bc7c86f69d18",
+     "org:6f7d1d23f786",
+     "org:ee6d26327633",
+     "org:2e7262992005",
+     "org:62d92af329d6",
+     "org:60475b12abb7",
+     "org:17cb067370c2",
+     "org:de99f0588597",
+     "org:12057a2a8be7",
+     "org:30487b505dd1",
+     "org:aab97ef69a87",
+     "org:9e189619c4a7",
+     "org:6494c08be238",
+     "org:97aff1446f65",
+     "org:1dd2f379cf11"
+    ],
+    "10": [
+     "org:93663d1b7510",
+     "org:ad0c5e10aaf6"
+    ],
+    "33": [
+     "org:e4cb893cea72",
+     "org:6fb359f23f16"
+    ],
+    "40": [
+     "org:577c04462584",
+     "org:6ac69f7ebb81"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "organic",
+   "kap": 8,
+   "title": "VO8 Fasern und Farbstoffe",
+   "file": "organic-08.pdf",
+   "pages": 40,
+   "cards_total": 43,
+   "cards_anchored": 43,
+   "page_cards": {
+    "5": [
+     "org:74a6de5c0676",
+     "org:6ce3b55f7f93",
+     "org:e1efb2603bcc",
+     "org:28d72f67cbba",
+     "org:b8cffe896fa4",
+     "org:20d8bbd7fcac",
+     "org:7de14a6417a3",
+     "org:5eb913ca952a",
+     "org:b6bf0963c678",
+     "org:bcd9445ef511",
+     "org:3f6ab3c07940",
+     "org:10525381ba56",
+     "org:8b191f6819c3",
+     "org:47a8bb5c8497",
+     "org:490f48ff535d",
+     "org:48ea67f9e0b0",
+     "org:5b50bb8b9abd",
+     "org:f66255dc75e3",
+     "org:c9e7a01d2c7b",
+     "org:55cd2a790a0e",
+     "org:e96d124662a2",
+     "org:92aa9e028da6",
+     "org:6ca6820208ec",
+     "org:baf4461f9dda",
+     "org:d756324bbc98",
+     "org:dfb7151de7cc",
+     "org:4e7e0ed36ff0",
+     "org:2bc419460f7a",
+     "org:cec3d38fe91a",
+     "org:51d512138a92",
+     "org:0e1bffbe0b48"
+    ],
+    "32": [
+     "org:a5ef3963948b"
+    ],
+    "33": [
+     "org:56fe6cb0e679",
+     "org:d8694b294a6e",
+     "org:92282203dc78",
+     "org:72527b3cfe70",
+     "org:cd9b2c1de0c3",
+     "org:4708825ebfa3",
+     "org:5dcd2893cc05",
+     "org:dc0f57bce861",
+     "org:bcc4835e176a",
+     "org:333c618e6354",
+     "org:daf518d1a596"
+    ]
+   },
+   "unanchored": []
+  },
+  {
+   "module": "organic",
+   "kap": 9,
+   "title": "VO9 Polymerchemie",
+   "file": "organic-09.pdf",
+   "pages": 76,
+   "cards_total": 55,
+   "cards_anchored": 54,
+   "page_cards": {
+    "4": [
+     "org:0ff4af8f8e8f",
+     "org:c57b757288d7",
+     "org:c72a86f2ec80",
+     "org:49a830c312f9",
+     "org:004313b790e3",
+     "org:00c99921f19c",
+     "org:4101205a57c1",
+     "org:5db507b17e37",
+     "org:fadfab6b67df",
+     "org:5b8d655aa438",
+     "org:6995b7fed891"
+    ],
+    "10": [
+     "org:d63ecca60add"
+    ],
+    "12": [
+     "org:b9c1d04cde3c"
+    ],
+    "13": [
+     "org:54bbec151936"
+    ],
+    "15": [
+     "org:b632b152c3a9",
+     "org:f1678b7b366d",
+     "org:d63ace7c7bd8"
+    ],
+    "19": [
+     "org:bb61de28a79d",
+     "org:938e4df193cf"
+    ],
+    "22": [
+     "org:02b168cf07ff"
+    ],
+    "33": [
+     "org:5a86728be9c6"
+    ],
+    "34": [
+     "org:175c6c9feeac",
+     "org:6c268e6e5c97",
+     "org:0e408f228dbf"
+    ],
+    "39": [
+     "org:afeb3948fbf1"
+    ],
+    "44": [
+     "org:1c301622e2ff",
+     "org:8ea210665551"
+    ],
+    "49": [
+     "org:0c6c5732d9a0"
+    ],
+    "58": [
+     "org:14000df95b23"
+    ],
+    "63": [
+     "org:08c39ab22ac6"
+    ],
+    "68": [
+     "org:f29280b9ecca"
+    ],
+    "69": [
+     "org:61a0bf20c9f3",
+     "org:c7d8101337ef"
+    ],
+    "73": [
+     "org:44b6b51b4c9c",
+     "org:f265a9831c13",
+     "org:83e833e81cfc",
+     "org:7e4959836c1f",
+     "org:c5ec9912a3be",
+     "org:58af4169193a",
+     "org:54c555fcd500",
+     "org:7aecaa80c6c2",
+     "org:8973f8231976",
+     "org:754c86b5fc33",
+     "org:5ee881701eae",
+     "org:4a0fa9ce2f6f",
+     "org:1ca45e40fed8",
+     "org:55e0ee4a4f08",
+     "org:f1591ae5f474",
+     "org:46839433eaa3",
+     "org:253d20f05223",
+     "org:7fdaa576e494",
+     "org:f58d0be2970c",
+     "org:43f08d7fb4f0",
+     "org:681adfddc9a0"
+    ]
+   },
+   "unanchored": [
+    "org:909e1ccb4a71"
+   ]
+  },
+  {
+   "module": "organic",
+   "kap": 10,
+   "title": "VO10 Kunststoffrecycling",
+   "file": "organic-10.pdf",
+   "pages": 50,
+   "cards_total": 25,
+   "cards_anchored": 24,
+   "page_cards": {
+    "6": [
+     "org:4c571832b3f1"
+    ],
+    "13": [
+     "org:30485e407d92",
+     "org:924f2e33cd98",
+     "org:cce90fcf39b7"
+    ],
+    "14": [
+     "org:4e7216d3be66",
+     "org:1cce73521472",
+     "org:33b62165b64a",
+     "org:01bc3fcf9909",
+     "org:41179485456f"
+    ],
+    "15": [
+     "org:2a060c10e57a",
+     "org:a2ab72bd21fa",
+     "org:6d0514c9578c",
+     "org:6cac655ff1d0",
+     "org:4649dc738518",
+     "org:3e724c439f7f",
+     "org:2fea5c5a4bff",
+     "org:e813f159668b",
+     "org:49a90acf9a91",
+     "org:5600175100a1",
+     "org:1325bd10b9d2",
+     "org:7173916949aa",
+     "org:f559ae57d614",
+     "org:5dd116704cb3"
+    ],
+    "26": [
+     "org:2893b7647777"
+    ]
+   },
+   "unanchored": [
+    "org:358909db9f66"
+   ]
+  }
+ ],
+ "anchors": {
+  "inorg:07d3559670b4": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 3,
+   "score": 3.65
+  },
+  "inorg:9657c4c91a1e": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 3,
+   "score": 2.32
+  },
+  "inorg:4820cf0241bb": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 3,
+   "score": 2.23
+  },
+  "inorg:090bf2048805": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 26,
+   "score": 1.23
+  },
+  "inorg:6e48d375a037": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 11,
+   "score": 1.49
+  },
+  "inorg:d262326066ee": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 11,
+   "score": 1.68
+  },
+  "inorg:da8ca19a64f8": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 11,
+   "score": 2.2
+  },
+  "inorg:9074236ac6a8": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 10,
+   "score": 1.23
+  },
+  "inorg:d3880af7ccb0": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 9,
+   "score": 1.35
+  },
+  "inorg:a353fe700671": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 3,
+   "score": 1.83
+  },
+  "inorg:ad57fabc8cbf": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 25,
+   "score": 2.64
+  },
+  "inorg:6deb0d5f3163": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 3,
+   "score": 2.7
+  },
+  "inorg:c72d2b1a3670": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 14,
+   "score": 1.67
+  },
+  "inorg:ad347082741f": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 33,
+   "score": 1.58
+  },
+  "inorg:857e5e27a4be": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 26,
+   "score": 1.53
+  },
+  "inorg:7cc13d9898ad": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 5,
+   "score": 1.28
+  },
+  "inorg:5e5805013f10": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 12,
+   "score": 1.25
+  },
+  "inorg:c0f8a68b51c6": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 33,
+   "score": 1.47
+  },
+  "inorg:86d2dd0aac29": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 14,
+   "score": 2.67
+  },
+  "inorg:4ac666733d80": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 16,
+   "score": 2.69
+  },
+  "inorg:82d97187f57c": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 11,
+   "score": 2.19
+  },
+  "inorg:71035a83d497": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 11,
+   "score": 2.22
+  },
+  "inorg:b35f71373896": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 16,
+   "score": 1.34
+  },
+  "inorg:4eb970ef44d4": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 12,
+   "score": 1.8
+  },
+  "inorg:d358d8662978": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 16,
+   "score": 3.51
+  },
+  "inorg:4ce94476a21d": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 20,
+   "score": 1.81
+  },
+  "inorg:eef4d90b186c": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 16,
+   "score": 1.61
+  },
+  "inorg:1c46cfb90f3a": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 16,
+   "score": 2.63
+  },
+  "inorg:caef1c748b8f": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 16,
+   "score": 3.26
+  },
+  "inorg:46c5c425f6ac": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 37,
+   "score": 1.25
+  },
+  "inorg:d1a6ec910986": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 30,
+   "score": 2.41
+  },
+  "inorg:d2f5a7efb53e": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 25,
+   "score": 2.01
+  },
+  "inorg:0f794d78eae4": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 33,
+   "score": 3.88
+  },
+  "inorg:2a37b25e271d": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 30,
+   "score": 2.78
+  },
+  "inorg:73d69070bc87": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 37,
+   "score": 2.19
+  },
+  "inorg:ae0a2caf9585": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 33,
+   "score": 1.84
+  },
+  "inorg:1b6f9fcd28e0": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 33,
+   "score": 2.74
+  },
+  "inorg:01c5a55b761d": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 12,
+   "score": 1.5
+  },
+  "inorg:3d7baa6b497c": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 33,
+   "score": 1.76
+  },
+  "inorg:deac6b17a269": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 37,
+   "score": 1.47
+  },
+  "inorg:a8b9c5a9de38": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 4,
+   "score": 2.91
+  },
+  "inorg:0fed3b35454a": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 12,
+   "score": 2.55
+  },
+  "inorg:da1f84bc0bb0": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 10,
+   "score": 1.22
+  },
+  "inorg:d22ff2f40f93": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 7,
+   "score": 3.3
+  },
+  "inorg:33755556b1ed": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 37,
+   "score": 1.91
+  },
+  "inorg:9177472d9e6f": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 31,
+   "score": 2.46
+  },
+  "inorg:13af1275f755": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 31,
+   "score": 2.09
+  },
+  "inorg:fc6789f5af8b": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 37,
+   "score": 1.28
+  },
+  "inorg:7a09be9e81fc": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 25,
+   "score": 2.85
+  },
+  "inorg:031df21927e8": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 37,
+   "score": 1.61
+  },
+  "inorg:29a5d08fc831": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 34,
+   "score": 2.72
+  },
+  "inorg:f5567f87dee9": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 17,
+   "score": 1.95
+  },
+  "inorg:8f3511f6a243": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 11,
+   "score": 2.52
+  },
+  "inorg:9c1c02d7e16b": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 20,
+   "score": 1.81
+  },
+  "inorg:da35dadea3ad": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 2.04
+  },
+  "inorg:25d435f923f8": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 23,
+   "score": 1.92
+  },
+  "inorg:65df4a81da47": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 24,
+   "score": 1.92
+  },
+  "inorg:2f7210a29175": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 22,
+   "score": 2.25
+  },
+  "inorg:80ebb3a8f2f8": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 2.18
+  },
+  "inorg:4a42114b2d49": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 2.03
+  },
+  "inorg:83f8e64fc502": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 17,
+   "score": 2.24
+  },
+  "inorg:dc0cf394a91f": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 24,
+   "score": 2.44
+  },
+  "inorg:7d18a67978ff": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 2.11
+  },
+  "inorg:5c23aff38f31": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 1.6
+  },
+  "inorg:068b1b504aaf": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 1.95
+  },
+  "inorg:1ba5b3bdc9b8": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 4,
+   "score": 1.64
+  },
+  "inorg:f313b501daaa": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 28,
+   "score": 2.05
+  },
+  "inorg:24f18959b589": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 28,
+   "score": 1.76
+  },
+  "inorg:ba1aa4693210": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 20,
+   "score": 1.3
+  },
+  "inorg:f4fa06583b28": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 38,
+   "score": 2.29
+  },
+  "inorg:7cf32592a04e": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 28,
+   "score": 1.46
+  },
+  "inorg:8936da156b9f": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 10,
+   "score": 2.27
+  },
+  "inorg:1a0896553bd4": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 29,
+   "score": 2.0
+  },
+  "inorg:0e303bc7fbb2": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 27,
+   "score": 2.43
+  },
+  "inorg:a62367495d1f": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 34,
+   "score": 2.45
+  },
+  "inorg:593b513aabfb": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 34,
+   "score": 2.18
+  },
+  "inorg:c45023e84285": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 5,
+   "score": 2.61
+  },
+  "inorg:7c2e22e6b795": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 6,
+   "score": 2.48
+  },
+  "inorg:97496004ac92": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 13,
+   "score": 3.45
+  },
+  "inorg:83a59af3181b": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 6,
+   "score": 1.32
+  },
+  "inorg:6fcdb90be447": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 2.18
+  },
+  "inorg:9a7b611d669d": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 21,
+   "score": 1.35
+  },
+  "inorg:6b7ca789925b": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 2.75
+  },
+  "inorg:2a71184e85fb": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 10,
+   "score": 1.28
+  },
+  "inorg:fb1226518a6e": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 13,
+   "score": 1.27
+  },
+  "inorg:5c44adbf33ea": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 10,
+   "score": 1.8
+  },
+  "inorg:9cd98be5bc0e": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 17,
+   "score": 3.32
+  },
+  "inorg:6499e8fc9371": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 42,
+   "score": 1.75
+  },
+  "inorg:0347f0f40b2c": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 43,
+   "score": 1.59
+  },
+  "inorg:3079610773e4": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 34,
+   "score": 2.24
+  },
+  "inorg:4cee786b564f": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 38,
+   "score": 2.21
+  },
+  "inorg:53abbd806496": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 12,
+   "score": 1.74
+  },
+  "inorg:b8e582b531e5": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 18,
+   "score": 1.56
+  },
+  "inorg:3908e1b375eb": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 12,
+   "score": 1.75
+  },
+  "inorg:135c474fdef3": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 22,
+   "score": 1.26
+  },
+  "inorg:4a6ea78a1a2a": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 17,
+   "score": 2.98
+  },
+  "inorg:ea564d0f5147": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 17,
+   "score": 3.44
+  },
+  "inorg:b6e581a1cb0c": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 17,
+   "score": 3.99
+  },
+  "inorg:b468f4afe82b": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 17,
+   "score": 1.42
+  },
+  "inorg:d796cee7235c": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 11,
+   "score": 1.86
+  },
+  "inorg:2b12d6cc3c4d": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 11,
+   "score": 1.7
+  },
+  "inorg:71fb2ac6d6da": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.44
+  },
+  "inorg:407b61372184": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 22,
+   "score": 1.46
+  },
+  "inorg:08c79c01e530": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 22,
+   "score": 1.23
+  },
+  "inorg:8d4ae0d408ed": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 21,
+   "score": 1.43
+  },
+  "inorg:9081c4e4e36a": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.4
+  },
+  "inorg:54f2390fe469": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 18,
+   "score": 1.47
+  },
+  "inorg:b26724f91b1b": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.23
+  },
+  "inorg:4a6852f87999": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 21,
+   "score": 1.49
+  },
+  "inorg:21b3fed29dfc": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.64
+  },
+  "inorg:5e8248493abf": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.64
+  },
+  "inorg:1d4670fa28cd": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.24
+  },
+  "inorg:c701e8d95540": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 22,
+   "score": 1.53
+  },
+  "inorg:ae30b53fae24": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.37
+  },
+  "inorg:974137cd2916": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 5,
+   "score": 2.06
+  },
+  "inorg:9e7bedb58b6f": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.64
+  },
+  "inorg:f568f1052b17": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 1,
+   "score": 1.64
+  },
+  "inorg:cce6c9fc70c0": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 9,
+   "score": 3.34
+  },
+  "inorg:93863c3c5226": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 9,
+   "score": 4.26
+  },
+  "inorg:30e111f3c0da": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 15,
+   "score": 3.41
+  },
+  "inorg:8387899398d1": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 15,
+   "score": 3.48
+  },
+  "inorg:f279ba050da3": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 8,
+   "score": 2.67
+  },
+  "inorg:9d13320d4910": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 11,
+   "score": 2.78
+  },
+  "inorg:576e9c77e8db": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 11,
+   "score": 1.36
+  },
+  "inorg:b36212801e65": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 32,
+   "score": 3.42
+  },
+  "inorg:9aad99948088": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 37,
+   "score": 2.83
+  },
+  "inorg:c3aec02fdfcd": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 41,
+   "score": 2.87
+  },
+  "inorg:fcb9ed251951": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 44,
+   "score": 2.49
+  },
+  "inorg:a104f091341c": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 23,
+   "score": 3.57
+  },
+  "inorg:719939fbdc85": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 24,
+   "score": 2.03
+  },
+  "inorg:23a911d3c057": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 20,
+   "score": 3.1
+  },
+  "inorg:280100936331": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 1.75
+  },
+  "inorg:e688df099c8d": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 11,
+   "score": 1.73
+  },
+  "inorg:1ff691c8be32": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 15,
+   "score": 1.76
+  },
+  "inorg:ee642c5540f1": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 7,
+   "score": 1.98
+  },
+  "inorg:df5d22979018": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 32,
+   "score": 1.42
+  },
+  "inorg:f893352c75b2": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 3,
+   "score": 1.91
+  },
+  "inorg:d9e55e2f1cd4": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 1.8
+  },
+  "inorg:d46ab504f106": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 2.07
+  },
+  "inorg:a4c4012f2c10": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 2.3
+  },
+  "inorg:10be2b73f8d6": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 9,
+   "score": 1.43
+  },
+  "inorg:9ab4a9ad9291": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 2.95
+  },
+  "inorg:dbc3dbe76d31": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 11,
+   "score": 2.31
+  },
+  "inorg:635c0c1a7c0a": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 32,
+   "score": 2.15
+  },
+  "inorg:667f61b78e88": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 49,
+   "score": 2.66
+  },
+  "inorg:d9c51cd5ad45": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 49,
+   "score": 2.95
+  },
+  "inorg:5fc1fe90e5ec": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 49,
+   "score": 3.89
+  },
+  "inorg:04951e9aaa06": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 40,
+   "score": 2.62
+  },
+  "inorg:1493da682738": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 17,
+   "score": 1.46
+  },
+  "inorg:7aa71fac8e08": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 30,
+   "score": 1.37
+  },
+  "inorg:24f93353ea15": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 14,
+   "score": 1.79
+  },
+  "inorg:b1775cd80fdf": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 1.95
+  },
+  "inorg:3c5350d36122": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 2.06
+  },
+  "inorg:6a040ee5afec": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 2.21
+  },
+  "inorg:0fbe8acad666": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 47,
+   "score": 2.75
+  },
+  "inorg:da2e76f5f8dd": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 11,
+   "score": 2.64
+  },
+  "inorg:252410a20c2c": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 13,
+   "score": 2.11
+  },
+  "inorg:651f7c6c981a": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 14,
+   "score": 2.2
+  },
+  "inorg:d811ca0bfd69": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 17,
+   "score": 1.51
+  },
+  "inorg:bd5d22ffc578": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 2.34
+  },
+  "inorg:4fa604622186": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 44,
+   "score": 2.06
+  },
+  "inorg:713653d6c666": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 23,
+   "score": 4.42
+  },
+  "inorg:483d2134623c": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 26,
+   "score": 3.15
+  },
+  "inorg:090e9025542e": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 20,
+   "score": 3.24
+  },
+  "inorg:f199c86fb031": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 32,
+   "score": 3.82
+  },
+  "inorg:c0977ad29f7f": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 32,
+   "score": 4.05
+  },
+  "inorg:4bdbef114e23": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 34,
+   "score": 5.44
+  },
+  "inorg:27bb7fad8128": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 37,
+   "score": 2.83
+  },
+  "inorg:e1f9a0909ab9": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 42,
+   "score": 3.14
+  },
+  "inorg:4416fbe8ecf8": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 35,
+   "score": 3.68
+  },
+  "inorg:2de99e89e6ae": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 26,
+   "score": 4.84
+  },
+  "inorg:ce3f336e12b9": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 4,
+   "score": 2.55
+  },
+  "inorg:31dc667f10a3": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 18,
+   "score": 1.67
+  },
+  "inorg:7fb3504643ad": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 7,
+   "score": 2.08
+  },
+  "inorg:a177f6655ff2": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 10,
+   "score": 2.64
+  },
+  "inorg:69a584b817dd": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 8,
+   "score": 2.51
+  },
+  "inorg:d2ed7bee73c5": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 14,
+   "score": 2.88
+  },
+  "inorg:4f827637575a": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 17,
+   "score": 3.24
+  },
+  "inorg:9a11de6e8e5c": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 4,
+   "score": 3.81
+  },
+  "inorg:f534d7deecbd": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 3,
+   "score": 1.69
+  },
+  "inorg:108d5c528c89": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 3,
+   "score": 3.02
+  },
+  "inorg:989f1354d5fe": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 6,
+   "score": 3.31
+  },
+  "inorg:dd0bc3e39df5": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 1.85
+  },
+  "inorg:bd9b833c1ea3": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 29,
+   "score": 3.23
+  },
+  "inorg:dbc4fa65377d": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 2.66
+  },
+  "inorg:469acfa7c749": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 2.53
+  },
+  "inorg:b1bafaaa633c": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 2.95
+  },
+  "inorg:9c714fb9ba1e": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 2.65
+  },
+  "inorg:1fdae04129b6": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 37,
+   "score": 2.16
+  },
+  "inorg:fab00d341491": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 3.2
+  },
+  "inorg:2a76e2215763": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 4,
+   "score": 3.41
+  },
+  "inorg:595766ba0b61": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 25,
+   "score": 1.99
+  },
+  "inorg:605f32c418e2": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 2.29
+  },
+  "inorg:57ddbab0dd07": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 2.16
+  },
+  "inorg:fd7eca2b1eab": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 25,
+   "score": 2.18
+  },
+  "inorg:8c8b9e38ea5a": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 2.98
+  },
+  "inorg:42f5f33979de": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 2.91
+  },
+  "inorg:cea12e16ecfc": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 19,
+   "score": 1.63
+  },
+  "inorg:7ea142704091": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 14,
+   "score": 2.28
+  },
+  "inorg:8e5fe3a30cd0": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 9,
+   "score": 1.81
+  },
+  "inorg:d98a08bc564a": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 3.07
+  },
+  "inorg:910f824ffc02": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 14,
+   "score": 2.12
+  },
+  "inorg:318cd9a649c9": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 3,
+   "score": 1.47
+  },
+  "inorg:df7073399ae0": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 20,
+   "score": 2.2
+  },
+  "inorg:b9837d6de960": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 3.02
+  },
+  "inorg:5752d30ed912": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 1.7
+  },
+  "inorg:fcd14bc6cd19": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 3,
+   "score": 3.59
+  },
+  "inorg:d475da34cca9": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 17,
+   "score": 3.23
+  },
+  "inorg:60b7e2165df8": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 1.87
+  },
+  "inorg:b6aab4e8116a": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 4.03
+  },
+  "inorg:944571c23ad5": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 9,
+   "score": 2.31
+  },
+  "inorg:366d6168ca72": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 4,
+   "score": 2.43
+  },
+  "inorg:999c44152cbf": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 32,
+   "score": 2.05
+  },
+  "inorg:656f84fcad85": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 7,
+   "score": 1.3
+  },
+  "inorg:34a348b766e8": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 11,
+   "score": 1.75
+  },
+  "inorg:122b6b60c3dd": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 23,
+   "score": 1.49
+  },
+  "inorg:7611e76e0e44": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 11,
+   "score": 2.6
+  },
+  "inorg:7783068fb588": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 11,
+   "score": 2.38
+  },
+  "inorg:6029f8e7e349": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 6,
+   "score": 1.72
+  },
+  "inorg:a0217354bca1": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 10,
+   "score": 1.57
+  },
+  "inorg:640e52f4688c": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 6,
+   "score": 1.64
+  },
+  "inorg:4af0e28aa875": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 6,
+   "score": 1.41
+  },
+  "inorg:ec6700e4911a": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 16,
+   "score": 1.92
+  },
+  "inorg:0f89fef5e47b": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 21,
+   "score": 2.94
+  },
+  "inorg:f0349e30e62f": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 19,
+   "score": 2.48
+  },
+  "inorg:88db624d2c6b": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 16,
+   "score": 1.71
+  },
+  "inorg:a6c8d312bad2": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 17,
+   "score": 1.49
+  },
+  "inorg:63d4510851ef": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 2,
+   "score": 1.89
+  },
+  "inorg:8b0ec836fcfc": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 2,
+   "score": 1.42
+  },
+  "inorg:b40e0de7acc6": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 12,
+   "score": 1.34
+  },
+  "inorg:96bf3fe1fdee": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 23,
+   "score": 1.5
+  },
+  "inorg:7b7713232fc5": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 18,
+   "score": 1.56
+  },
+  "inorg:97be9257758f": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 23,
+   "score": 2.5
+  },
+  "inorg:82d315cfdb10": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 12,
+   "score": 4.15
+  },
+  "inorg:1b12062a2250": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 15,
+   "score": 1.94
+  },
+  "inorg:90d16c635087": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 15,
+   "score": 2.5
+  },
+  "inorg:2bd9115db906": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 2,
+   "score": 1.68
+  },
+  "inorg:cf55f9cafcdd": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 21,
+   "score": 1.78
+  },
+  "inorg:dd0877157054": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 23,
+   "score": 1.34
+  },
+  "inorg:4e513f4a1560": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 21,
+   "score": 1.74
+  },
+  "inorg:537635e5a7c6": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 15,
+   "score": 1.66
+  },
+  "inorg:f155a5c4f577": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 23,
+   "score": 2.23
+  },
+  "inorg:56f15c3b0bad": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 16,
+   "score": 1.76
+  },
+  "inorg:1aed33d8bbe4": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 6,
+   "score": 1.74
+  },
+  "inorg:df053f818219": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 18,
+   "score": 1.54
+  },
+  "inorg:4ed28b28a301": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 14,
+   "score": 1.24
+  },
+  "inorg:060d8b4d881d": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 23,
+   "score": 2.1
+  },
+  "inorg:2bc5f0ce3fe0": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 22,
+   "score": 4.18
+  },
+  "inorg:8ed4d816f7e1": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 2,
+   "score": 2.56
+  },
+  "inorg:d0ceb77e7327": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 2,
+   "score": 1.9
+  },
+  "inorg:c607d76e2178": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 11,
+   "score": 3.31
+  },
+  "inorg:a32a7cd27f20": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 11,
+   "score": 3.15
+  },
+  "inorg:e4413a0a1edd": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 15,
+   "score": 2.48
+  },
+  "inorg:d69983894f3c": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 13,
+   "score": 3.2
+  },
+  "inorg:2512ce5bd7bc": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 15,
+   "score": 3.56
+  },
+  "inorg:f1e67c9742a4": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 13,
+   "score": 4.34
+  },
+  "inorg:bf79d4605d9d": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 13,
+   "score": 2.87
+  },
+  "inorg:82deafb8fdc8": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 15,
+   "score": 2.69
+  },
+  "inorg:c243511c0d86": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 1,
+   "score": 2.25
+  },
+  "inorg:07e9d98a6169": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 1,
+   "score": 2.17
+  },
+  "inorg:8560f272ac91": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 16,
+   "score": 2.22
+  },
+  "inorg:98e68dfd0cf3": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 20,
+   "score": 4.68
+  },
+  "inorg:7b2322d426ee": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 20,
+   "score": 3.04
+  },
+  "inorg:4d616c86cce8": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 20,
+   "score": 2.76
+  },
+  "inorg:9390ff82f195": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 20,
+   "score": 2.3
+  },
+  "inorg:05b3f4942920": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 1,
+   "score": 2.16
+  },
+  "inorg:aa773f29dfe9": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 19,
+   "score": 2.12
+  },
+  "inorg:d0b0e5976e82": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 11,
+   "score": 2.43
+  },
+  "inorg:4e020163c284": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 11,
+   "score": 2.69
+  },
+  "inorg:d1537732814c": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 13,
+   "score": 2.55
+  },
+  "inorg:2b10a63dffae": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 15,
+   "score": 2.43
+  },
+  "inorg:a1ad28ded1a8": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 15,
+   "score": 3.07
+  },
+  "inorg:38a740aedace": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 12,
+   "score": 2.63
+  },
+  "inorg:317515f82840": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 11,
+   "score": 4.69
+  },
+  "inorg:ec061fba0b82": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 1,
+   "score": 2.74
+  },
+  "inorg:4da5a77f0aed": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 11,
+   "score": 2.7
+  },
+  "inorg:b03833ed3c45": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 15,
+   "score": 2.47
+  },
+  "inorg:6a5c0cced6ae": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 12,
+   "score": 3.41
+  },
+  "inorg:7dbbdb07ab90": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 1,
+   "score": 2.54
+  },
+  "inorg:343b92671226": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 11,
+   "score": 2.22
+  },
+  "inorg:191b391ebd38": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 10,
+   "score": 2.58
+  },
+  "inorg:e69b97335d3e": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 15,
+   "score": 3.07
+  },
+  "inorg:9276be208b18": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 21,
+   "score": 4.77
+  },
+  "inorg:81ffa439f545": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 9,
+   "score": 1.9
+  },
+  "inorg:d770ef6eae9f": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 6,
+   "score": 2.55
+  },
+  "inorg:20f95a6acc10": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 1,
+   "score": 2.01
+  },
+  "inorg:be6ae811225b": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 9,
+   "score": 1.46
+  },
+  "inorg:6bfde1794dd9": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 12,
+   "score": 2.34
+  },
+  "inorg:eeb830f0276a": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 12,
+   "score": 1.97
+  },
+  "inorg:d0ca744809b7": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 13,
+   "score": 1.89
+  },
+  "inorg:1b9164795a11": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 14,
+   "score": 1.55
+  },
+  "inorg:4099ed6a263e": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 13,
+   "score": 1.83
+  },
+  "inorg:de4e059861a3": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 13,
+   "score": 1.27
+  },
+  "inorg:2a344a7ad097": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 3,
+   "score": 1.46
+  },
+  "inorg:d4e26198879a": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 3,
+   "score": 1.45
+  },
+  "inorg:5575ceab8657": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 14,
+   "score": 1.37
+  },
+  "inorg:7f2d8ed63a9f": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 9,
+   "score": 2.05
+  },
+  "inorg:55b4e2ce1724": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 9,
+   "score": 1.59
+  },
+  "inorg:50783d5632f3": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 9,
+   "score": 1.87
+  },
+  "inorg:13a574f0849f": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 2,
+   "score": 1.49
+  },
+  "inorg:480b26224e6b": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 12,
+   "score": 2.49
+  },
+  "inorg:6f5b567f5907": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 14,
+   "score": 1.62
+  },
+  "inorg:099181e7a8bd": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 3,
+   "score": 1.7
+  },
+  "inorg:d921ac3d7653": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 3,
+   "score": 1.41
+  },
+  "inorg:60e12e3c2f55": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 9,
+   "score": 2.15
+  },
+  "inorg:9e6d20711a50": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 8,
+   "score": 1.69
+  },
+  "inorg:532cd99a883f": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 12,
+   "score": 1.51
+  },
+  "inorg:d3b203caacb8": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 12,
+   "score": 1.46
+  },
+  "inorg:075d13269580": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 12,
+   "score": 1.98
+  },
+  "inorg:5abed9e0d67e": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 14,
+   "score": 2.32
+  },
+  "inorg:20a4a89604dd": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 13,
+   "score": 1.9
+  },
+  "inorg:6ab291dee8d7": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 2,
+   "score": 1.94
+  },
+  "inorg:8187270f5b09": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 4,
+   "score": 1.36
+  },
+  "inorg:e72fb14f75cf": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 1,
+   "score": 1.59
+  },
+  "inorg:e93a1f1b64eb": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 13,
+   "score": 1.77
+  },
+  "inorg:e86d4933ed60": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 14,
+   "score": 1.63
+  },
+  "inorg:0888205b2dc7": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 9,
+   "score": 3.03
+  },
+  "inorg:003e5e67aee0": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 3,
+   "score": 3.46
+  },
+  "inorg:9f1ebb96eeef": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 4,
+   "score": 3.08
+  },
+  "inorg:283bbef9622d": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 19,
+   "score": 2.07
+  },
+  "inorg:65b95dc9ab1e": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 16,
+   "score": 1.96
+  },
+  "inorg:aa3ae3e5b901": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 16,
+   "score": 1.74
+  },
+  "inorg:c5c2861986b7": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 15,
+   "score": 1.7
+  },
+  "inorg:a36cee89c187": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 7,
+   "score": 3.7
+  },
+  "inorg:8f5c28a407c8": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 34,
+   "score": 2.42
+  },
+  "inorg:541e3e43ffa0": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 7,
+   "score": 2.29
+  },
+  "inorg:8741db81c2a6": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 34,
+   "score": 2.29
+  },
+  "inorg:1c5ff8c456b6": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 21,
+   "score": 4.09
+  },
+  "inorg:34d57564a665": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 24,
+   "score": 2.01
+  },
+  "inorg:81b35209113f": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 27,
+   "score": 1.78
+  },
+  "inorg:0e6385506aba": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 30,
+   "score": 2.27
+  },
+  "inorg:a6f494471e86": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 24,
+   "score": 3.42
+  },
+  "inorg:ce1bd1325b63": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 31,
+   "score": 2.4
+  },
+  "inorg:70bec41abdb3": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 34,
+   "score": 2.11
+  },
+  "inorg:b4526323c186": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 31,
+   "score": 1.7
+  },
+  "inorg:3a10d3f25775": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 34,
+   "score": 1.58
+  },
+  "inorg:6c52d8cd467f": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 33,
+   "score": 2.08
+  },
+  "inorg:fa096b4e289d": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 21,
+   "score": 3.02
+  },
+  "inorg:35b849e2edca": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 21,
+   "score": 2.04
+  },
+  "inorg:0846f02a8c23": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 33,
+   "score": 2.22
+  },
+  "inorg:ca6a274a5607": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 33,
+   "score": 3.04
+  },
+  "inorg:6e2f7a280554": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 36,
+   "score": 1.77
+  },
+  "inorg:ff3c626f32d9": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 36,
+   "score": 2.15
+  },
+  "inorg:9bd5ebf48473": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 34,
+   "score": 2.44
+  },
+  "inorg:e9dcaf4cae04": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 5,
+   "score": 2.37
+  },
+  "inorg:7298c620889e": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 3,
+   "score": 2.03
+  },
+  "inorg:dd49bc4064c8": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 13,
+   "score": 2.58
+  },
+  "inorg:a2d7243d7ca8": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 33,
+   "score": 1.94
+  },
+  "inorg:2ddd5cf5f66e": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 33,
+   "score": 2.09
+  },
+  "inorg:2765477e0a6a": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 24,
+   "score": 2.68
+  },
+  "inorg:090fb2878ccc": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 33,
+   "score": 1.51
+  },
+  "inorg:3e9390ce1d53": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 23,
+   "score": 1.85
+  },
+  "inorg:f96ed7f2c7d9": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 34,
+   "score": 2.14
+  },
+  "inorg:3c3c11068ea1": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 2,
+   "score": 3.1
+  },
+  "inorg:0d905ee0f369": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 6,
+   "score": 1.9
+  },
+  "inorg:21eb64df8dbb": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 6,
+   "score": 4.35
+  },
+  "inorg:666d693ad8d5": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 6,
+   "score": 3.86
+  },
+  "inorg:40265d43f9fa": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 10,
+   "score": 2.11
+  },
+  "inorg:c4ae9782a2e1": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 6,
+   "score": 2.46
+  },
+  "inorg:5e50f5820c0a": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 4,
+   "score": 1.9
+  },
+  "inorg:dc8526b16e76": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 10,
+   "score": 2.11
+  },
+  "inorg:a7de3e688ebc": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 12,
+   "score": 2.85
+  },
+  "inorg:aeca5e2b50e0": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 23,
+   "score": 2.39
+  },
+  "inorg:4d7944a4da31": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 5,
+   "score": 2.85
+  },
+  "inorg:1fed7bdbb519": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 5,
+   "score": 2.32
+  },
+  "inorg:cf0b1887afbb": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 24,
+   "score": 2.29
+  },
+  "inorg:a5c1beae128f": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 24,
+   "score": 3.19
+  },
+  "inorg:f0074f408c5f": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 9,
+   "score": 2.36
+  },
+  "inorg:f7df94a81506": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 18,
+   "score": 3.17
+  },
+  "inorg:13db39650238": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 19,
+   "score": 1.63
+  },
+  "inorg:6a5782611176": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 5,
+   "score": 1.49
+  },
+  "inorg:3226e2bf1f37": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 19,
+   "score": 4.29
+  },
+  "inorg:0c2a4714c6c0": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 30,
+   "score": 1.87
+  },
+  "inorg:e718051fb8c9": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 32,
+   "score": 2.76
+  },
+  "inorg:98d2e11c9d48": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 31,
+   "score": 1.51
+  },
+  "inorg:4d9a3f8c9d50": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 36,
+   "score": 1.97
+  },
+  "inorg:0957d59426ec": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 12,
+   "score": 1.91
+  },
+  "inorg:b9840257a111": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 36,
+   "score": 1.44
+  },
+  "inorg:59985d59a960": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 32,
+   "score": 1.74
+  },
+  "inorg:52faef574e8c": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 32,
+   "score": 3.31
+  },
+  "inorg:c531047a6b1d": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 32,
+   "score": 5.02
+  },
+  "inorg:bceff8be7b5e": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 34,
+   "score": 1.7
+  },
+  "inorg:764c8d12a2d9": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 32,
+   "score": 2.62
+  },
+  "inorg:9656866bc0ce": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 32,
+   "score": 2.16
+  },
+  "inorg:9c790571d810": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 32,
+   "score": 2.32
+  },
+  "inorg:d6b34a0ac407": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 18,
+   "score": 1.73
+  },
+  "inorg:35f15819b81a": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 2,
+   "score": 1.65
+  },
+  "inorg:f74cfc8b290b": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 6,
+   "score": 2.41
+  },
+  "inorg:47e74ed681f9": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 41,
+   "score": 1.88
+  },
+  "org:372915ff992e": {
+   "module": "organic",
+   "kap": 1,
+   "page": 4,
+   "score": 2.28
+  },
+  "org:2f751c4d01fe": {
+   "module": "organic",
+   "kap": 1,
+   "page": 16,
+   "score": 4.43
+  },
+  "org:6e36bb66b2f2": {
+   "module": "organic",
+   "kap": 1,
+   "page": 16,
+   "score": 3.31
+  },
+  "org:0bfffd88c52c": {
+   "module": "organic",
+   "kap": 1,
+   "page": 9,
+   "score": 2.33
+  },
+  "org:204bcbeda3b3": {
+   "module": "organic",
+   "kap": 1,
+   "page": 11,
+   "score": 3.53
+  },
+  "org:553ef29049c0": {
+   "module": "organic",
+   "kap": 1,
+   "page": 12,
+   "score": 2.94
+  },
+  "org:ab3b372e551d": {
+   "module": "organic",
+   "kap": 1,
+   "page": 30,
+   "score": 2.07
+  },
+  "org:de8afb554a6e": {
+   "module": "organic",
+   "kap": 1,
+   "page": 39,
+   "score": 2.31
+  },
+  "org:6e8fd7fd5992": {
+   "module": "organic",
+   "kap": 1,
+   "page": 39,
+   "score": 2.42
+  },
+  "org:e848c44bf412": {
+   "module": "organic",
+   "kap": 1,
+   "page": 39,
+   "score": 2.63
+  },
+  "org:72136948d33e": {
+   "module": "organic",
+   "kap": 1,
+   "page": 32,
+   "score": 2.26
+  },
+  "org:155f2b0d70d5": {
+   "module": "organic",
+   "kap": 1,
+   "page": 37,
+   "score": 2.16
+  },
+  "org:32178dac7d93": {
+   "module": "organic",
+   "kap": 1,
+   "page": 21,
+   "score": 3.17
+  },
+  "org:91a99ef8624f": {
+   "module": "organic",
+   "kap": 1,
+   "page": 21,
+   "score": 3.07
+  },
+  "org:6cd4cacea5aa": {
+   "module": "organic",
+   "kap": 1,
+   "page": 22,
+   "score": 2.59
+  },
+  "org:10ecec59973d": {
+   "module": "organic",
+   "kap": 1,
+   "page": 35,
+   "score": 1.98
+  },
+  "org:30b979e69e62": {
+   "module": "organic",
+   "kap": 1,
+   "page": 49,
+   "score": 2.46
+  },
+  "org:fb2ddde0f21b": {
+   "module": "organic",
+   "kap": 1,
+   "page": 38,
+   "score": 2.25
+  },
+  "org:a48b519e836b": {
+   "module": "organic",
+   "kap": 1,
+   "page": 18,
+   "score": 2.11
+  },
+  "org:100eedf851c3": {
+   "module": "organic",
+   "kap": 1,
+   "page": 35,
+   "score": 2.1
+  },
+  "org:1157eead7fae": {
+   "module": "organic",
+   "kap": 1,
+   "page": 12,
+   "score": 1.65
+  },
+  "org:f289c45834e8": {
+   "module": "organic",
+   "kap": 1,
+   "page": 38,
+   "score": 2.03
+  },
+  "org:f08ec5af9165": {
+   "module": "organic",
+   "kap": 1,
+   "page": 38,
+   "score": 3.68
+  },
+  "org:b4c490416df9": {
+   "module": "organic",
+   "kap": 1,
+   "page": 39,
+   "score": 1.81
+  },
+  "org:d3eb764da661": {
+   "module": "organic",
+   "kap": 1,
+   "page": 11,
+   "score": 3.18
+  },
+  "org:cf1ef9a099a6": {
+   "module": "organic",
+   "kap": 1,
+   "page": 11,
+   "score": 2.1
+  },
+  "org:15521fe5583d": {
+   "module": "organic",
+   "kap": 1,
+   "page": 12,
+   "score": 3.3
+  },
+  "org:a6d438bd3fd1": {
+   "module": "organic",
+   "kap": 1,
+   "page": 12,
+   "score": 2.91
+  },
+  "org:1398de0fcced": {
+   "module": "organic",
+   "kap": 1,
+   "page": 14,
+   "score": 1.53
+  },
+  "org:c06ab64b98b9": {
+   "module": "organic",
+   "kap": 1,
+   "page": 12,
+   "score": 1.72
+  },
+  "org:d4bdee086d1c": {
+   "module": "organic",
+   "kap": 1,
+   "page": 11,
+   "score": 1.86
+  },
+  "org:d65e62d08f6b": {
+   "module": "organic",
+   "kap": 1,
+   "page": 7,
+   "score": 2.66
+  },
+  "org:c453a7b0054b": {
+   "module": "organic",
+   "kap": 1,
+   "page": 45,
+   "score": 2.43
+  },
+  "org:7abd2906c1bf": {
+   "module": "organic",
+   "kap": 1,
+   "page": 4,
+   "score": 1.9
+  },
+  "org:878a36d17308": {
+   "module": "organic",
+   "kap": 1,
+   "page": 15,
+   "score": 4.3
+  },
+  "org:9656b74442c8": {
+   "module": "organic",
+   "kap": 1,
+   "page": 4,
+   "score": 1.22
+  },
+  "org:d3d77f801088": {
+   "module": "organic",
+   "kap": 1,
+   "page": 9,
+   "score": 1.8
+  },
+  "org:b8e0ff0efaa2": {
+   "module": "organic",
+   "kap": 1,
+   "page": 3,
+   "score": 1.62
+  },
+  "org:4f1c3940e7cf": {
+   "module": "organic",
+   "kap": 1,
+   "page": 21,
+   "score": 1.27
+  },
+  "org:9545a638171e": {
+   "module": "organic",
+   "kap": 1,
+   "page": 4,
+   "score": 1.3
+  },
+  "org:f5f2d288bb30": {
+   "module": "organic",
+   "kap": 1,
+   "page": 19,
+   "score": 1.94
+  },
+  "org:350ba668f2ea": {
+   "module": "organic",
+   "kap": 1,
+   "page": 35,
+   "score": 1.95
+  },
+  "org:661f7c9c99f6": {
+   "module": "organic",
+   "kap": 1,
+   "page": 11,
+   "score": 3.07
+  },
+  "org:aa02ba3a4f37": {
+   "module": "organic",
+   "kap": 1,
+   "page": 11,
+   "score": 2.19
+  },
+  "org:8b6e81051b32": {
+   "module": "organic",
+   "kap": 1,
+   "page": 15,
+   "score": 1.6
+  },
+  "org:42ab325e6e9c": {
+   "module": "organic",
+   "kap": 2,
+   "page": 50,
+   "score": 4.61
+  },
+  "org:765ec526828b": {
+   "module": "organic",
+   "kap": 2,
+   "page": 16,
+   "score": 1.55
+  },
+  "org:c966b3dc54dd": {
+   "module": "organic",
+   "kap": 2,
+   "page": 50,
+   "score": 3.66
+  },
+  "org:3077b5a80055": {
+   "module": "organic",
+   "kap": 2,
+   "page": 53,
+   "score": 3.25
+  },
+  "org:59a2d8531683": {
+   "module": "organic",
+   "kap": 2,
+   "page": 50,
+   "score": 2.61
+  },
+  "org:9927ec87c81d": {
+   "module": "organic",
+   "kap": 2,
+   "page": 37,
+   "score": 2.79
+  },
+  "org:294e7cc80e6b": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 2.67
+  },
+  "org:16f9440f1584": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 2.83
+  },
+  "org:bf65361dd4d5": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 3.02
+  },
+  "org:d338672e3131": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 3.26
+  },
+  "org:6609049be5fa": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 2.66
+  },
+  "org:b47c8eb5f313": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 2.48
+  },
+  "org:bc939a36cb50": {
+   "module": "organic",
+   "kap": 2,
+   "page": 41,
+   "score": 2.56
+  },
+  "org:b4406dd7bd71": {
+   "module": "organic",
+   "kap": 2,
+   "page": 39,
+   "score": 1.98
+  },
+  "org:56b8ee30ed6a": {
+   "module": "organic",
+   "kap": 2,
+   "page": 41,
+   "score": 4.16
+  },
+  "org:73e162f13dca": {
+   "module": "organic",
+   "kap": 2,
+   "page": 43,
+   "score": 3.4
+  },
+  "org:a06b975a8c54": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 3.41
+  },
+  "org:eb99bfc6c439": {
+   "module": "organic",
+   "kap": 2,
+   "page": 43,
+   "score": 2.44
+  },
+  "org:62a02f2cecaf": {
+   "module": "organic",
+   "kap": 2,
+   "page": 43,
+   "score": 2.25
+  },
+  "org:60dac5cc6ee7": {
+   "module": "organic",
+   "kap": 2,
+   "page": 37,
+   "score": 3.98
+  },
+  "org:b7cf3ea3e5e0": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 3.23
+  },
+  "org:631d39d8aa05": {
+   "module": "organic",
+   "kap": 2,
+   "page": 42,
+   "score": 3.54
+  },
+  "org:1a068aeef4bb": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 1.44
+  },
+  "org:5113e265fc2d": {
+   "module": "organic",
+   "kap": 2,
+   "page": 35,
+   "score": 1.39
+  },
+  "org:e9c6cc477cc4": {
+   "module": "organic",
+   "kap": 2,
+   "page": 35,
+   "score": 1.95
+  },
+  "org:a28dda26a41c": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 2.01
+  },
+  "org:e7aaccaa5f04": {
+   "module": "organic",
+   "kap": 2,
+   "page": 34,
+   "score": 1.92
+  },
+  "org:e61c0455ec2b": {
+   "module": "organic",
+   "kap": 2,
+   "page": 33,
+   "score": 1.87
+  },
+  "org:d91efbebc756": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 3.36
+  },
+  "org:c11128da3643": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 2.99
+  },
+  "org:4d0677ea6d34": {
+   "module": "organic",
+   "kap": 2,
+   "page": 50,
+   "score": 3.3
+  },
+  "org:2c11815111b8": {
+   "module": "organic",
+   "kap": 2,
+   "page": 35,
+   "score": 3.24
+  },
+  "org:356f4edc0c04": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 3.06
+  },
+  "org:4e633639b6b6": {
+   "module": "organic",
+   "kap": 2,
+   "page": 51,
+   "score": 1.58
+  },
+  "org:383cdd6c423a": {
+   "module": "organic",
+   "kap": 2,
+   "page": 50,
+   "score": 2.5
+  },
+  "org:945d0baf11d0": {
+   "module": "organic",
+   "kap": 2,
+   "page": 35,
+   "score": 1.85
+  },
+  "org:e241b4818b53": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 1.96
+  },
+  "org:1002210c545f": {
+   "module": "organic",
+   "kap": 2,
+   "page": 42,
+   "score": 1.28
+  },
+  "org:35cd7785a169": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 1.87
+  },
+  "org:062c211fc2a9": {
+   "module": "organic",
+   "kap": 2,
+   "page": 16,
+   "score": 1.73
+  },
+  "org:3a01149eae53": {
+   "module": "organic",
+   "kap": 2,
+   "page": 37,
+   "score": 3.16
+  },
+  "org:7d1bd21bb1e0": {
+   "module": "organic",
+   "kap": 2,
+   "page": 43,
+   "score": 2.23
+  },
+  "org:6a7c978e1b33": {
+   "module": "organic",
+   "kap": 2,
+   "page": 43,
+   "score": 2.72
+  },
+  "org:eafc6c3be331": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 2.6
+  },
+  "org:56b50a7cad52": {
+   "module": "organic",
+   "kap": 2,
+   "page": 36,
+   "score": 1.82
+  },
+  "org:ac09bda7ca3d": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 3.67
+  },
+  "org:c58df4f091d4": {
+   "module": "organic",
+   "kap": 2,
+   "page": 40,
+   "score": 4.27
+  },
+  "org:ff44ae966077": {
+   "module": "organic",
+   "kap": 2,
+   "page": 43,
+   "score": 2.75
+  },
+  "org:41a04d4666d6": {
+   "module": "organic",
+   "kap": 3,
+   "page": 22,
+   "score": 4.8
+  },
+  "org:8b108e767413": {
+   "module": "organic",
+   "kap": 3,
+   "page": 22,
+   "score": 1.64
+  },
+  "org:1001a5ab2b70": {
+   "module": "organic",
+   "kap": 3,
+   "page": 22,
+   "score": 1.77
+  },
+  "org:18cf08bec4cc": {
+   "module": "organic",
+   "kap": 3,
+   "page": 16,
+   "score": 1.32
+  },
+  "org:d52959288e70": {
+   "module": "organic",
+   "kap": 3,
+   "page": 14,
+   "score": 1.79
+  },
+  "org:c00a5acdf88f": {
+   "module": "organic",
+   "kap": 3,
+   "page": 17,
+   "score": 1.47
+  },
+  "org:3b707d6543b7": {
+   "module": "organic",
+   "kap": 3,
+   "page": 16,
+   "score": 1.88
+  },
+  "org:dede28b041b2": {
+   "module": "organic",
+   "kap": 3,
+   "page": 12,
+   "score": 1.5
+  },
+  "org:5948e1bddbbc": {
+   "module": "organic",
+   "kap": 3,
+   "page": 19,
+   "score": 2.28
+  },
+  "org:7c812c1d30f1": {
+   "module": "organic",
+   "kap": 3,
+   "page": 19,
+   "score": 4.2
+  },
+  "org:5b137e96a941": {
+   "module": "organic",
+   "kap": 3,
+   "page": 8,
+   "score": 1.34
+  },
+  "org:ee3681e8e204": {
+   "module": "organic",
+   "kap": 3,
+   "page": 19,
+   "score": 1.21
+  },
+  "org:9dc2b3e43cbf": {
+   "module": "organic",
+   "kap": 3,
+   "page": 26,
+   "score": 2.65
+  },
+  "org:de10f06ebc16": {
+   "module": "organic",
+   "kap": 3,
+   "page": 5,
+   "score": 1.24
+  },
+  "org:f990804407d8": {
+   "module": "organic",
+   "kap": 3,
+   "page": 10,
+   "score": 3.18
+  },
+  "org:c418dede71e9": {
+   "module": "organic",
+   "kap": 3,
+   "page": 10,
+   "score": 2.25
+  },
+  "org:ba9ce21816ce": {
+   "module": "organic",
+   "kap": 3,
+   "page": 28,
+   "score": 2.87
+  },
+  "org:5209ee227d71": {
+   "module": "organic",
+   "kap": 3,
+   "page": 14,
+   "score": 2.24
+  },
+  "org:733d29ffd622": {
+   "module": "organic",
+   "kap": 3,
+   "page": 22,
+   "score": 1.55
+  },
+  "org:711d6041b0d5": {
+   "module": "organic",
+   "kap": 3,
+   "page": 12,
+   "score": 1.83
+  },
+  "org:1d25747c47f9": {
+   "module": "organic",
+   "kap": 3,
+   "page": 12,
+   "score": 2.18
+  },
+  "org:4b39e14821dd": {
+   "module": "organic",
+   "kap": 3,
+   "page": 5,
+   "score": 1.21
+  },
+  "org:104cc8e6ec12": {
+   "module": "organic",
+   "kap": 3,
+   "page": 22,
+   "score": 1.56
+  },
+  "org:1b85aeb5526f": {
+   "module": "organic",
+   "kap": 3,
+   "page": 10,
+   "score": 2.31
+  },
+  "org:3788f071c41e": {
+   "module": "organic",
+   "kap": 3,
+   "page": 9,
+   "score": 1.45
+  },
+  "org:9c8f5823c16d": {
+   "module": "organic",
+   "kap": 3,
+   "page": 11,
+   "score": 2.72
+  },
+  "org:074b95eff682": {
+   "module": "organic",
+   "kap": 3,
+   "page": 11,
+   "score": 1.74
+  },
+  "org:b5c311cc5d77": {
+   "module": "organic",
+   "kap": 3,
+   "page": 8,
+   "score": 1.26
+  },
+  "org:33d36c735573": {
+   "module": "organic",
+   "kap": 3,
+   "page": 8,
+   "score": 1.72
+  },
+  "org:987d3d49b28b": {
+   "module": "organic",
+   "kap": 3,
+   "page": 22,
+   "score": 1.78
+  },
+  "org:b4a3bc7f8047": {
+   "module": "organic",
+   "kap": 3,
+   "page": 16,
+   "score": 1.38
+  },
+  "org:567a9e11bff5": {
+   "module": "organic",
+   "kap": 4,
+   "page": 22,
+   "score": 3.13
+  },
+  "org:dd87a067c446": {
+   "module": "organic",
+   "kap": 4,
+   "page": 22,
+   "score": 3.27
+  },
+  "org:ceef5dccb948": {
+   "module": "organic",
+   "kap": 4,
+   "page": 22,
+   "score": 2.74
+  },
+  "org:ae5d4c532159": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.68
+  },
+  "org:bda0bac60d58": {
+   "module": "organic",
+   "kap": 4,
+   "page": 21,
+   "score": 2.26
+  },
+  "org:2f6bb14957be": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 2.0
+  },
+  "org:11c54783a1fe": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 2.96
+  },
+  "org:70221a1a9e16": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.85
+  },
+  "org:d3509b4bbde4": {
+   "module": "organic",
+   "kap": 4,
+   "page": 21,
+   "score": 2.25
+  },
+  "org:a98869ba409a": {
+   "module": "organic",
+   "kap": 4,
+   "page": 13,
+   "score": 1.85
+  },
+  "org:1684a4cfb8d6": {
+   "module": "organic",
+   "kap": 4,
+   "page": 33,
+   "score": 2.94
+  },
+  "org:86c4ecb0deac": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.68
+  },
+  "org:558ac6b75695": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 2.13
+  },
+  "org:30e42626d7c1": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 2.26
+  },
+  "org:cf071411cb16": {
+   "module": "organic",
+   "kap": 4,
+   "page": 40,
+   "score": 1.3
+  },
+  "org:4c9177242935": {
+   "module": "organic",
+   "kap": 4,
+   "page": 40,
+   "score": 1.5
+  },
+  "org:b3017f35449e": {
+   "module": "organic",
+   "kap": 4,
+   "page": 41,
+   "score": 2.26
+  },
+  "org:043bab729b1e": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.57
+  },
+  "org:bd25b07cca7d": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.31
+  },
+  "org:fd149dd00535": {
+   "module": "organic",
+   "kap": 4,
+   "page": 18,
+   "score": 3.17
+  },
+  "org:cafbadfd7277": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.81
+  },
+  "org:42ca2391227d": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.82
+  },
+  "org:04b9dfdcd129": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.57
+  },
+  "org:722ab9714b21": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 2.18
+  },
+  "org:5a57681b8b23": {
+   "module": "organic",
+   "kap": 4,
+   "page": 22,
+   "score": 2.66
+  },
+  "org:860de491ac86": {
+   "module": "organic",
+   "kap": 4,
+   "page": 22,
+   "score": 1.99
+  },
+  "org:632469c2c1fa": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.64
+  },
+  "org:25139e8cde4c": {
+   "module": "organic",
+   "kap": 4,
+   "page": 36,
+   "score": 1.61
+  },
+  "org:52b014bdbf63": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.89
+  },
+  "org:ee804f5f6c3f": {
+   "module": "organic",
+   "kap": 4,
+   "page": 22,
+   "score": 2.26
+  },
+  "org:599e84f2ac32": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.47
+  },
+  "org:6d822c4e8e89": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.61
+  },
+  "org:1aa5af9f280b": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.81
+  },
+  "org:ef018cbfe685": {
+   "module": "organic",
+   "kap": 4,
+   "page": 18,
+   "score": 1.88
+  },
+  "org:730f70fbfc79": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.93
+  },
+  "org:7646c9b66466": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.78
+  },
+  "org:e08ffe4f87b7": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.78
+  },
+  "org:f14a0e97c00c": {
+   "module": "organic",
+   "kap": 4,
+   "page": 22,
+   "score": 2.29
+  },
+  "org:2616bfa97fa3": {
+   "module": "organic",
+   "kap": 4,
+   "page": 22,
+   "score": 2.53
+  },
+  "org:3d267ba55d7a": {
+   "module": "organic",
+   "kap": 4,
+   "page": 26,
+   "score": 2.35
+  },
+  "org:94499be3fef6": {
+   "module": "organic",
+   "kap": 4,
+   "page": 45,
+   "score": 1.76
+  },
+  "org:227cf915a129": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.53
+  },
+  "org:9aca780c9d85": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.74
+  },
+  "org:3663a3affa30": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 2.18
+  },
+  "org:e1aba1f47414": {
+   "module": "organic",
+   "kap": 4,
+   "page": 20,
+   "score": 1.31
+  },
+  "org:5462ee815d7e": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.93
+  },
+  "org:b341d414db3a": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.67
+  },
+  "org:3f29e72fd612": {
+   "module": "organic",
+   "kap": 5,
+   "page": 23,
+   "score": 2.53
+  },
+  "org:822eb08ecc90": {
+   "module": "organic",
+   "kap": 5,
+   "page": 24,
+   "score": 2.01
+  },
+  "org:fc8672d438ac": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.18
+  },
+  "org:95f9e75be8e8": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.22
+  },
+  "org:d0b13f0b2cb3": {
+   "module": "organic",
+   "kap": 5,
+   "page": 23,
+   "score": 2.12
+  },
+  "org:8459a5ab8bf3": {
+   "module": "organic",
+   "kap": 5,
+   "page": 24,
+   "score": 2.12
+  },
+  "org:aed5d2a43261": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.08
+  },
+  "org:f8b48faef82e": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 1.87
+  },
+  "org:00a8785e325e": {
+   "module": "organic",
+   "kap": 5,
+   "page": 31,
+   "score": 2.37
+  },
+  "org:fa7cdb3c21e3": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 1.87
+  },
+  "org:0f1ae349b44b": {
+   "module": "organic",
+   "kap": 5,
+   "page": 31,
+   "score": 2.25
+  },
+  "org:366e445ce1f5": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.59
+  },
+  "org:ff12c7af75c9": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.33
+  },
+  "org:4c6e5373e9b1": {
+   "module": "organic",
+   "kap": 5,
+   "page": 32,
+   "score": 2.16
+  },
+  "org:13e60ecc067e": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.23
+  },
+  "org:803ba6cb4ef6": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.27
+  },
+  "org:10fe4bab443b": {
+   "module": "organic",
+   "kap": 5,
+   "page": 17,
+   "score": 2.08
+  },
+  "org:3549cd59b906": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.5
+  },
+  "org:d3c3059c98e7": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.15
+  },
+  "org:565dfa16acbc": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.47
+  },
+  "org:e82c0bc6ff12": {
+   "module": "organic",
+   "kap": 5,
+   "page": 24,
+   "score": 4.35
+  },
+  "org:a095b1421eb3": {
+   "module": "organic",
+   "kap": 5,
+   "page": 27,
+   "score": 1.93
+  },
+  "org:3be823ae84be": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.16
+  },
+  "org:37e44282f742": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 3.62
+  },
+  "org:0f343e57709d": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.33
+  },
+  "org:c837eb474d0d": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.86
+  },
+  "org:3e9b5b3d3a3d": {
+   "module": "organic",
+   "kap": 5,
+   "page": 28,
+   "score": 2.37
+  },
+  "org:4a8fd645e285": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.36
+  },
+  "org:ab82bb0e96b0": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 1.75
+  },
+  "org:29de2cd68f22": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.08
+  },
+  "org:6b439abfd531": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 1.96
+  },
+  "org:5584dcb7c213": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.23
+  },
+  "org:ff1f40c001ae": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.4
+  },
+  "org:65b19f21b556": {
+   "module": "organic",
+   "kap": 5,
+   "page": 31,
+   "score": 1.74
+  },
+  "org:5261c76ec4a8": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.68
+  },
+  "org:365042b4b082": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.18
+  },
+  "org:14d661b4e8bb": {
+   "module": "organic",
+   "kap": 5,
+   "page": 31,
+   "score": 2.01
+  },
+  "org:a5579445300a": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.03
+  },
+  "org:3700b97b7cd6": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.51
+  },
+  "org:190dca499c95": {
+   "module": "organic",
+   "kap": 5,
+   "page": 23,
+   "score": 2.52
+  },
+  "org:e051cd0c063d": {
+   "module": "organic",
+   "kap": 5,
+   "page": 5,
+   "score": 2.36
+  },
+  "org:9d5158daa5ff": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 2.81
+  },
+  "org:d6085c1d42ac": {
+   "module": "organic",
+   "kap": 6,
+   "page": 8,
+   "score": 2.43
+  },
+  "org:a785eea717a2": {
+   "module": "organic",
+   "kap": 6,
+   "page": 9,
+   "score": 1.27
+  },
+  "org:3a7fda1a5d53": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 1.62
+  },
+  "org:ba30431ba6a4": {
+   "module": "organic",
+   "kap": 6,
+   "page": 4,
+   "score": 1.74
+  },
+  "org:c8356851ac95": {
+   "module": "organic",
+   "kap": 6,
+   "page": 13,
+   "score": 1.63
+  },
+  "org:0b89afb95b4b": {
+   "module": "organic",
+   "kap": 6,
+   "page": 8,
+   "score": 2.62
+  },
+  "org:549b1488e486": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 2.6
+  },
+  "org:1a102bc08f58": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 3.57
+  },
+  "org:34235b877291": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 2.72
+  },
+  "org:5c251a1da7f2": {
+   "module": "organic",
+   "kap": 6,
+   "page": 13,
+   "score": 2.17
+  },
+  "org:a3fe091c6e39": {
+   "module": "organic",
+   "kap": 6,
+   "page": 16,
+   "score": 1.78
+  },
+  "org:76d3bf8d40e9": {
+   "module": "organic",
+   "kap": 6,
+   "page": 4,
+   "score": 1.74
+  },
+  "org:185c59d7a2e5": {
+   "module": "organic",
+   "kap": 6,
+   "page": 16,
+   "score": 3.2
+  },
+  "org:4e14f40491a9": {
+   "module": "organic",
+   "kap": 6,
+   "page": 19,
+   "score": 2.01
+  },
+  "org:6306cbedb247": {
+   "module": "organic",
+   "kap": 6,
+   "page": 20,
+   "score": 1.64
+  },
+  "org:f02d684a98e6": {
+   "module": "organic",
+   "kap": 6,
+   "page": 4,
+   "score": 1.23
+  },
+  "org:87b11aaf059d": {
+   "module": "organic",
+   "kap": 6,
+   "page": 6,
+   "score": 1.25
+  },
+  "org:2712fdfa1668": {
+   "module": "organic",
+   "kap": 6,
+   "page": 25,
+   "score": 1.28
+  },
+  "org:fb780023f832": {
+   "module": "organic",
+   "kap": 6,
+   "page": 25,
+   "score": 1.4
+  },
+  "org:a538b061dc0c": {
+   "module": "organic",
+   "kap": 6,
+   "page": 13,
+   "score": 2.39
+  },
+  "org:7a9e298e57ca": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 1.5
+  },
+  "org:348ef0b23d20": {
+   "module": "organic",
+   "kap": 6,
+   "page": 4,
+   "score": 1.79
+  },
+  "org:07e80c6f9058": {
+   "module": "organic",
+   "kap": 6,
+   "page": 4,
+   "score": 2.03
+  },
+  "org:f17ece4106d8": {
+   "module": "organic",
+   "kap": 6,
+   "page": 13,
+   "score": 1.74
+  },
+  "org:289af3db776e": {
+   "module": "organic",
+   "kap": 6,
+   "page": 13,
+   "score": 2.33
+  },
+  "org:0b0cf41aac18": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 1.62
+  },
+  "org:d8e9b64c0264": {
+   "module": "organic",
+   "kap": 6,
+   "page": 7,
+   "score": 2.84
+  },
+  "org:9f9ef9e234b9": {
+   "module": "organic",
+   "kap": 6,
+   "page": 9,
+   "score": 1.31
+  },
+  "org:6314d5b4009d": {
+   "module": "organic",
+   "kap": 6,
+   "page": 24,
+   "score": 1.84
+  },
+  "org:86490a75dd8c": {
+   "module": "organic",
+   "kap": 6,
+   "page": 8,
+   "score": 2.45
+  },
+  "org:51b138784c1c": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.61
+  },
+  "org:bed158f569d7": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.21
+  },
+  "org:a548e7ac8ffa": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.17
+  },
+  "org:eb203fcae31c": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.61
+  },
+  "org:d142093a780d": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.23
+  },
+  "org:b01a5b9cb599": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 1.79
+  },
+  "org:e4cb893cea72": {
+   "module": "organic",
+   "kap": 7,
+   "page": 33,
+   "score": 2.16
+  },
+  "org:6fb359f23f16": {
+   "module": "organic",
+   "kap": 7,
+   "page": 33,
+   "score": 1.66
+  },
+  "org:2939f8f9cbf5": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 1.79
+  },
+  "org:8eae0aa2eb09": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.17
+  },
+  "org:364d0734698a": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.54
+  },
+  "org:9c831f6986f6": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.23
+  },
+  "org:294d869148d9": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.19
+  },
+  "org:99d021d11f8d": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 4.53
+  },
+  "org:5d2ffd5c9e8c": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 5.82
+  },
+  "org:0be1a457ca86": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 5.17
+  },
+  "org:e7eb63dbf309": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.23
+  },
+  "org:96afb7a61bb7": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.88
+  },
+  "org:93663d1b7510": {
+   "module": "organic",
+   "kap": 7,
+   "page": 10,
+   "score": 2.87
+  },
+  "org:ad0c5e10aaf6": {
+   "module": "organic",
+   "kap": 7,
+   "page": 10,
+   "score": 2.83
+  },
+  "org:577c04462584": {
+   "module": "organic",
+   "kap": 7,
+   "page": 40,
+   "score": 2.54
+  },
+  "org:9119e0b8f2d6": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.61
+  },
+  "org:6ac69f7ebb81": {
+   "module": "organic",
+   "kap": 7,
+   "page": 40,
+   "score": 3.72
+  },
+  "org:70467af67062": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.45
+  },
+  "org:bc7c86f69d18": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.23
+  },
+  "org:6f7d1d23f786": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 1.84
+  },
+  "org:ee6d26327633": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.23
+  },
+  "org:2e7262992005": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.17
+  },
+  "org:62d92af329d6": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 1.82
+  },
+  "org:60475b12abb7": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.17
+  },
+  "org:17cb067370c2": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.61
+  },
+  "org:de99f0588597": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 4.53
+  },
+  "org:12057a2a8be7": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.23
+  },
+  "org:30487b505dd1": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.32
+  },
+  "org:aab97ef69a87": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.23
+  },
+  "org:9e189619c4a7": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.17
+  },
+  "org:6494c08be238": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.17
+  },
+  "org:97aff1446f65": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 3.19
+  },
+  "org:1dd2f379cf11": {
+   "module": "organic",
+   "kap": 7,
+   "page": 7,
+   "score": 2.14
+  },
+  "org:a5ef3963948b": {
+   "module": "organic",
+   "kap": 8,
+   "page": 32,
+   "score": 2.43
+  },
+  "org:56fe6cb0e679": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 4.56
+  },
+  "org:d8694b294a6e": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 3.58
+  },
+  "org:92282203dc78": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 1.87
+  },
+  "org:74a6de5c0676": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.65
+  },
+  "org:6ce3b55f7f93": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.84
+  },
+  "org:e1efb2603bcc": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.99
+  },
+  "org:28d72f67cbba": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.9
+  },
+  "org:b8cffe896fa4": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.21
+  },
+  "org:20d8bbd7fcac": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.26
+  },
+  "org:7de14a6417a3": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.43
+  },
+  "org:5eb913ca952a": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.34
+  },
+  "org:b6bf0963c678": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.29
+  },
+  "org:bcd9445ef511": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.27
+  },
+  "org:3f6ab3c07940": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.94
+  },
+  "org:10525381ba56": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.93
+  },
+  "org:8b191f6819c3": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.26
+  },
+  "org:47a8bb5c8497": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.95
+  },
+  "org:72527b3cfe70": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 2.14
+  },
+  "org:490f48ff535d": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.12
+  },
+  "org:48ea67f9e0b0": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.43
+  },
+  "org:5b50bb8b9abd": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.43
+  },
+  "org:f66255dc75e3": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.08
+  },
+  "org:c9e7a01d2c7b": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.08
+  },
+  "org:55cd2a790a0e": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.21
+  },
+  "org:e96d124662a2": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.43
+  },
+  "org:92aa9e028da6": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.82
+  },
+  "org:6ca6820208ec": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 1.9
+  },
+  "org:baf4461f9dda": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.04
+  },
+  "org:d756324bbc98": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.43
+  },
+  "org:dfb7151de7cc": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.21
+  },
+  "org:cd9b2c1de0c3": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 2.4
+  },
+  "org:4708825ebfa3": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 2.87
+  },
+  "org:5dcd2893cc05": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 2.37
+  },
+  "org:4e7e0ed36ff0": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.34
+  },
+  "org:dc0f57bce861": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 2.13
+  },
+  "org:bcc4835e176a": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 3.22
+  },
+  "org:2bc419460f7a": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.98
+  },
+  "org:cec3d38fe91a": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.3
+  },
+  "org:333c618e6354": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 2.24
+  },
+  "org:51d512138a92": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.43
+  },
+  "org:0e1bffbe0b48": {
+   "module": "organic",
+   "kap": 8,
+   "page": 5,
+   "score": 2.25
+  },
+  "org:daf518d1a596": {
+   "module": "organic",
+   "kap": 8,
+   "page": 33,
+   "score": 3.99
+  },
+  "org:0ff4af8f8e8f": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 2.64
+  },
+  "org:14000df95b23": {
+   "module": "organic",
+   "kap": 9,
+   "page": 58,
+   "score": 1.63
+  },
+  "org:5a86728be9c6": {
+   "module": "organic",
+   "kap": 9,
+   "page": 33,
+   "score": 2.12
+  },
+  "org:b9c1d04cde3c": {
+   "module": "organic",
+   "kap": 9,
+   "page": 12,
+   "score": 2.96
+  },
+  "org:44b6b51b4c9c": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 2.64
+  },
+  "org:f265a9831c13": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.92
+  },
+  "org:c57b757288d7": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 2.19
+  },
+  "org:83e833e81cfc": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 2.31
+  },
+  "org:7e4959836c1f": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.69
+  },
+  "org:c72a86f2ec80": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 2.03
+  },
+  "org:c5ec9912a3be": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 2.52
+  },
+  "org:49a830c312f9": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 2.05
+  },
+  "org:58af4169193a": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.85
+  },
+  "org:54c555fcd500": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 2.85
+  },
+  "org:08c39ab22ac6": {
+   "module": "organic",
+   "kap": 9,
+   "page": 63,
+   "score": 2.11
+  },
+  "org:afeb3948fbf1": {
+   "module": "organic",
+   "kap": 9,
+   "page": 39,
+   "score": 1.53
+  },
+  "org:54bbec151936": {
+   "module": "organic",
+   "kap": 9,
+   "page": 13,
+   "score": 1.42
+  },
+  "org:004313b790e3": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 1.42
+  },
+  "org:00c99921f19c": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 1.96
+  },
+  "org:4101205a57c1": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 1.62
+  },
+  "org:175c6c9feeac": {
+   "module": "organic",
+   "kap": 9,
+   "page": 34,
+   "score": 1.8
+  },
+  "org:61a0bf20c9f3": {
+   "module": "organic",
+   "kap": 9,
+   "page": 69,
+   "score": 2.22
+  },
+  "org:bb61de28a79d": {
+   "module": "organic",
+   "kap": 9,
+   "page": 19,
+   "score": 2.12
+  },
+  "org:938e4df193cf": {
+   "module": "organic",
+   "kap": 9,
+   "page": 19,
+   "score": 2.15
+  },
+  "org:7aecaa80c6c2": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.3
+  },
+  "org:8973f8231976": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.64
+  },
+  "org:02b168cf07ff": {
+   "module": "organic",
+   "kap": 9,
+   "page": 22,
+   "score": 2.0
+  },
+  "org:5db507b17e37": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 2.01
+  },
+  "org:f29280b9ecca": {
+   "module": "organic",
+   "kap": 9,
+   "page": 68,
+   "score": 2.67
+  },
+  "org:754c86b5fc33": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.54
+  },
+  "org:5ee881701eae": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.44
+  },
+  "org:4a0fa9ce2f6f": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.74
+  },
+  "org:b632b152c3a9": {
+   "module": "organic",
+   "kap": 9,
+   "page": 15,
+   "score": 1.84
+  },
+  "org:d63ecca60add": {
+   "module": "organic",
+   "kap": 9,
+   "page": 10,
+   "score": 2.03
+  },
+  "org:f1678b7b366d": {
+   "module": "organic",
+   "kap": 9,
+   "page": 15,
+   "score": 1.47
+  },
+  "org:d63ace7c7bd8": {
+   "module": "organic",
+   "kap": 9,
+   "page": 15,
+   "score": 3.04
+  },
+  "org:fadfab6b67df": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 1.44
+  },
+  "org:1c301622e2ff": {
+   "module": "organic",
+   "kap": 9,
+   "page": 44,
+   "score": 1.91
+  },
+  "org:5b8d655aa438": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 1.4
+  },
+  "org:6c268e6e5c97": {
+   "module": "organic",
+   "kap": 9,
+   "page": 34,
+   "score": 2.84
+  },
+  "org:1ca45e40fed8": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.82
+  },
+  "org:55e0ee4a4f08": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.57
+  },
+  "org:8ea210665551": {
+   "module": "organic",
+   "kap": 9,
+   "page": 44,
+   "score": 2.04
+  },
+  "org:f1591ae5f474": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.76
+  },
+  "org:46839433eaa3": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.41
+  },
+  "org:253d20f05223": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.33
+  },
+  "org:7fdaa576e494": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.48
+  },
+  "org:6995b7fed891": {
+   "module": "organic",
+   "kap": 9,
+   "page": 4,
+   "score": 1.71
+  },
+  "org:c7d8101337ef": {
+   "module": "organic",
+   "kap": 9,
+   "page": 69,
+   "score": 2.63
+  },
+  "org:f58d0be2970c": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.7
+  },
+  "org:0e408f228dbf": {
+   "module": "organic",
+   "kap": 9,
+   "page": 34,
+   "score": 2.53
+  },
+  "org:43f08d7fb4f0": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.63
+  },
+  "org:0c6c5732d9a0": {
+   "module": "organic",
+   "kap": 9,
+   "page": 49,
+   "score": 4.24
+  },
+  "org:681adfddc9a0": {
+   "module": "organic",
+   "kap": 9,
+   "page": 73,
+   "score": 1.45
+  },
+  "org:2a060c10e57a": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 2.43
+  },
+  "org:a2ab72bd21fa": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 1.62
+  },
+  "org:2893b7647777": {
+   "module": "organic",
+   "kap": 10,
+   "page": 26,
+   "score": 2.79
+  },
+  "org:6d0514c9578c": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 2.03
+  },
+  "org:6cac655ff1d0": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 1.65
+  },
+  "org:4e7216d3be66": {
+   "module": "organic",
+   "kap": 10,
+   "page": 14,
+   "score": 1.22
+  },
+  "org:4649dc738518": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 2.31
+  },
+  "org:30485e407d92": {
+   "module": "organic",
+   "kap": 10,
+   "page": 13,
+   "score": 3.29
+  },
+  "org:3e724c439f7f": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 2.35
+  },
+  "org:2fea5c5a4bff": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 2.03
+  },
+  "org:924f2e33cd98": {
+   "module": "organic",
+   "kap": 10,
+   "page": 13,
+   "score": 2.97
+  },
+  "org:1cce73521472": {
+   "module": "organic",
+   "kap": 10,
+   "page": 14,
+   "score": 1.22
+  },
+  "org:e813f159668b": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 1.62
+  },
+  "org:49a90acf9a91": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 1.62
+  },
+  "org:33b62165b64a": {
+   "module": "organic",
+   "kap": 10,
+   "page": 14,
+   "score": 1.22
+  },
+  "org:01bc3fcf9909": {
+   "module": "organic",
+   "kap": 10,
+   "page": 14,
+   "score": 1.22
+  },
+  "org:41179485456f": {
+   "module": "organic",
+   "kap": 10,
+   "page": 14,
+   "score": 1.22
+  },
+  "org:4c571832b3f1": {
+   "module": "organic",
+   "kap": 10,
+   "page": 6,
+   "score": 2.48
+  },
+  "org:5600175100a1": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 1.62
+  },
+  "org:1325bd10b9d2": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 2.03
+  },
+  "org:7173916949aa": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 2.03
+  },
+  "org:f559ae57d614": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 1.62
+  },
+  "org:cce90fcf39b7": {
+   "module": "organic",
+   "kap": 10,
+   "page": 13,
+   "score": 2.11
+  },
+  "org:5dd116704cb3": {
+   "module": "organic",
+   "kap": 10,
+   "page": 15,
+   "score": 2.03
+  }
+ }
+}

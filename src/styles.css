@@ -3359,3 +3359,62 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
     var(--paper);
   background-size: 28px 28px;
 }
+
+/* ===================== Lernunterlagen ===================== */
+.lu-grid {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) 320px;
+  gap: 14px;
+  align-items: start;
+}
+.lu-chapters { display: flex; flex-direction: column; gap: 6px; max-height: 80vh; overflow: auto; }
+.lu-chap {
+  display: grid; grid-template-columns: 1fr; gap: 2px; text-align: left;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--card); cursor: pointer; min-height: 0;
+}
+.lu-chap:hover { border-color: var(--tu-blue); }
+.lu-chap.active { border-color: var(--tu-blue); box-shadow: inset 0 0 0 1px var(--tu-blue); }
+.lu-chap b { font-size: 13px; }
+.lu-chap-title { font-size: 12px; color: var(--muted); line-height: 1.25; }
+.lu-chap em { font-size: 10.5px; color: var(--muted); font-style: normal; }
+.lu-chap .lu-bar { display: block; height: 4px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 3px; }
+.lu-chap .lu-bar span { display: block; height: 100%; background: var(--tu-blue); }
+
+.lu-pdf { min-height: 60vh; }
+.lu-frame {
+  width: 100%; height: 80vh; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.lu-pages { display: flex; flex-direction: column; gap: 6px; max-height: 80vh; overflow: auto; }
+.lu-cov { font-size: 12px; color: var(--muted); padding: 4px 2px 8px; }
+.lu-cov b { color: var(--ink); }
+.lu-page { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--card); }
+.lu-page.current { border-color: var(--tu-blue); }
+.lu-page-head {
+  width: 100%; display: flex; align-items: center; gap: 8px; justify-content: flex-start;
+  padding: 7px 10px; background: var(--ok-bg); border: none; border-radius: 0; cursor: pointer;
+}
+.lu-page-head .lu-pg { font-weight: 700; font-size: 12.5px; }
+.lu-page-head .lu-cnt { font-size: 11.5px; color: var(--muted); }
+.lu-page-head .lu-chev { margin-left: auto; transition: transform .15s ease; opacity: .6; }
+.lu-page-head .lu-chev.open { transform: rotate(180deg); }
+.lu-qs { list-style: none; margin: 0; padding: 6px 10px 10px; display: flex; flex-direction: column; gap: 7px; }
+.lu-qs li { font-size: 12.5px; line-height: 1.35; display: flex; gap: 7px; align-items: baseline; }
+.lu-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; margin-top: 4px; }
+.lu-unanchored { margin-top: 4px; border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; }
+.lu-unanchored summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+
+@media (max-width: 900px) {
+  .lu-grid { grid-template-columns: 1fr; }
+  .lu-chapters { flex-direction: row; flex-wrap: wrap; max-height: none; }
+  .lu-chap { flex: 1 1 130px; }
+  .lu-frame { height: 60vh; }
+  .lu-pages { max-height: none; }
+}
+
+.lu-pdf-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.lu-pdf-title { font-size: 12px; color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-open { font-size: 12px; font-weight: 600; color: var(--tu-blue); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.lu-open:hover { text-decoration: underline; }
