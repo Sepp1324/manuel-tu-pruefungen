@@ -672,6 +672,41 @@ button:disabled { cursor: default; opacity: .48; }
   overflow: hidden;
 }
 .progress span { background: var(--tu-blue); display: block; height: 100%; }
+
+/* Segmentierte Fortschrittsleiste (Wiederhol-Modus, StudySmarter-Stil):
+   ein Segment je Karte, gefaerbt nach zuletzt gegebener Bewertung. */
+.seg-progress {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  align-items: stretch;
+  min-width: 120px;
+  height: 12px;
+}
+.seg-progress .seg {
+  flex: 1 1 0;
+  min-width: 3px;
+  border-radius: 3px;
+  background: var(--line);
+  transition: background-color .25s ease;
+}
+.seg-progress .seg-unseen  { background: color-mix(in srgb, var(--line) 70%, #7c8798); }
+.seg-progress .seg-again   { background: #e5484d; }              /* Schlecht */
+.seg-progress .seg-ok      { background: #e0a015; }              /* OK */
+.seg-progress .seg-good    { background: #30a46c; }              /* Gut */
+.seg-progress .seg-perfect { background: #3b82f6; }              /* Perfekt */
+.seg-progress .seg-current {
+  background: #f5c518;                                            /* aktuelle Karte */
+  box-shadow: 0 0 0 2px color-mix(in srgb, #f5c518 55%, transparent);
+  animation: segPulse 1.1s ease-in-out infinite;
+}
+@keyframes segPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seg-progress .seg-current { animation: none; }
+}
 .study-meta {
   align-items: center;
   color: var(--muted);
