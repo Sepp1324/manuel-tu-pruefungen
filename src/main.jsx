@@ -35,6 +35,7 @@ import {
   Split,
   Sun,
   Moon,
+  FileText,
 } from "lucide-react";
 import "./styles.css";
 
@@ -4772,11 +4773,143 @@ function AntwortCheckPage({ module, sessionSize = 20, setSessionSize }) {
   );
 }
 
+const LU_STATUS = {
+  neu: ["#8a94a6", "neu"], gelernt: ["#30a46c", "gelernt"],
+  faellig: ["#e0a015", "faellig"], inaktiv: ["#8a94a6", "inaktiv"], fehlt: ["#8a94a6", "-"],
+};
+
+function LernunterlagenPage({ module, setModule, modules }) {
+  const [index, setIndex] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [page, setPage] = useState(1);
+  const [openPage, setOpenPage] = useState(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => { api("/api/lernunterlagen").then(setIndex).catch(() => setError(true)); }, []);
+
+  const chapters = (index?.chapters || []).filter((c) => c.module === module);
+
+  function open(ch) {
+    setLoadingDetail(true); setDetail(null); setPage(1); setOpenPage(null);
+    api(`/api/lernunterlagen/${ch.module}/${ch.kap}`)
+      .then((d) => { setDetail(d); setLoadingDetail(false); })
+      .catch(() => { setError(true); setLoadingDetail(false); });
+  }
+
+  // Beim Modulwechsel / Erst-Laden das erste Kapitel oeffnen.
+  useEffect(() => {
+    if (chapters.length && (!detail || detail.module !== module)) open(chapters[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [module, index]);
+
+  if (error) return <LoadError onRetry={() => window.location.reload()} label="Lernunterlagen konnten nicht geladen werden." />;
+  if (!index) return <div className="loading">Lernunterlagen laden...</div>;
+
+  const curKap = detail?.kap;
+  const coveredPages = detail ? Object.keys(detail.page_cards).map(Number).sort((a, b) => a - b) : [];
+  const pdfSrc = detail ? `/lernunterlagen/${encodeURIComponent(detail.file)}#page=${page}&view=FitH` : null;
+
+  return (
+    <section className="panel lu">
+      <div className="section-head">
+        <div><h2><FileText size={18} /> Lernunterlagen</h2>
+          <p>Original-Foliensaetze mit markierten Seiten und den zugehoerigen Fragen.</p></div>
+        {setModule && (
+          <div className="module-switch">
+            <button className={module === "organic" ? "active" : ""} onClick={() => setModule("organic")}>Organik</button>
+            <button className={module === "inorganic" ? "active" : ""} onClick={() => setModule("inorganic")}>Anorganik</button>
+          </div>
+        )}
+      </div>
+      <div className="lu-grid">
+        <aside className="lu-chapters">
+          {chapters.map((ch) => {
+            const pct = ch.cards_total ? Math.round(100 * ch.cards_anchored / ch.cards_total) : 0;
+            const label = module === "organic" ? `VO${ch.kap}` : `Einheit ${String(ch.kap).padStart(2, "0")}`;
+            const title = ch.title.replace(/^VO\d+\s*/, "").replace(/^Einheit \d+\s*/, "");
+            return (
+              <button key={ch.kap} className={`lu-chap ${curKap === ch.kap ? "active" : ""}`} onClick={() => open(ch)}>
+                <b>{label}</b>
+                <span className="lu-chap-title">{title}</span>
+                <em>{ch.cards_total} Fragen &middot; {ch.pages} S.{ch.available ? "" : " · PDF fehlt"}</em>
+                <i className="lu-bar"><span style={{ width: `${pct}%` }} /></i>
+              </button>
+            );
+          })}
+        </aside>
+
+        <div className="lu-pdf">
+          {loadingDetail && <div className="loading">Kapitel laedt...</div>}
+          {detail && !detail.available && (
+            <div className="form-msg">Dieses PDF liegt noch nicht auf dem Server. Die Seiten- und Fragen-Uebersicht rechts funktioniert trotzdem.</div>
+          )}
+          {detail && detail.available && pdfSrc && (
+            <>
+              <div className="lu-pdf-bar">
+                <span className="lu-pdf-title">{detail.title} &middot; Seite {page}/{detail.pages}</span>
+                <a className="lu-open" href={pdfSrc} target="_blank" rel="noreferrer">
+                  In neuem Tab oeffnen <ArrowLeft size={13} style={{ transform: "rotate(135deg)" }} />
+                </a>
+              </div>
+              <iframe key={detail.file} title={detail.title} src={pdfSrc} className="lu-frame" />
+            </>
+          )}
+        </div>
+
+        <aside className="lu-pages">
+          {detail && (
+            <>
+              <div className="lu-cov">
+                <b>{detail.cards_anchored}/{detail.cards_total}</b> Fragen verortet &middot; {coveredPages.length} Seiten markiert
+              </div>
+              {coveredPages.map((pg) => {
+                const cards = detail.page_cards[String(pg)];
+                const isOpen = openPage === pg;
+                return (
+                  <div key={pg} className={`lu-page ${page === pg ? "current" : ""}`}>
+                    <button className="lu-page-head" onClick={() => { setPage(pg); setOpenPage(isOpen ? null : pg); }}>
+                      <span className="lu-pg">S. {pg}</span>
+                      <span className="lu-cnt">{cards.length} {cards.length === 1 ? "Frage" : "Fragen"}</span>
+                      <ChevronDown size={14} className={`lu-chev ${isOpen ? "open" : ""}`} />
+                    </button>
+                    {isOpen && (
+                      <ul className="lu-qs">
+                        {cards.map((c) => (
+                          <li key={c.id}>
+                            <i className="lu-dot" style={{ background: (LU_STATUS[c.status] || LU_STATUS.neu)[0] }} title={(LU_STATUS[c.status] || [])[1]} />
+                            {c.q}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+              {detail.unanchored.length > 0 && (
+                <details className="lu-unanchored">
+                  <summary>{detail.unanchored.length} weitere Fragen (Seite unklar)</summary>
+                  <ul className="lu-qs">
+                    {detail.unanchored.map((c) => (
+                      <li key={c.id}><i className="lu-dot" style={{ background: (LU_STATUS[c.status] || LU_STATUS.neu)[0] }} />{c.q}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </>
+          )}
+        </aside>
+      </div>
+    </section>
+  );
+}
+
 const NAV_GROUPS = [
   {
     label: "Lernen", icon: Target,
     items: [
       { route: "exam", label: "Pruefung", icon: Target },
+      { route: "lernunterlagen", label: "Lernunterlagen", icon: FileText },
       { route: "antwortcheck", label: "Antwort-Check", icon: Sparkles },
       { route: "reactions", label: "Reaktionen", icon: FlaskConical },
       { route: "processes", label: "Prozesse", icon: ListOrdered },
@@ -4985,6 +5118,7 @@ function App() {
     if (route === "analytics") return <AnalyticsPage module={module} />;
     if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} />;
     if (route === "studyplan") return <StudyPlanPage module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />;
+    if (route === "lernunterlagen") return <LernunterlagenPage module={module} setModule={setModule} modules={data.modules} />;
     if (route === "antwortcheck") return <AntwortCheckPage module={module} sessionSize={sessionSize} setSessionSize={setSessionSize} />;
     if (route === "reactions") return <ReactionTrainerPage module={module} />;
     if (route === "processes") return <ProcessTrainerPage module={module} />;

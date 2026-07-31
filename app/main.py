@@ -50,6 +50,15 @@ SPA_DIR = Path(os.environ.get("SPA_DIR", Path(__file__).parent / "spa"))
 if not SPA_DIR.exists() and (Path(__file__).parent.parent / "dist").exists():
     SPA_DIR = Path(__file__).parent.parent / "dist"
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "/data/uploads"))
+# Lernunterlagen: Manifest (Karte->Seite je Kapitel) liegt im Repo; die PDFs selbst
+# (zu gross fuers Image) auf dem Daten-Volume unter LERN_DIR.
+LERN_PATH = Path(__file__).parent / "lernunterlagen.json"
+LERN_DIR = Path(os.environ.get("LERN_DIR", "/data/lernunterlagen"))
+try:
+    _LERN = json.loads(LERN_PATH.read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError):
+    _LERN = {"chapters": [], "anchors": {}}
+_LERN_FILES = {ch["file"] for ch in _LERN.get("chapters", [])}
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(8 * 1024 * 1024)))
 AUTO_QUALITY_TTL_SECONDS = int(os.environ.get("AUTO_QUALITY_TTL_SECONDS", "300"))
 KNOWLEDGE_MAP_TTL_SECONDS = int(os.environ.get("KNOWLEDGE_MAP_TTL_SECONDS", "90"))
@@ -3967,6 +3976,83 @@ async def upload_photo(file: UploadFile = File(...)):
         "content_type": content_type,
         "html": f'<img class="card-photo" src="{url}" alt="{escape(alt)}" loading="lazy">',
     }
+
+
+def _card_status(row) -> str:
+    # neu = noch nie beantwortet; faellig = ueberfaellig; gelernt = beantwortet & terminiert
+    if row is None:
+        return "fehlt"
+    if row["status"] != "active":
+        return "inaktiv"
+    if row["reps"] == 0 or row["due"] is None:
+        return "neu"
+    return "faellig" if row["due"] <= _now_iso() else "gelernt"
+
+
+def _short_q(payload_q: str) -> str:
+    # "Kontext: ... Quelle: ...\n\n<Frage>" -> nur die Frage
+    return (payload_q or "").split("\n\n")[-1].strip()
+
+
+@app.get("/api/lernunterlagen")
+def lernunterlagen_index():
+    out = []
+    for ch in _LERN.get("chapters", []):
+        out.append({
+            "module": ch["module"], "kap": ch["kap"], "title": ch["title"],
+            "file": ch["file"], "pages": ch["pages"],
+            "cards_total": ch["cards_total"], "cards_anchored": ch["cards_anchored"],
+            "available": (LERN_DIR / ch["file"]).exists(),
+        })
+    return {"chapters": out}
+
+
+@app.get("/api/lernunterlagen/{module}/{kap}")
+def lernunterlagen_detail(module: str, kap: int):
+    module = _valid_module(module)
+    ch = next((c for c in _LERN.get("chapters", []) if c["module"] == module and c["kap"] == kap), None)
+    if not ch:
+        raise HTTPException(404, "Kapitel nicht gefunden")
+    conn = db.get_conn()
+    rows = conn.execute(
+        "SELECT id, payload, status, reps, due FROM cards WHERE module=? AND kap=?",
+        (module, kap),
+    ).fetchall()
+    conn.close()
+    by_id = {r["id"]: r for r in rows}
+
+    def card_brief(cid: str, page: int | None):
+        r = by_id.get(cid)
+        try:
+            q = _short_q(json.loads(r["payload"]).get("q", "")) if r else ""
+        except (json.JSONDecodeError, TypeError):
+            q = ""
+        return {"id": cid, "q": q, "status": _card_status(r), "page": page}
+
+    page_cards = {
+        str(pg): [card_brief(cid, int(pg)) for cid in ids]
+        for pg, ids in ch.get("page_cards", {}).items()
+    }
+    unanchored = [card_brief(cid, None) for cid in ch.get("unanchored", [])]
+    return {
+        "module": module, "kap": kap, "title": ch["title"],
+        "file": ch["file"], "pages": ch["pages"],
+        "available": (LERN_DIR / ch["file"]).exists(),
+        "cards_total": ch["cards_total"], "cards_anchored": ch["cards_anchored"],
+        "page_cards": page_cards, "unanchored": unanchored,
+    }
+
+
+@app.get("/lernunterlagen/{name}")
+def lernunterlagen_pdf(name: str):
+    # Nur bekannte Manifest-Dateien ausliefern (kein Path-Traversal).
+    if name not in _LERN_FILES:
+        raise HTTPException(404, "Nicht gefunden")
+    path = LERN_DIR / name
+    if not path.exists():
+        raise HTTPException(404, "PDF noch nicht auf dem Server (LERN_DIR)")
+    return FileResponse(path, media_type="application/pdf",
+                        headers={"Content-Disposition": f'inline; filename="{name}"'})
 
 
 @app.get("/login")
