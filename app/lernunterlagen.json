@@ -6,8 +6,8 @@
    "title": "Einheit 01 Einfuehrung",
    "file": "inorganic-01.pdf",
    "pages": 34,
-   "cards_total": 29,
-   "cards_anchored": 19,
+   "cards_total": 43,
+   "cards_anchored": 33,
    "page_cards": {
     "3": [
      "inorg:07d3559670b4",
@@ -23,7 +23,8 @@
      "inorg:d3880af7ccb0"
     ],
     "10": [
-     "inorg:9074236ac6a8"
+     "inorg:9074236ac6a8",
+     "inorg:799353a69307"
     ],
     "11": [
      "inorg:6e48d375a037",
@@ -33,20 +34,47 @@
     "12": [
      "inorg:5e5805013f10"
     ],
+    "13": [
+     "inorg:1484effb9ef2"
+    ],
     "14": [
      "inorg:c72d2b1a3670",
      "inorg:86d2dd0aac29"
     ],
+    "18": [
+     "inorg:5d15767ac372"
+    ],
+    "21": [
+     "inorg:78deb79b97dd",
+     "inorg:f028e5e2571f"
+    ],
     "25": [
-     "inorg:ad57fabc8cbf"
+     "inorg:ad57fabc8cbf",
+     "inorg:dd7b80b18cc8"
     ],
     "26": [
      "inorg:090bf2048805",
-     "inorg:857e5e27a4be"
+     "inorg:857e5e27a4be",
+     "inorg:f5f40813953d",
+     "inorg:328ba56bd0ff"
+    ],
+    "27": [
+     "inorg:5706a5052469"
+    ],
+    "28": [
+     "inorg:f9c3b63fc153"
+    ],
+    "30": [
+     "inorg:1220754f50c8",
+     "inorg:6f9b12ea339c"
+    ],
+    "32": [
+     "inorg:557412cc281b"
     ],
     "33": [
      "inorg:ad347082741f",
-     "inorg:c0f8a68b51c6"
+     "inorg:c0f8a68b51c6",
+     "inorg:94cd2a8bbfbc"
     ]
    },
    "unanchored": [
@@ -68,8 +96,8 @@
    "title": "Einheit 02 Rohstoffe",
    "file": "inorganic-02.pdf",
    "pages": 38,
-   "cards_total": 34,
-   "cards_anchored": 31,
+   "cards_total": 46,
+   "cards_anchored": 43,
    "page_cards": {
     "4": [
      "inorg:a8b9c5a9de38"
@@ -77,8 +105,12 @@
     "7": [
      "inorg:d22ff2f40f93"
     ],
+    "9": [
+     "inorg:445a074f4d1c"
+    ],
     "10": [
-     "inorg:da1f84bc0bb0"
+     "inorg:da1f84bc0bb0",
+     "inorg:4b8dfb108f8b"
     ],
     "11": [
      "inorg:82d97187f57c",
@@ -100,9 +132,23 @@
     "20": [
      "inorg:4ce94476a21d"
     ],
+    "21": [
+     "inorg:b1ffe8d91ced",
+     "inorg:bb59ceca0b50"
+    ],
     "25": [
      "inorg:d2f5a7efb53e",
      "inorg:7a09be9e81fc"
+    ],
+    "26": [
+     "inorg:ac21f00e81c6",
+     "inorg:f4a62dd4097d",
+     "inorg:96ed4d85e083",
+     "inorg:b6ff4747eb7d"
+    ],
+    "29": [
+     "inorg:9139caf0ad69",
+     "inorg:30a27881199c"
     ],
     "30": [
      "inorg:d1a6ec910986",
@@ -110,13 +156,15 @@
     ],
     "31": [
      "inorg:9177472d9e6f",
-     "inorg:13af1275f755"
+     "inorg:13af1275f755",
+     "inorg:7442c07fe784"
     ],
     "33": [
      "inorg:0f794d78eae4",
      "inorg:ae0a2caf9585",
      "inorg:1b6f9fcd28e0",
-     "inorg:3d7baa6b497c"
+     "inorg:3d7baa6b497c",
+     "inorg:62ca4c461114"
     ],
     "37": [
      "inorg:46c5c425f6ac",
@@ -139,8 +187,8 @@
    "title": "Einheit 03 Einleitung Metallurgie",
    "file": "inorganic-03.pdf",
    "pages": 44,
-   "cards_total": 42,
-   "cards_anchored": 41,
+   "cards_total": 61,
+   "cards_anchored": 60,
    "page_cards": {
     "4": [
      "inorg:1ba5b3bdc9b8"
@@ -169,18 +217,24 @@
      "inorg:83f8e64fc502",
      "inorg:9cd98be5bc0e"
     ],
+    "19": [
+     "inorg:a0bcf3c2052c"
+    ],
     "20": [
      "inorg:9c1c02d7e16b",
-     "inorg:ba1aa4693210"
+     "inorg:ba1aa4693210",
+     "inorg:b5a1c23408c0"
     ],
     "21": [
-     "inorg:9a7b611d669d"
+     "inorg:9a7b611d669d",
+     "inorg:ea42072c4e98"
     ],
     "22": [
      "inorg:2f7210a29175"
     ],
     "23": [
-     "inorg:25d435f923f8"
+     "inorg:25d435f923f8",
+     "inorg:bea42803acdf"
     ],
     "24": [
      "inorg:65df4a81da47",
@@ -194,7 +248,11 @@
      "inorg:5c23aff38f31",
      "inorg:068b1b504aaf",
      "inorg:6fcdb90be447",
-     "inorg:6b7ca789925b"
+     "inorg:6b7ca789925b",
+     "inorg:2c8ec97f58e5"
+    ],
+    "26": [
+     "inorg:0222dfac0dae"
     ],
     "27": [
      "inorg:0e303bc7fbb2"
@@ -207,15 +265,42 @@
     "29": [
      "inorg:1a0896553bd4"
     ],
+    "30": [
+     "inorg:64e573bbbda8",
+     "inorg:4c1279d716a9"
+    ],
+    "32": [
+     "inorg:c0f66fc8a132"
+    ],
     "34": [
      "inorg:29a5d08fc831",
      "inorg:a62367495d1f",
      "inorg:593b513aabfb",
      "inorg:3079610773e4"
     ],
+    "35": [
+     "inorg:01c8f0caf71a",
+     "inorg:22667378b0b9"
+    ],
+    "36": [
+     "inorg:0942ff0379a4",
+     "inorg:2b13b667b267"
+    ],
+    "37": [
+     "inorg:742e57a28193",
+     "inorg:bd7b8c5e113d"
+    ],
     "38": [
      "inorg:f4fa06583b28",
-     "inorg:4cee786b564f"
+     "inorg:4cee786b564f",
+     "inorg:b5998ac9d988",
+     "inorg:1a6ebabe702c"
+    ],
+    "39": [
+     "inorg:5ce98cc14313"
+    ],
+    "40": [
+     "inorg:52eaf73d43de"
     ],
     "42": [
      "inorg:6499e8fc9371"
@@ -234,8 +319,8 @@
    "title": "Einheit 04 Tools der Metallurgie",
    "file": "inorganic-04.pdf",
    "pages": 23,
-   "cards_total": 29,
-   "cards_anchored": 26,
+   "cards_total": 41,
+   "cards_anchored": 38,
    "page_cards": {
     "1": [
      "inorg:71fb2ac6d6da",
@@ -248,30 +333,50 @@
      "inorg:9e7bedb58b6f",
      "inorg:f568f1052b17"
     ],
+    "3": [
+     "inorg:56c7508d728f",
+     "inorg:ae933fe6533a"
+    ],
     "5": [
-     "inorg:974137cd2916"
+     "inorg:974137cd2916",
+     "inorg:ad8ff35a63f1"
+    ],
+    "8": [
+     "inorg:ecde59bee6e9"
+    ],
+    "10": [
+     "inorg:e4e4600ebe7b"
     ],
     "11": [
      "inorg:d796cee7235c",
-     "inorg:2b12d6cc3c4d"
+     "inorg:2b12d6cc3c4d",
+     "inorg:f1b097c3443f"
     ],
     "12": [
      "inorg:53abbd806496",
      "inorg:3908e1b375eb"
     ],
+    "13": [
+     "inorg:49311c64120c"
+    ],
     "17": [
      "inorg:4a6ea78a1a2a",
      "inorg:ea564d0f5147",
      "inorg:b6e581a1cb0c",
-     "inorg:b468f4afe82b"
+     "inorg:b468f4afe82b",
+     "inorg:8565e9794e30",
+     "inorg:5515b71b9e68"
     ],
     "18": [
      "inorg:b8e582b531e5",
-     "inorg:54f2390fe469"
+     "inorg:54f2390fe469",
+     "inorg:1fe4c9980c8d",
+     "inorg:3aae9e2403b7"
     ],
     "21": [
      "inorg:8d4ae0d408ed",
-     "inorg:4a6852f87999"
+     "inorg:4a6852f87999",
+     "inorg:c905afe36b3f"
     ],
     "22": [
      "inorg:135c474fdef3",
@@ -292,11 +397,14 @@
    "title": "Einheit 05 Eisen und Stahl",
    "file": "inorganic-05.pdf",
    "pages": 53,
-   "cards_total": 54,
-   "cards_anchored": 54,
+   "cards_total": 65,
+   "cards_anchored": 65,
    "page_cards": {
     "3": [
      "inorg:f893352c75b2"
+    ],
+    "4": [
+     "inorg:12325ff668fa"
     ],
     "7": [
      "inorg:ee642c5540f1"
@@ -314,19 +422,29 @@
      "inorg:576e9c77e8db",
      "inorg:e688df099c8d",
      "inorg:dbc3dbe76d31",
-     "inorg:da2e76f5f8dd"
+     "inorg:da2e76f5f8dd",
+     "inorg:6b819522cdec"
+    ],
+    "12": [
+     "inorg:0f410bf2a712"
     ],
     "13": [
      "inorg:252410a20c2c"
     ],
     "14": [
      "inorg:24f93353ea15",
-     "inorg:651f7c6c981a"
+     "inorg:651f7c6c981a",
+     "inorg:60a5465b267d"
     ],
     "15": [
      "inorg:30e111f3c0da",
      "inorg:8387899398d1",
-     "inorg:1ff691c8be32"
+     "inorg:1ff691c8be32",
+     "inorg:a41d63b8f65e"
+    ],
+    "16": [
+     "inorg:9073d2a684a6",
+     "inorg:f29b1793b4b8"
     ],
     "17": [
      "inorg:1493da682738",
@@ -356,10 +474,12 @@
      "inorg:b1775cd80fdf",
      "inorg:3c5350d36122",
      "inorg:6a040ee5afec",
-     "inorg:bd5d22ffc578"
+     "inorg:bd5d22ffc578",
+     "inorg:ccbe82087463"
     ],
     "30": [
-     "inorg:7aa71fac8e08"
+     "inorg:7aa71fac8e08",
+     "inorg:7c812b3d083d"
     ],
     "32": [
      "inorg:b36212801e65",
@@ -389,7 +509,8 @@
     ],
     "44": [
      "inorg:fcb9ed251951",
-     "inorg:4fa604622186"
+     "inorg:4fa604622186",
+     "inorg:fb43fe0eb77a"
     ],
     "47": [
      "inorg:0fbe8acad666"
@@ -398,6 +519,9 @@
      "inorg:667f61b78e88",
      "inorg:d9c51cd5ad45",
      "inorg:5fc1fe90e5ec"
+    ],
+    "51": [
+     "inorg:e1983407bc87"
     ]
    },
    "unanchored": []
@@ -408,8 +532,8 @@
    "title": "Einheit 06 Kupfer und Aluminium",
    "file": "inorganic-06.pdf",
    "pages": 40,
-   "cards_total": 42,
-   "cards_anchored": 42,
+   "cards_total": 56,
+   "cards_anchored": 56,
    "page_cards": {
     "3": [
      "inorg:f534d7deecbd",
@@ -430,14 +554,25 @@
      "inorg:7fb3504643ad"
     ],
     "8": [
-     "inorg:69a584b817dd"
+     "inorg:69a584b817dd",
+     "inorg:4ebcf7e6497f"
     ],
     "9": [
      "inorg:8e5fe3a30cd0",
-     "inorg:944571c23ad5"
+     "inorg:944571c23ad5",
+     "inorg:d3247a3ec153"
     ],
     "10": [
-     "inorg:a177f6655ff2"
+     "inorg:a177f6655ff2",
+     "inorg:e9a4940face1",
+     "inorg:38b433a4fe9e"
+    ],
+    "11": [
+     "inorg:39fb25624ad5"
+    ],
+    "13": [
+     "inorg:8f1d2b6fcaa5",
+     "inorg:822800d66a2b"
     ],
     "14": [
      "inorg:d2ed7bee73c5",
@@ -449,13 +584,18 @@
      "inorg:d475da34cca9"
     ],
     "18": [
-     "inorg:31dc667f10a3"
+     "inorg:31dc667f10a3",
+     "inorg:263a6479d6ac"
     ],
     "19": [
-     "inorg:cea12e16ecfc"
+     "inorg:cea12e16ecfc",
+     "inorg:82baa428e352",
+     "inorg:c69196505281"
     ],
     "20": [
-     "inorg:df7073399ae0"
+     "inorg:df7073399ae0",
+     "inorg:b810bac2f6c3",
+     "inorg:3ed7470c6d20"
     ],
     "25": [
      "inorg:595766ba0b61",
@@ -466,6 +606,9 @@
     ],
     "32": [
      "inorg:999c44152cbf"
+    ],
+    "33": [
+     "inorg:efc4a6b5954c"
     ],
     "37": [
      "inorg:1fdae04129b6"
@@ -485,7 +628,8 @@
      "inorg:b9837d6de960",
      "inorg:5752d30ed912",
      "inorg:60b7e2165df8",
-     "inorg:b6aab4e8116a"
+     "inorg:b6aab4e8116a",
+     "inorg:b787dbf74eab"
     ]
    },
    "unanchored": []
@@ -496,13 +640,20 @@
    "title": "Einheit 07 Grosschemie Stickstoff",
    "file": "inorganic-07.pdf",
    "pages": 25,
-   "cards_total": 41,
-   "cards_anchored": 35,
+   "cards_total": 52,
+   "cards_anchored": 46,
    "page_cards": {
     "2": [
      "inorg:63d4510851ef",
      "inorg:8b0ec836fcfc",
-     "inorg:2bd9115db906"
+     "inorg:2bd9115db906",
+     "inorg:c83262a65ffd"
+    ],
+    "3": [
+     "inorg:600f6f43e5ff"
+    ],
+    "4": [
+     "inorg:00ebcca2ab22"
     ],
     "6": [
      "inorg:6029f8e7e349",
@@ -511,10 +662,18 @@
      "inorg:1aed33d8bbe4"
     ],
     "7": [
-     "inorg:656f84fcad85"
+     "inorg:656f84fcad85",
+     "inorg:f3bf16e77bfb"
+    ],
+    "8": [
+     "inorg:61adaf7c9c1c"
+    ],
+    "9": [
+     "inorg:a06a0d16cdae"
     ],
     "10": [
-     "inorg:a0217354bca1"
+     "inorg:a0217354bca1",
+     "inorg:f1abf7d70e7f"
     ],
     "11": [
      "inorg:34a348b766e8",
@@ -525,8 +684,12 @@
      "inorg:b40e0de7acc6",
      "inorg:82d315cfdb10"
     ],
+    "13": [
+     "inorg:ff94312331d6"
+    ],
     "14": [
-     "inorg:4ed28b28a301"
+     "inorg:4ed28b28a301",
+     "inorg:4f350909cb40"
     ],
     "15": [
      "inorg:1b12062a2250",
@@ -539,7 +702,8 @@
      "inorg:56f15c3b0bad"
     ],
     "17": [
-     "inorg:a6c8d312bad2"
+     "inorg:a6c8d312bad2",
+     "inorg:08533278728d"
     ],
     "18": [
      "inorg:7b7713232fc5",
@@ -547,6 +711,9 @@
     ],
     "19": [
      "inorg:f0349e30e62f"
+    ],
+    "20": [
+     "inorg:a1e35da05235"
     ],
     "21": [
      "inorg:0f89fef5e47b",
@@ -580,8 +747,8 @@
    "title": "Einheit 08 Grosschemie NaCl, Chlor, NaOH, Soda",
    "file": "inorganic-08.pdf",
    "pages": 24,
-   "cards_total": 35,
-   "cards_anchored": 35,
+   "cards_total": 44,
+   "cards_anchored": 44,
    "page_cards": {
     "1": [
      "inorg:c243511c0d86",
@@ -594,8 +761,21 @@
      "inorg:8ed4d816f7e1",
      "inorg:d0ceb77e7327"
     ],
+    "3": [
+     "inorg:f1a50119738e"
+    ],
+    "5": [
+     "inorg:ff8441613cc2"
+    ],
+    "6": [
+     "inorg:ccce13706308"
+    ],
+    "9": [
+     "inorg:27227f2b1988"
+    ],
     "10": [
-     "inorg:191b391ebd38"
+     "inorg:191b391ebd38",
+     "inorg:f0142278e8ba"
     ],
     "11": [
      "inorg:c607d76e2178",
@@ -623,19 +803,25 @@
      "inorg:2b10a63dffae",
      "inorg:a1ad28ded1a8",
      "inorg:b03833ed3c45",
-     "inorg:e69b97335d3e"
+     "inorg:e69b97335d3e",
+     "inorg:9f6092c2dba1"
     ],
     "16": [
      "inorg:8560f272ac91"
     ],
+    "18": [
+     "inorg:ac85fa292bdc"
+    ],
     "19": [
-     "inorg:aa773f29dfe9"
+     "inorg:aa773f29dfe9",
+     "inorg:a5add25eb831"
     ],
     "20": [
      "inorg:98e68dfd0cf3",
      "inorg:7b2322d426ee",
      "inorg:4d616c86cce8",
-     "inorg:9390ff82f195"
+     "inorg:9390ff82f195",
+     "inorg:88c371485816"
     ],
     "21": [
      "inorg:9276be208b18"
@@ -649,8 +835,8 @@
    "title": "Einheit 09 Grosschemie Schwefel",
    "file": "inorganic-09.pdf",
    "pages": 15,
-   "cards_total": 36,
-   "cards_anchored": 34,
+   "cards_total": 42,
+   "cards_anchored": 40,
    "page_cards": {
     "1": [
      "inorg:20f95a6acc10",
@@ -669,11 +855,17 @@
     "4": [
      "inorg:8187270f5b09"
     ],
+    "5": [
+     "inorg:968f29d6c019",
+     "inorg:7938fdd5847f"
+    ],
     "6": [
-     "inorg:d770ef6eae9f"
+     "inorg:d770ef6eae9f",
+     "inorg:9b8529c00aab"
     ],
     "8": [
-     "inorg:9e6d20711a50"
+     "inorg:9e6d20711a50",
+     "inorg:daaf72865e82"
     ],
     "9": [
      "inorg:81ffa439f545",
@@ -697,7 +889,9 @@
      "inorg:4099ed6a263e",
      "inorg:de4e059861a3",
      "inorg:20a4a89604dd",
-     "inorg:e93a1f1b64eb"
+     "inorg:e93a1f1b64eb",
+     "inorg:e7a13aa1165f",
+     "inorg:f40d8f4b4015"
     ],
     "14": [
      "inorg:1b9164795a11",
@@ -718,8 +912,8 @@
    "title": "Einheit 10 Anorganische Bindemittel",
    "file": "inorganic-10.pdf",
    "pages": 38,
-   "cards_total": 37,
-   "cards_anchored": 36,
+   "cards_total": 49,
+   "cards_anchored": 48,
    "page_cards": {
     "3": [
      "inorg:003e5e67aee0",
@@ -733,20 +927,33 @@
     ],
     "7": [
      "inorg:a36cee89c187",
-     "inorg:541e3e43ffa0"
+     "inorg:541e3e43ffa0",
+     "inorg:1f19972b1e90"
+    ],
+    "8": [
+     "inorg:d7a55a304386"
+    ],
+    "10": [
+     "inorg:259efc4373b3"
     ],
     "13": [
-     "inorg:dd49bc4064c8"
+     "inorg:dd49bc4064c8",
+     "inorg:ffab0c4052c2"
     ],
     "15": [
      "inorg:c5c2861986b7"
     ],
     "16": [
      "inorg:65b95dc9ab1e",
-     "inorg:aa3ae3e5b901"
+     "inorg:aa3ae3e5b901",
+     "inorg:5d8651d3da75"
+    ],
+    "17": [
+     "inorg:7f33a676a24f"
     ],
     "19": [
-     "inorg:283bbef9622d"
+     "inorg:283bbef9622d",
+     "inorg:fdf8817573db"
     ],
     "21": [
      "inorg:1c5ff8c456b6",
@@ -759,13 +966,21 @@
     "24": [
      "inorg:34d57564a665",
      "inorg:a6f494471e86",
-     "inorg:2765477e0a6a"
+     "inorg:2765477e0a6a",
+     "inorg:0927449f6990"
+    ],
+    "25": [
+     "inorg:4656607fa7d8"
     ],
     "27": [
      "inorg:81b35209113f"
     ],
+    "29": [
+     "inorg:c7047c23138a"
+    ],
     "30": [
-     "inorg:0e6385506aba"
+     "inorg:0e6385506aba",
+     "inorg:12d67d850129"
     ],
     "31": [
      "inorg:ce1bd1325b63",
@@ -777,7 +992,8 @@
      "inorg:ca6a274a5607",
      "inorg:a2d7243d7ca8",
      "inorg:2ddd5cf5f66e",
-     "inorg:090fb2878ccc"
+     "inorg:090fb2878ccc",
+     "inorg:0612ec368c39"
     ],
     "34": [
      "inorg:8f5c28a407c8",
@@ -802,12 +1018,15 @@
    "title": "Einheit 11 Glas und Keramik",
    "file": "inorganic-11.pdf",
    "pages": 43,
-   "cards_total": 36,
-   "cards_anchored": 36,
+   "cards_total": 57,
+   "cards_anchored": 57,
    "page_cards": {
     "2": [
      "inorg:3c3c11068ea1",
      "inorg:35f15819b81a"
+    ],
+    "3": [
+     "inorg:7728b2bfdfa6"
     ],
     "4": [
      "inorg:5e50f5820c0a"
@@ -815,7 +1034,8 @@
     "5": [
      "inorg:4d7944a4da31",
      "inorg:1fed7bdbb519",
-     "inorg:6a5782611176"
+     "inorg:6a5782611176",
+     "inorg:16e57f0c9605"
     ],
     "6": [
      "inorg:0d905ee0f369",
@@ -824,6 +1044,9 @@
      "inorg:c4ae9782a2e1",
      "inorg:f74cfc8b290b"
     ],
+    "7": [
+     "inorg:00e4dc1bfdd3"
+    ],
     "9": [
      "inorg:f0074f408c5f"
     ],
@@ -831,24 +1054,59 @@
      "inorg:40265d43f9fa",
      "inorg:dc8526b16e76"
     ],
+    "11": [
+     "inorg:27f8ef3e6c54"
+    ],
     "12": [
      "inorg:a7de3e688ebc",
-     "inorg:0957d59426ec"
+     "inorg:0957d59426ec",
+     "inorg:506c0783ce85"
+    ],
+    "14": [
+     "inorg:8315480a2133"
+    ],
+    "15": [
+     "inorg:328ebfb84956"
+    ],
+    "16": [
+     "inorg:bb3329fad960"
     ],
     "18": [
      "inorg:f7df94a81506",
-     "inorg:d6b34a0ac407"
+     "inorg:d6b34a0ac407",
+     "inorg:c7cea16b1fdf"
     ],
     "19": [
      "inorg:13db39650238",
      "inorg:3226e2bf1f37"
     ],
+    "20": [
+     "inorg:bece635d0b6c"
+    ],
+    "21": [
+     "inorg:1e4495db16cb"
+    ],
+    "22": [
+     "inorg:a2694ec8c4f2"
+    ],
     "23": [
-     "inorg:aeca5e2b50e0"
+     "inorg:aeca5e2b50e0",
+     "inorg:b280df1b9c82"
     ],
     "24": [
      "inorg:cf0b1887afbb",
-     "inorg:a5c1beae128f"
+     "inorg:a5c1beae128f",
+     "inorg:d0bcce357328"
+    ],
+    "25": [
+     "inorg:913a219cbed8"
+    ],
+    "27": [
+     "inorg:7f549fff4e72",
+     "inorg:14d9718f776a"
+    ],
+    "28": [
+     "inorg:7d929c0b81e0"
     ],
     "30": [
      "inorg:0c2a4714c6c0"
@@ -863,10 +1121,15 @@
      "inorg:c531047a6b1d",
      "inorg:764c8d12a2d9",
      "inorg:9656866bc0ce",
-     "inorg:9c790571d810"
+     "inorg:9c790571d810",
+     "inorg:44f3cd2b8302"
     ],
     "34": [
-     "inorg:bceff8be7b5e"
+     "inorg:bceff8be7b5e",
+     "inorg:fec837477e1d"
+    ],
+    "35": [
+     "inorg:42a3db1949bb"
     ],
     "36": [
      "inorg:4d9a3f8c9d50",
@@ -1974,6 +2237,90 @@
    "page": 14,
    "score": 2.67
   },
+  "inorg:799353a69307": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 10,
+   "score": 3.61
+  },
+  "inorg:1484effb9ef2": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 13,
+   "score": 8.87
+  },
+  "inorg:5d15767ac372": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 18,
+   "score": 2.48
+  },
+  "inorg:78deb79b97dd": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 21,
+   "score": 7.64
+  },
+  "inorg:f028e5e2571f": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 21,
+   "score": 5.21
+  },
+  "inorg:f5f40813953d": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 26,
+   "score": 7.87
+  },
+  "inorg:328ba56bd0ff": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 26,
+   "score": 7.18
+  },
+  "inorg:dd7b80b18cc8": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 25,
+   "score": 6.04
+  },
+  "inorg:5706a5052469": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 27,
+   "score": 4.59
+  },
+  "inorg:f9c3b63fc153": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 28,
+   "score": 3.43
+  },
+  "inorg:1220754f50c8": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 30,
+   "score": 5.21
+  },
+  "inorg:6f9b12ea339c": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 30,
+   "score": 5.01
+  },
+  "inorg:557412cc281b": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 32,
+   "score": 4.55
+  },
+  "inorg:94cd2a8bbfbc": {
+   "module": "inorganic",
+   "kap": 1,
+   "page": 33,
+   "score": 5.39
+  },
   "inorg:4ac666733d80": {
    "module": "inorganic",
    "kap": 2,
@@ -2159,6 +2506,78 @@
    "kap": 2,
    "page": 37,
    "score": 1.61
+  },
+  "inorg:ac21f00e81c6": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 26,
+   "score": 7.07
+  },
+  "inorg:f4a62dd4097d": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 26,
+   "score": 3.29
+  },
+  "inorg:96ed4d85e083": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 26,
+   "score": 2.83
+  },
+  "inorg:b6ff4747eb7d": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 26,
+   "score": 2.49
+  },
+  "inorg:9139caf0ad69": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 29,
+   "score": 6.2
+  },
+  "inorg:30a27881199c": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 29,
+   "score": 8.34
+  },
+  "inorg:b1ffe8d91ced": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 21,
+   "score": 6.58
+  },
+  "inorg:bb59ceca0b50": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 21,
+   "score": 9.31
+  },
+  "inorg:7442c07fe784": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 31,
+   "score": 5.06
+  },
+  "inorg:62ca4c461114": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 33,
+   "score": 10.97
+  },
+  "inorg:445a074f4d1c": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 9,
+   "score": 6.49
+  },
+  "inorg:4b8dfb108f8b": {
+   "module": "inorganic",
+   "kap": 2,
+   "page": 10,
+   "score": 8.28
   },
   "inorg:29a5d08fc831": {
    "module": "inorganic",
@@ -2406,6 +2825,120 @@
    "page": 38,
    "score": 2.21
   },
+  "inorg:a0bcf3c2052c": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 19,
+   "score": 3.94
+  },
+  "inorg:b5a1c23408c0": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 20,
+   "score": 5.75
+  },
+  "inorg:ea42072c4e98": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 21,
+   "score": 5.5
+  },
+  "inorg:2c8ec97f58e5": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 25,
+   "score": 9.24
+  },
+  "inorg:bea42803acdf": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 23,
+   "score": 6.53
+  },
+  "inorg:0222dfac0dae": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 26,
+   "score": 5.15
+  },
+  "inorg:64e573bbbda8": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 30,
+   "score": 6.6
+  },
+  "inorg:c0f66fc8a132": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 32,
+   "score": 7.33
+  },
+  "inorg:4c1279d716a9": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 30,
+   "score": 4.07
+  },
+  "inorg:b5998ac9d988": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 38,
+   "score": 4.12
+  },
+  "inorg:01c8f0caf71a": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 35,
+   "score": 5.87
+  },
+  "inorg:22667378b0b9": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 35,
+   "score": 7.58
+  },
+  "inorg:0942ff0379a4": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 36,
+   "score": 5.03
+  },
+  "inorg:2b13b667b267": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 36,
+   "score": 7.77
+  },
+  "inorg:742e57a28193": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 37,
+   "score": 7.52
+  },
+  "inorg:1a6ebabe702c": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 38,
+   "score": 5.81
+  },
+  "inorg:5ce98cc14313": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 39,
+   "score": 7.27
+  },
+  "inorg:52eaf73d43de": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 40,
+   "score": 6.76
+  },
+  "inorg:bd7b8c5e113d": {
+   "module": "inorganic",
+   "kap": 3,
+   "page": 37,
+   "score": 6.59
+  },
   "inorg:53abbd806496": {
    "module": "inorganic",
    "kap": 4,
@@ -2561,6 +3094,78 @@
    "kap": 4,
    "page": 1,
    "score": 1.64
+  },
+  "inorg:56c7508d728f": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 3,
+   "score": 4.11
+  },
+  "inorg:ae933fe6533a": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 3,
+   "score": 3.56
+  },
+  "inorg:ad8ff35a63f1": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 5,
+   "score": 4.34
+  },
+  "inorg:e4e4600ebe7b": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 10,
+   "score": 3.21
+  },
+  "inorg:ecde59bee6e9": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 8,
+   "score": 3.81
+  },
+  "inorg:f1b097c3443f": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 11,
+   "score": 5.05
+  },
+  "inorg:1fe4c9980c8d": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 18,
+   "score": 7.16
+  },
+  "inorg:3aae9e2403b7": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 18,
+   "score": 5.6
+  },
+  "inorg:c905afe36b3f": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 21,
+   "score": 10.21
+  },
+  "inorg:49311c64120c": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 13,
+   "score": 5.69
+  },
+  "inorg:8565e9794e30": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 17,
+   "score": 6.19
+  },
+  "inorg:5515b71b9e68": {
+   "module": "inorganic",
+   "kap": 4,
+   "page": 17,
+   "score": 3.23
   },
   "inorg:cce6c9fc70c0": {
    "module": "inorganic",
@@ -2886,6 +3491,72 @@
    "page": 26,
    "score": 4.84
   },
+  "inorg:60a5465b267d": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 14,
+   "score": 8.14
+  },
+  "inorg:a41d63b8f65e": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 15,
+   "score": 6.83
+  },
+  "inorg:6b819522cdec": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 11,
+   "score": 7.07
+  },
+  "inorg:0f410bf2a712": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 12,
+   "score": 7.64
+  },
+  "inorg:9073d2a684a6": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 16,
+   "score": 4.54
+  },
+  "inorg:f29b1793b4b8": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 16,
+   "score": 3.72
+  },
+  "inorg:ccbe82087463": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 28,
+   "score": 4.89
+  },
+  "inorg:e1983407bc87": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 51,
+   "score": 4.31
+  },
+  "inorg:fb43fe0eb77a": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 44,
+   "score": 7.5
+  },
+  "inorg:12325ff668fa": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 4,
+   "score": 8.7
+  },
+  "inorg:7c812b3d083d": {
+   "module": "inorganic",
+   "kap": 5,
+   "page": 30,
+   "score": 6.29
+  },
   "inorg:ce3f336e12b9": {
    "module": "inorganic",
    "kap": 6,
@@ -3138,6 +3809,90 @@
    "page": 32,
    "score": 2.05
   },
+  "inorg:8f1d2b6fcaa5": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 13,
+   "score": 8.83
+  },
+  "inorg:822800d66a2b": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 13,
+   "score": 3.68
+  },
+  "inorg:e9a4940face1": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 10,
+   "score": 5.19
+  },
+  "inorg:4ebcf7e6497f": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 8,
+   "score": 10.09
+  },
+  "inorg:d3247a3ec153": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 9,
+   "score": 6.74
+  },
+  "inorg:38b433a4fe9e": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 10,
+   "score": 6.32
+  },
+  "inorg:263a6479d6ac": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 18,
+   "score": 7.96
+  },
+  "inorg:82baa428e352": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 19,
+   "score": 6.46
+  },
+  "inorg:b810bac2f6c3": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 20,
+   "score": 7.9
+  },
+  "inorg:3ed7470c6d20": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 20,
+   "score": 5.83
+  },
+  "inorg:c69196505281": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 19,
+   "score": 5.38
+  },
+  "inorg:efc4a6b5954c": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 33,
+   "score": 6.76
+  },
+  "inorg:b787dbf74eab": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 38,
+   "score": 5.1
+  },
+  "inorg:39fb25624ad5": {
+   "module": "inorganic",
+   "kap": 6,
+   "page": 11,
+   "score": 3.67
+  },
   "inorg:656f84fcad85": {
    "module": "inorganic",
    "kap": 7,
@@ -3347,6 +4102,72 @@
    "kap": 7,
    "page": 22,
    "score": 4.18
+  },
+  "inorg:600f6f43e5ff": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 3,
+   "score": 7.08
+  },
+  "inorg:61adaf7c9c1c": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 8,
+   "score": 6.41
+  },
+  "inorg:f1abf7d70e7f": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 10,
+   "score": 7.11
+  },
+  "inorg:a06a0d16cdae": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 9,
+   "score": 6.9
+  },
+  "inorg:ff94312331d6": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 13,
+   "score": 4.74
+  },
+  "inorg:4f350909cb40": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 14,
+   "score": 7.81
+  },
+  "inorg:c83262a65ffd": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 2,
+   "score": 8.38
+  },
+  "inorg:08533278728d": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 17,
+   "score": 8.51
+  },
+  "inorg:f3bf16e77bfb": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 7,
+   "score": 6.61
+  },
+  "inorg:a1e35da05235": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 20,
+   "score": 6.63
+  },
+  "inorg:00ebcca2ab22": {
+   "module": "inorganic",
+   "kap": 7,
+   "page": 4,
+   "score": 6.1
   },
   "inorg:8ed4d816f7e1": {
    "module": "inorganic",
@@ -3558,6 +4379,60 @@
    "page": 21,
    "score": 4.77
   },
+  "inorg:ccce13706308": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 6,
+   "score": 4.35
+  },
+  "inorg:ff8441613cc2": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 5,
+   "score": 5.08
+  },
+  "inorg:9f6092c2dba1": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 15,
+   "score": 9.13
+  },
+  "inorg:ac85fa292bdc": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 18,
+   "score": 4.97
+  },
+  "inorg:88c371485816": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 20,
+   "score": 6.67
+  },
+  "inorg:a5add25eb831": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 19,
+   "score": 7.47
+  },
+  "inorg:f0142278e8ba": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 10,
+   "score": 7.81
+  },
+  "inorg:f1a50119738e": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 3,
+   "score": 11.19
+  },
+  "inorg:27227f2b1988": {
+   "module": "inorganic",
+   "kap": 8,
+   "page": 9,
+   "score": 7.21
+  },
   "inorg:81ffa439f545": {
    "module": "inorganic",
    "kap": 9,
@@ -3761,6 +4636,42 @@
    "kap": 9,
    "page": 9,
    "score": 3.03
+  },
+  "inorg:968f29d6c019": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 5,
+   "score": 6.05
+  },
+  "inorg:9b8529c00aab": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 6,
+   "score": 5.24
+  },
+  "inorg:7938fdd5847f": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 5,
+   "score": 4.89
+  },
+  "inorg:daaf72865e82": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 8,
+   "score": 4.86
+  },
+  "inorg:e7a13aa1165f": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 13,
+   "score": 5.72
+  },
+  "inorg:f40d8f4b4015": {
+   "module": "inorganic",
+   "kap": 9,
+   "page": 13,
+   "score": 6.57
   },
   "inorg:003e5e67aee0": {
    "module": "inorganic",
@@ -3978,6 +4889,78 @@
    "page": 34,
    "score": 2.14
   },
+  "inorg:1f19972b1e90": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 7,
+   "score": 10.43
+  },
+  "inorg:d7a55a304386": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 8,
+   "score": 8.06
+  },
+  "inorg:259efc4373b3": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 10,
+   "score": 5.29
+  },
+  "inorg:ffab0c4052c2": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 13,
+   "score": 8.7
+  },
+  "inorg:7f33a676a24f": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 17,
+   "score": 8.57
+  },
+  "inorg:5d8651d3da75": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 16,
+   "score": 3.24
+  },
+  "inorg:fdf8817573db": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 19,
+   "score": 8.22
+  },
+  "inorg:4656607fa7d8": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 25,
+   "score": 4.04
+  },
+  "inorg:c7047c23138a": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 29,
+   "score": 10.15
+  },
+  "inorg:12d67d850129": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 30,
+   "score": 8.85
+  },
+  "inorg:0612ec368c39": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 33,
+   "score": 10.1
+  },
+  "inorg:0927449f6990": {
+   "module": "inorganic",
+   "kap": 10,
+   "page": 24,
+   "score": 6.68
+  },
   "inorg:3c3c11068ea1": {
    "module": "inorganic",
    "kap": 11,
@@ -4193,6 +5176,132 @@
    "kap": 11,
    "page": 41,
    "score": 1.88
+  },
+  "inorg:7728b2bfdfa6": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 3,
+   "score": 5.44
+  },
+  "inorg:16e57f0c9605": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 5,
+   "score": 6.62
+  },
+  "inorg:00e4dc1bfdd3": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 7,
+   "score": 6.77
+  },
+  "inorg:27f8ef3e6c54": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 11,
+   "score": 4.19
+  },
+  "inorg:506c0783ce85": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 12,
+   "score": 6.59
+  },
+  "inorg:8315480a2133": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 14,
+   "score": 1.95
+  },
+  "inorg:328ebfb84956": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 15,
+   "score": 8.97
+  },
+  "inorg:bb3329fad960": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 16,
+   "score": 8.0
+  },
+  "inorg:bece635d0b6c": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 20,
+   "score": 8.32
+  },
+  "inorg:c7cea16b1fdf": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 18,
+   "score": 5.84
+  },
+  "inorg:1e4495db16cb": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 21,
+   "score": 5.61
+  },
+  "inorg:a2694ec8c4f2": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 22,
+   "score": 8.46
+  },
+  "inorg:b280df1b9c82": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 23,
+   "score": 4.78
+  },
+  "inorg:d0bcce357328": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 24,
+   "score": 4.72
+  },
+  "inorg:913a219cbed8": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 25,
+   "score": 7.07
+  },
+  "inorg:7f549fff4e72": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 27,
+   "score": 5.18
+  },
+  "inorg:14d9718f776a": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 27,
+   "score": 5.69
+  },
+  "inorg:7d929c0b81e0": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 28,
+   "score": 4.21
+  },
+  "inorg:44f3cd2b8302": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 32,
+   "score": 9.01
+  },
+  "inorg:fec837477e1d": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 34,
+   "score": 4.56
+  },
+  "inorg:42a3db1949bb": {
+   "module": "inorganic",
+   "kap": 11,
+   "page": 35,
+   "score": 6.79
   },
   "org:372915ff992e": {
    "module": "organic",
