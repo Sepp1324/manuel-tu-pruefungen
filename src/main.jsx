@@ -36,6 +36,7 @@ import {
   Sun,
   Moon,
   FileText,
+  Timer,
 } from "lucide-react";
 import "./styles.css";
 
@@ -4970,6 +4971,7 @@ const NAV_GROUPS = [
       { route: "dashboard", label: "Dashboard", icon: BarChart3 },
       { route: "analytics", label: "Analytics", icon: Gauge },
       { route: "readiness", label: "Reifeplan", icon: CalendarClock },
+      { route: "pomodoro", label: "Pomodoro", icon: Timer },
       { route: "knowledge", label: "Landkarte", icon: Tag },
       { route: "quests", label: "Quests", icon: Trophy },
     ],
@@ -5060,6 +5062,195 @@ function LoadError({ onRetry, label = "Konnte nicht geladen werden." }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Pomodoro-Verknüpfung: steuert den externen Pomodoro-Timer
+// (pomodoro.stoegerer-home.cloud) per Maschinen-Token. Aktives Lernen ->
+// Fokus-Timer fürs aktuelle Modul; Inaktivität/Tab-Wechsel -> Pause.
+// Konfiguration liegt lokal im Browser (localStorage), Token bleibt clientseitig.
+// ---------------------------------------------------------------------------
+const POMO_DEFAULT_URL = "https://pomodoro.stoegerer-home.cloud";
+const pomoCfg = () => ({
+  enabled: localStorage.getItem("pomo_enabled") === "1",
+  url: (localStorage.getItem("pomo_url") || POMO_DEFAULT_URL).replace(/\/+$/, ""),
+  token: localStorage.getItem("pomo_token") || "",
+  cat: {
+    organic: localStorage.getItem("pomo_cat_organic") || "",
+    inorganic: localStorage.getItem("pomo_cat_inorganic") || "",
+  },
+  idle: Math.max(5, parseInt(localStorage.getItem("pomo_idle") || "25", 10) || 25),
+});
+
+function pomoFocus(cfg, category, action) {
+  // action: "start" | "pause"; feuert & vergisst, Fehler werden geschluckt.
+  const u = `${cfg.url}/api/study-time/${encodeURIComponent(category)}/focus/${action}?token=${encodeURIComponent(cfg.token)}`;
+  return fetch(u, { method: "POST", keepalive: true }).then((r) => r.ok).catch(() => false);
+}
+
+function usePomodoroSync(module) {
+  const [status, setStatus] = useState({ enabled: false, running: false, category: null, error: null });
+  const lastActivity = useRef(Date.now());
+  const lastSent = useRef({ run: null, cat: null });
+  const moduleRef = useRef(module);
+  moduleRef.current = module;
+
+  // Aktivität erfassen.
+  useEffect(() => {
+    const bump = () => { lastActivity.current = Date.now(); };
+    const evs = ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "wheel"];
+    evs.forEach((e) => window.addEventListener(e, bump, { passive: true }));
+    return () => evs.forEach((e) => window.removeEventListener(e, bump));
+  }, []);
+
+  // Sofort pausieren, wenn der Tab in den Hintergrund geht (Timer sind dann gedrosselt).
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState !== "hidden") return;
+      const cfg = pomoCfg();
+      if (!cfg.enabled || !cfg.token) return;
+      const cat = cfg.cat[moduleRef.current];
+      if (cat && lastSent.current.run !== false) {
+        pomoFocus(cfg, cat, "pause");
+        lastSent.current = { run: false, cat };
+      }
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, []);
+
+  // Regelmäßiger Abgleich.
+  useEffect(() => {
+    let stopped = false;
+    async function tick() {
+      if (stopped) return;
+      const cfg = pomoCfg();
+      if (!cfg.enabled || !cfg.url || !cfg.token) {
+        lastSent.current = { run: null, cat: null };
+        setStatus({ enabled: false, running: false, category: null, error: null });
+        return;
+      }
+      const cat = cfg.cat[module];
+      if (!cat) { setStatus({ enabled: true, running: false, category: null, error: "Kategorie für dieses Modul nicht gesetzt" }); return; }
+      // Aktiv = kürzlich Aktivität. Ein versteckter Tab bekommt keine Maus-/
+      // Tastenaktivität -> pausiert nach Ablauf ohnehin; zusätzlich pausiert der
+      // visibilitychange-Handler sofort beim Wegwechseln.
+      const active = (Date.now() - lastActivity.current) < cfg.idle * 1000;
+      if (active) {
+        if (lastSent.current.run !== true || lastSent.current.cat !== cat) {
+          const ok = await pomoFocus(cfg, cat, "start");
+          lastSent.current = { run: true, cat };
+          setStatus({ enabled: true, running: true, category: cat, error: ok ? null : "Verbindungsfehler" });
+        } else {
+          setStatus((s) => (s.running && s.category === cat ? s : { enabled: true, running: true, category: cat, error: null }));
+        }
+      } else if (lastSent.current.run !== false) {
+        const ok = await pomoFocus(cfg, cat, "pause");
+        lastSent.current = { run: false, cat };
+        setStatus({ enabled: true, running: false, category: cat, error: ok ? null : "Verbindungsfehler" });
+      } else {
+        setStatus((s) => (!s.running ? s : { enabled: true, running: false, category: cat, error: null }));
+      }
+    }
+    tick();
+    const id = setInterval(tick, 4000);
+    return () => { stopped = true; clearInterval(id); };
+  }, [module]);
+
+  return status;
+}
+
+function PomodoroChip({ status, setRoute }) {
+  if (!status.enabled) return null;
+  const color = status.error ? "var(--bad)" : status.running ? "var(--ok)" : "var(--muted)";
+  const label = status.error ? "Fehler" : status.running ? `läuft · ${status.category}` : "pausiert";
+  return (
+    <button className="pomo-chip" title="Pomodoro-Verknüpfung" onClick={() => setRoute?.("pomodoro")}>
+      🍅 <span className="pomo-dot" style={{ background: color }} /> {label}
+    </button>
+  );
+}
+
+function PomodoroSettings({ module }) {
+  const [url, setUrl] = useState(localStorage.getItem("pomo_url") || POMO_DEFAULT_URL);
+  const [token, setToken] = useState(localStorage.getItem("pomo_token") || "");
+  const [enabled, setEnabled] = useState(localStorage.getItem("pomo_enabled") === "1");
+  const [idle, setIdle] = useState(localStorage.getItem("pomo_idle") || "25");
+  const [catO, setCatO] = useState(localStorage.getItem("pomo_cat_organic") || "");
+  const [catA, setCatA] = useState(localStorage.getItem("pomo_cat_inorganic") || "");
+  const [cats, setCats] = useState(null);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function save() {
+    localStorage.setItem("pomo_url", url.replace(/\/+$/, ""));
+    localStorage.setItem("pomo_token", token.trim());
+    localStorage.setItem("pomo_enabled", enabled ? "1" : "0");
+    localStorage.setItem("pomo_idle", String(Math.max(5, parseInt(idle, 10) || 25)));
+    localStorage.setItem("pomo_cat_organic", catO);
+    localStorage.setItem("pomo_cat_inorganic", catA);
+    setMsg("Gespeichert.");
+  }
+  async function connect() {
+    setBusy(true); setMsg("");
+    try {
+      const base = url.replace(/\/+$/, "");
+      const r = await fetch(`${base}/api/study-time?token=${encodeURIComponent(token.trim())}`);
+      if (!r.ok) throw new Error(r.status === 401 ? "Token ungültig" : `HTTP ${r.status}`);
+      const list = await r.json();
+      const names = (Array.isArray(list) ? list : []).map((c) => c.category).filter(Boolean);
+      setCats(names);
+      // Sinnvolle Vorauswahl per Namensheuristik.
+      if (!catO) { const g = names.find((n) => /organ/i.test(n) && !/anorgan/i.test(n)); if (g) setCatO(g); }
+      if (!catA) { const g = names.find((n) => /anorgan/i.test(n)); if (g) setCatA(g); }
+      setMsg(`Verbunden – ${names.length} Projekte gefunden.`);
+    } catch (e) {
+      setCats(null); setMsg("Verbindung fehlgeschlagen: " + (e.message || e));
+    } finally { setBusy(false); }
+  }
+  const catInput = (val, set, label) => (
+    <label className="pomo-field">
+      <span>{label}</span>
+      {cats
+        ? <select value={val} onChange={(e) => set(e.target.value)}>
+            <option value="">– Projekt wählen –</option>
+            {cats.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        : <input value={val} onChange={(e) => set(e.target.value)} placeholder="Projektname im Pomodoro" />}
+    </label>
+  );
+
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div><h2><Timer size={18} /> Pomodoro-Verknüpfung</h2>
+          <p>Beim Lernen startet der Fokus-Timer im gewählten Projekt; bei Inaktivität pausiert er.</p></div>
+      </div>
+      <div className="pomo-form">
+        <label className="pomo-field"><span>Pomodoro-URL</span>
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={POMO_DEFAULT_URL} /></label>
+        <label className="pomo-field"><span>API-Token <small className="muted">(Pomodoro → Einstellungen → Sicherheit)</small></span>
+          <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="API-Token" /></label>
+        <div className="pomo-row">
+          <button onClick={connect} disabled={busy || !token.trim()}>{busy ? "Verbinde…" : "Verbinden & Projekte laden"}</button>
+          {msg && <span className="muted" style={{ fontSize: 13 }}>{msg}</span>}
+        </div>
+        {catInput(catO, setCatO, "Projekt für Organik")}
+        {catInput(catA, setCatA, "Projekt für Anorganik")}
+        <label className="pomo-field"><span>Pause nach Inaktivität (Sekunden)</span>
+          <input type="number" min="5" value={idle} onChange={(e) => setIdle(e.target.value)} style={{ maxWidth: 120 }} /></label>
+        <label className="pomo-toggle">
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+          <span>Verknüpfung aktiv</span>
+        </label>
+        <div className="pomo-row">
+          <button className="primary" onClick={save}>Speichern</button>
+          <span className="muted" style={{ fontSize: 12 }}>Aktuelles Modul: {module === "inorganic" ? "Anorganik" : "Organik"}</span>
+        </div>
+        <small className="muted">Der Token wird nur lokal in deinem Browser gespeichert und direkt an deinen Pomodoro-Server geschickt.</small>
+      </div>
+    </section>
+  );
+}
+
 function App() {
   const isLogin = window.location.pathname === "/login";
   const [route, setRoute] = useState("home");
@@ -5078,6 +5269,8 @@ function App() {
     setSessionSizeState(v);
     try { localStorage.setItem("sr_session_size", String(v)); } catch (e) { /* Speicher evtl. blockiert */ }
   };
+  // Pomodoro-Verknüpfung: startet/pausiert den externen Fokus-Timer je nach Modul & Aktivität.
+  const pomoStatus = usePomodoroSync(module);
 
   async function load() {
     setLoadError(false);
@@ -5163,6 +5356,7 @@ function App() {
     if (route === "fehlerbuch") return <FehlerbuchPage module={module} startSession={startSession} />;
     if (route === "analytics") return <AnalyticsPage module={module} />;
     if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} startSession={startSession} />;
+    if (route === "pomodoro") return <PomodoroSettings module={module} />;
     if (route === "studyplan") return <StudyPlanPage module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />;
     if (route === "lernunterlagen") return <LernunterlagenPage module={module} setModule={setModule} modules={data.modules} />;
     if (route === "antwortcheck") return <AntwortCheckPage module={module} sessionSize={sessionSize} setSessionSize={setSessionSize} />;
@@ -5185,6 +5379,7 @@ function App() {
       }}
     >
       <AuthBar />
+      <PomodoroChip status={pomoStatus} setRoute={setRoute} />
       <NavBar route={route} setRoute={setRoute} />
       {content}
       <PhotoLightbox photo={lightbox} onClose={() => setLightbox(null)} />
