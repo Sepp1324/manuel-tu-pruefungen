@@ -17,7 +17,12 @@ env:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, organicsr]
+    # WICHTIG: Es sind ZWEI self-hosted Runner mit Label "organicsr" registriert
+    # (srv1801804 = Produktions-Cluster, k3s-01 = anderer Cluster). Lief der Deploy
+    # auf k3s-01, wirkten dessen kubectl-Befehle auf den FALSCHEN Cluster -> CI gruen,
+    # aber Produktion unveraendert. Das Label "prod-cluster" hat NUR srv1801804 ->
+    # der Deploy laeuft garantiert dort, wo die echte Produktion liegt.
+    runs-on: [self-hosted, prod-cluster]
 
     steps:
       - name: Checkout
