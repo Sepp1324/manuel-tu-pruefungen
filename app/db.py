@@ -866,12 +866,19 @@ def get_card(conn: sqlite3.Connection, card_id: str) -> dict | None:
 
 
 def due_cards(conn: sqlite3.Connection, now_iso: str, limit: int = 30,
-              kap: int | None = None, module: str = "organic") -> list[dict]:
+              kap: int | None = None, module: str = "organic",
+              kaps: list[int] | None = None) -> list[dict]:
+    # kap = einzelnes Kapitel; kaps = mehrere Kapitel (z.B. ganzer Pruefungs-Teil)
+    def kap_clause(prefix_params: list[object]) -> str:
+        if kap:
+            prefix_params.append(kap)
+            return " AND kap=?"
+        if kaps:
+            prefix_params.extend(kaps)
+            return f" AND kap IN ({','.join('?' for _ in kaps)})"
+        return ""
     params: list[object] = [now_iso]
-    kap_sql = ""
-    if kap:
-        kap_sql = " AND kap=?"
-        params.append(kap)
+    kap_sql = kap_clause(params)
     due = conn.execute(
         f"""SELECT * FROM cards
             WHERE module=? AND deck='anki' AND status='active' AND due IS NOT NULL AND due<=? {kap_sql}
@@ -882,10 +889,7 @@ def due_cards(conn: sqlite3.Connection, now_iso: str, limit: int = 30,
     new: list[sqlite3.Row] = []
     if remaining:
         new_params: list[object] = []
-        kap_new_sql = ""
-        if kap:
-            kap_new_sql = " AND kap=?"
-            new_params.append(kap)
+        kap_new_sql = kap_clause(new_params)
         new = conn.execute(
             f"""SELECT * FROM cards
                 WHERE module=? AND deck='anki' AND status='active' AND due IS NULL {kap_new_sql}

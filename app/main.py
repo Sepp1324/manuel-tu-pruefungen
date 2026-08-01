@@ -2267,12 +2267,20 @@ def knowledge_map(module: str = "organic"):
     return out
 
 
+def _block_kaps(module: str, block: str) -> list[int]:
+    """Alle Kapitel, die zu einem Pruefungs-Teil/Block gehoeren (Umkehr von _exam_block)."""
+    return [k for k in range(1, 20) if _exam_block(module, k) == block]
+
+
 @app.get("/api/study/anki")
-def study(limit: int = 20, kap: int | None = None, module: str = "organic"):
+def study(limit: int = 20, kap: int | None = None, module: str = "organic",
+          block: str | None = None):
     module = _valid_module(module)
     limit = max(1, min(limit, 100))  # gegen unsinnige Werte absichern
     conn = db.get_conn()
-    cards = db.due_cards(conn, _now_iso(), limit, kap, module)
+    # block = ganzer Pruefungsteil (mehrere Kapitel) -> gezieltes Teil-Training
+    kaps = _block_kaps(module, block) if block else None
+    cards = db.due_cards(conn, _now_iso(), limit, kap, module, kaps=kaps)
     conn.close()
     return {"deck": "anki", "module": module, "cards": cards}
 

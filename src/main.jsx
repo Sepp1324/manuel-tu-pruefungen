@@ -954,6 +954,49 @@ function HomePlanCard({ plan: d, startSession, startExam, setRoute }) {
   );
 }
 
+function ExamReadinessStrip({ module, startSession, setRoute }) {
+  const [d, setD] = useState(null);
+  useEffect(() => { setD(null); api(`/api/readiness-plan?module=${module}`).then(setD).catch(() => {}); }, [module]);
+  const parts = d?.pass_prediction?.parts || [];
+  if (!d || !parts.length) return null;
+  const color = (s) => (s < 50 ? "var(--bad)" : s < 65 ? "var(--warn-strong)" : "var(--ok)");
+  const weakest = d.pass_prediction.weakest_part;
+  const pass = d.pass_prediction.would_pass;
+  return (
+    <section className="panel exam-strip">
+      <div className="exam-strip-head">
+        <div>
+          <b className={`exam-verdict ${pass ? "ok" : "risk"}`}>{pass ? "✓ Auf Bestehenskurs" : "✗ Noch nicht bestehenssicher"}</b>
+          <span className="muted"> · Regel: {d.pass_prediction.rule}</span>
+        </div>
+        <div className="exam-countdown"><b>{d.days_left}</b> Tage bis zur Prüfung</div>
+      </div>
+      <div className="exam-teile">
+        {parts.map((p) => (
+          <button key={p.name} className={`exam-teil ${weakest && p.name === weakest.name ? "weakest" : ""}`}
+            onClick={() => startSession("anki", null, p.name)} title={`${p.name} gezielt üben`}>
+            <span className="exam-teil-top">
+              <span className="exam-teil-dot" style={{ background: color(p.score) }} />
+              <span className="exam-teil-name">{p.name}</span>
+              <span className="exam-teil-score" style={{ color: color(p.score) }}>{p.score}%</span>
+            </span>
+            <i className="exam-teil-bar"><span style={{ width: `${Math.min(100, p.score)}%`, background: color(p.score) }} /><em /></i>
+            {p.accuracy_blocks && <small className="exam-teil-warn">nur {p.accuracy}% richtig</small>}
+          </button>
+        ))}
+      </div>
+      <div className="exam-strip-foot">
+        {weakest && (
+          <button className="primary" onClick={() => startSession("anki", null, weakest.name)}>
+            <Target size={15} /> Schwächsten Teil üben: {weakest.name}
+          </button>
+        )}
+        <button onClick={() => setRoute("readiness")}><CalendarClock size={15} /> Ganzer Reifeplan</button>
+      </div>
+    </section>
+  );
+}
+
 function Home({ data, startSession, startExam, setRoute, refresh, module, setModule, sessionSize, setSessionSize }) {
   const st = data.anki || {};
   const goal = data.daily_goal || {};
@@ -982,6 +1025,7 @@ function Home({ data, startSession, startExam, setRoute, refresh, module, setMod
         </div>
       </section>
 
+      <ExamReadinessStrip module={module} startSession={startSession} setRoute={setRoute} />
       <XpCard xp={data.xp} streak={data.streak} />
       <HomePlanCard plan={data.plan} startSession={startSession} startExam={startExam} setRoute={setRoute} />
       <ReadinessCoach score={data.exam_score} setRoute={setRoute} startExam={startExam} startSession={startSession} />
@@ -4214,7 +4258,7 @@ function StudyPlanPage({ module, startSession, startExam, setRoute }) {
   );
 }
 
-function ReadinessPage({ module, startExam, setRoute }) {
+function ReadinessPage({ module, startExam, setRoute, startSession }) {
   const [d, setD] = useState(null);
   const [error, setError] = useState(false);
   function load() { setError(false); api(`/api/readiness-plan?module=${module}`).then(setD).catch(() => setError(true)); }
@@ -4265,9 +4309,10 @@ function ReadinessPage({ module, startExam, setRoute }) {
                 <div style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 1, background: "var(--muted)" }} title="50%" />
               </div>
               <span style={{ width: 42, textAlign: "right", color: p.pass ? "var(--ok)" : "var(--bad)" }}>{p.score}%</span>
+              <button className="teil-uben" onClick={() => startSession?.("anki", null, p.name)} title={`${p.name} gezielt üben`}>üben</button>
             </div>
           ))}
-          <small className="muted">Gestrichelte Linie = 50-%-Bestehensgrenze je Teil.</small>
+          <small className="muted">Gestrichelte Linie = 50-%-Bestehensgrenze je Teil. Klick auf „üben" startet eine Session nur aus diesem Teil.</small>
         </div>
       )}
       <h3 style={{ marginTop: 16 }}>Fokus-Blöcke</h3>
@@ -5053,12 +5098,13 @@ function App() {
     load();
   }, [isLogin, module]);
 
-  async function startSession(deck = "anki", kap = null) {
+  async function startSession(deck = "anki", kap = null, block = null) {
     const qs = new URLSearchParams({ limit: String(sessionSize) });
     if (kap) qs.set("kap", String(kap));
+    if (block) qs.set("block", block);  // ganzer Pruefungs-Teil
     qs.set("module", module);
     const res = await api(`/api/study/${deck}?${qs}`);
-    setSession({ deck, module, cards: res.cards || [], idx: 0, kap });
+    setSession({ deck, module, cards: res.cards || [], idx: 0, kap, block });
   }
 
   async function startExam(count = 20, mode = "mixed") {
@@ -5116,7 +5162,7 @@ function App() {
     if (route === "import") return <CardImportPage onDone={load} module={module} />;
     if (route === "fehlerbuch") return <FehlerbuchPage module={module} startSession={startSession} />;
     if (route === "analytics") return <AnalyticsPage module={module} />;
-    if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} />;
+    if (route === "readiness") return <ReadinessPage module={module} startExam={startExam} setRoute={setRoute} startSession={startSession} />;
     if (route === "studyplan") return <StudyPlanPage module={module} startSession={startSession} startExam={startExam} setRoute={setRoute} />;
     if (route === "lernunterlagen") return <LernunterlagenPage module={module} setModule={setModule} modules={data.modules} />;
     if (route === "antwortcheck") return <AntwortCheckPage module={module} sessionSize={sessionSize} setSessionSize={setSessionSize} />;
