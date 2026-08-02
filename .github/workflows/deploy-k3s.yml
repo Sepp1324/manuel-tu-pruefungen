@@ -87,17 +87,23 @@ jobs:
       - name: Manifeste anwenden
         run: |
           set -euo pipefail
-          # WICHTIG: Das Deployment NICHT per `kubectl apply -k` anfassen.
-          # In diesem Cluster fuehrt `apply` auf das Deployment reproduzierbar dazu,
-          # dass die Image-Aenderung zwar in der Spec landet und `rollout status`
-          # "successfully rolled out" meldet, die Pods aber NICHT ersetzt werden
-          # (Produktion blieb auf dem alten Build, kein Downtime). Ein direktes
-          # `kubectl set image` rollt dagegen sauber aus - im Cluster verifiziert
-          # (manuelles set-image ersetzte den Pod jedes Mal korrekt).
-          # Daher: Infra-Ressourcen per apply, das Deployment-Image per set-image.
+          # Frueher stand hier die Theorie, `apply` auf das Deployment ersetze die Pods
+          # nicht. Das war eine FEHLDIAGNOSE: die eigentliche Ursache war ein zweiter
+          # Runner mit gleichem Label, der auf einem FALSCHEN Cluster deployte (Prod
+          # blieb alt, obwohl CI gruen war). Seit dieser Runner entfernt ist, rollt
+          # `apply` sauber aus. Deswegen wird 20-deployment.yaml (Deployment UND
+          # Service) jetzt wieder angewendet - sonst rollen strukturelle Aenderungen
+          # (Probes, Ressourcen, Volumes, Env, Service) NIE aus und geloeschte
+          # Ressourcen lassen sich nicht wiederherstellen.
           for f in 00-namespace 10-storage-local 15-secret 30-ingress 50-cronjob-ntfy; do
             [ -f "k8s/$f.yaml" ] && kubectl -n "$NAMESPACE" apply -f "k8s/$f.yaml"
           done
+          # Deployment + Service mit dem AKTUELLEN Image-Tag anwenden (der Platzhalter-
+          # Tag aus dem Manifest wird durch $TAG ersetzt, damit apply nicht kurz auf
+          # den Platzhalter zurueckrollt).
+          sed "s#\(image: ${IMAGE}\):[^[:space:]]*#\1:${TAG}#" k8s/20-deployment.yaml \
+            | kubectl -n "$NAMESPACE" apply -f -
+          # Belt-and-suspenders: sicherstellen, dass die Spec wirklich den SHA traegt.
           kubectl -n "$NAMESPACE" set image deployment/organicsr organicsr="$IMAGE:$TAG"
           # Verifizieren, dass die Spec den SHA traegt.
           live=$(kubectl -n "$NAMESPACE" get deploy organicsr -o jsonpath='{.spec.template.spec.containers[0].image}')

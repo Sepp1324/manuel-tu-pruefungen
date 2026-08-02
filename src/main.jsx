@@ -1158,7 +1158,11 @@ function Study({ session, setSession, finish }) {
     submittingRef.current = false;
     setSubmitting(false);
     setDraft({ q: card?.q || "", a: card?.a || "", review_note: card?.review_note || "" });
-  }, [card?.id]);
+    // An session.idx UND card.id koppeln: bei "Nochmal"/"Schwer" auf der letzten Karte
+    // wird dieselbe Karte direkt wieder eingereiht - dann bleibt card.id gleich, aber
+    // idx aendert sich. Ohne idx im Dep-Array liefe der Reset nicht und submittingRef
+    // bliebe true -> die Session waere blockiert.
+  }, [session.idx, card?.id]);
 
   useEffect(() => {
     setSecondsLeft((session.minutes || 0) * 60);
@@ -5120,16 +5124,27 @@ function usePomodoroSync(module) {
   // Regelmäßiger Abgleich.
   useEffect(() => {
     let stopped = false;
+    // Status nur setzen, wenn sich wirklich etwas geaendert hat - sonst wuerde das
+    // 4s-Intervall auch bei DEAKTIVIERTER Integration jedes Mal ein neues Objekt setzen
+    // und App 15x/min unnoetig neu rendern.
+    const apply = (next) => setStatus((s) =>
+      (s.enabled === next.enabled && s.running === next.running &&
+       s.category === next.category && s.error === next.error) ? s : next);
     async function tick() {
       if (stopped) return;
       const cfg = pomoCfg();
       if (!cfg.enabled || !cfg.url || !cfg.token) {
+        // Beim Deaktivieren einen noch laufenden Fokus sauber pausieren, bevor wir den
+        // Zustand vergessen - sonst liefe der externe Timer unbemerkt weiter.
+        if (lastSent.current.run === true && lastSent.current.cat && cfg.url && cfg.token) {
+          pomoFocus(cfg, lastSent.current.cat, "pause");
+        }
         lastSent.current = { run: null, cat: null };
-        setStatus({ enabled: false, running: false, category: null, error: null });
+        apply({ enabled: false, running: false, category: null, error: null });
         return;
       }
       const cat = cfg.cat[module];
-      if (!cat) { setStatus({ enabled: true, running: false, category: null, error: "Kategorie für dieses Modul nicht gesetzt" }); return; }
+      if (!cat) { apply({ enabled: true, running: false, category: null, error: "Kategorie für dieses Modul nicht gesetzt" }); return; }
       // Aktiv = kürzlich Aktivität. Ein versteckter Tab bekommt keine Maus-/
       // Tastenaktivität -> pausiert nach Ablauf ohnehin; zusätzlich pausiert der
       // visibilitychange-Handler sofort beim Wegwechseln.
@@ -5138,21 +5153,32 @@ function usePomodoroSync(module) {
         if (lastSent.current.run !== true || lastSent.current.cat !== cat) {
           const ok = await pomoFocus(cfg, cat, "start");
           lastSent.current = { run: true, cat };
-          setStatus({ enabled: true, running: true, category: cat, error: ok ? null : "Verbindungsfehler" });
+          apply({ enabled: true, running: true, category: cat, error: ok ? null : "Verbindungsfehler" });
         } else {
-          setStatus((s) => (s.running && s.category === cat ? s : { enabled: true, running: true, category: cat, error: null }));
+          apply({ enabled: true, running: true, category: cat, error: null });
         }
       } else if (lastSent.current.run !== false) {
         const ok = await pomoFocus(cfg, cat, "pause");
         lastSent.current = { run: false, cat };
-        setStatus({ enabled: true, running: false, category: cat, error: ok ? null : "Verbindungsfehler" });
+        apply({ enabled: true, running: false, category: cat, error: ok ? null : "Verbindungsfehler" });
       } else {
-        setStatus((s) => (!s.running ? s : { enabled: true, running: false, category: cat, error: null }));
+        apply({ enabled: true, running: false, category: cat, error: null });
       }
     }
     tick();
     const id = setInterval(tick, 4000);
-    return () => { stopped = true; clearInterval(id); };
+    return () => {
+      stopped = true;
+      clearInterval(id);
+      // Modulwechsel/Unmount: den laufenden Fokus des BISHERIGEN Moduls pausieren.
+      // Der neu montierte Effekt startet danach den Fokus des neuen Moduls. Ohne das
+      // liefe die alte Kategorie extern weiter, bis der naechste Tick zufaellig umschaltet.
+      const cfg = pomoCfg();
+      if (cfg.enabled && cfg.url && cfg.token && lastSent.current.run === true && lastSent.current.cat) {
+        pomoFocus(cfg, lastSent.current.cat, "pause");
+        lastSent.current = { run: false, cat: lastSent.current.cat };
+      }
+    };
   }, [module]);
 
   return status;

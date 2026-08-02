@@ -2383,10 +2383,20 @@ def mock_exam(module: str = "organic"):
     }
 
 
+class MockResultIn(BaseModel):
+    # Ein einzelnes eingereichtes Ergebnis. rating ist als int typisiert, damit ein
+    # unsinniger Wert (z.B. "bad") sauber 422 liefert statt in int() einen 500 zu werfen.
+    # card_id ist ein String-Slug (z.B. "organic-example-2024"), kann aber auch numerisch
+    # sein - daher str|int (Pydantic-Smart-Union behaelt den Eingabetyp bei).
+    card_id: str | int | None = None
+    kap: int | None = None
+    rating: int = 0
+
+
 class MockGradeIn(BaseModel):
     module: str = "organic"
     exam_id: str = ""
-    results: list[dict]
+    results: list[MockResultIn]
     duration_seconds: int = 0
 
 
@@ -2396,9 +2406,15 @@ def mock_exam_grade(inp: MockGradeIn):
     Unbeantwortete Karten der gespeicherten Zusammenstellung zaehlen als FALSCH."""
     module = _valid_module(inp.module)
     PASS = 50
-    answered = {r.get("card_id"): int(r.get("rating") or 0)
-                for r in inp.results if r.get("card_id") is not None}
-    composition = _MOCK_EXAMS.pop(inp.exam_id, None) if inp.exam_id else None
+    answered = {r.card_id: (r.rating or 0)
+                for r in inp.results if r.card_id is not None}
+    # WICHTIG: NICHT pop() - sonst waere die Bewertung nicht idempotent: ein zweiter
+    # (identischer) Submit faende die Zusammenstellung nicht mehr und wuerde ueber den
+    # Fallback nur die eingereichten Karten werten -> aus 1/18 (6%) wuerde 1/1 (100%,
+    # "bestanden"). Die Zusammenstellung bleibt bis zum TTL-Purge erhalten.
+    now = datetime.now(timezone.utc)
+    _purge_mock_exams(now)
+    composition = _MOCK_EXAMS.get(inp.exam_id) if inp.exam_id else None
     composition_missing = not (composition and composition.get("module") == module)
 
     blocks: dict[str, dict] = {}
@@ -2411,12 +2427,15 @@ def mock_exam_grade(inp: MockGradeIn):
             if answered.get(c.get("id"), 0) >= 3:
                 b["correct"] += 1
     else:
-        # Fallback (z.B. nach Server-Neustart): nur eingereichte Karten werten.
+        # Fallback (z.B. nach Server-Neustart / abgelaufener TTL): nur eingereichte
+        # Karten werten. Das kann NICHT die echte Bestehensregel abbilden (unbeantwortete
+        # Karten fehlen) - deshalb wird dieser Versuch weiter unten NICHT in die Statistik
+        # geschrieben, damit kein "Fail-open"-Bestehen die Auswertung verfaelscht.
         for r in inp.results:
-            name = _exam_block(module, r.get("kap"))
+            name = _exam_block(module, r.kap)
             b = blocks.setdefault(name, {"name": name, "total": 0, "correct": 0})
             b["total"] += 1
-            if int(r.get("rating") or 0) >= 3:
+            if (r.rating or 0) >= 3:
                 b["correct"] += 1
     parts = []
     for b in blocks.values():
@@ -2437,16 +2456,22 @@ def mock_exam_grade(inp: MockGradeIn):
     else:
         verdict = f"Nicht bestanden – unter 50 % in: {', '.join(failing)}. Diese Teile gezielt üben."
 
-    try:
-        conn = db.get_conn()
-        db.record_exam_attempt(conn, module, "mock", "mixed", "Volle Prüfung", "",
-                               correct, total, overall, max(0, int(inp.duration_seconds or 0)),
-                               {"parts": parts, "would_pass": would_pass}, _now_iso())
-        conn.commit()
-        conn.close()
-        _invalidate_module_caches(module)
-    except Exception:  # noqa: BLE001 - Speichern darf die Auswertung nie verhindern
-        pass
+    # Nur EINMAL je Zusammenstellung in die Statistik schreiben (Retry/Reload/Doppel-
+    # Submit sollen keine weiteren Versuche verbuchen) und NICHT im Fallback (dort ist
+    # die Quote unzuverlaessig). Das "recorded"-Flag lebt in der In-Memory-Composition.
+    already_recorded = bool(composition and composition.get("recorded"))
+    if not composition_missing and not already_recorded:
+        try:
+            conn = db.get_conn()
+            db.record_exam_attempt(conn, module, "mock", "mixed", "Volle Prüfung", "",
+                                   correct, total, overall, max(0, int(inp.duration_seconds or 0)),
+                                   {"parts": parts, "would_pass": would_pass}, _now_iso())
+            conn.commit()
+            conn.close()
+            composition["recorded"] = True
+            _invalidate_module_caches(module)
+        except Exception:  # noqa: BLE001 - Speichern darf die Auswertung nie verhindern
+            pass
 
     return {
         "module": module, "threshold": PASS,
