@@ -144,9 +144,17 @@ async function api(path, opts) {
       // keep raw response
     }
     if (res.status === 401 && message === "nicht angemeldet") window.location.href = "/login";
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = res.status;   // erlaubt Aufrufern, z.B. 409 (Idempotenz-Konflikt) zu erkennen
+    throw err;
   }
   return res.json();
+}
+
+// Idempotenz-ID fuer schreibende Requests (Retry-sicher, an den Aufrufer gebunden).
+function newReqId() {
+  return ((crypto.randomUUID && crypto.randomUUID()) ||
+    (String(Date.now()) + "-" + Math.random().toString(36).slice(2))).slice(0, 64);
 }
 
 function appendHtml(value = "", html = "") {
@@ -1267,14 +1275,14 @@ function Study({ session, setSession, finish }) {
     submittingRef.current = true;
     setSubmitting(true);
     const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
-    // Idempotenz-Schluessel pro Bewertung. Bereits vergebene ID (aus einem vorherigen,
-    // evtl. schon committeten Versuch) WIEDERVERWENDEN - sonst wuerde ein Retry mit neuer
-    // ID einen bereits verbuchten Review doppelt zaehlen, wenn nur die Antwort verloren ging.
-    if (!pendingReqId.current) {
-      pendingReqId.current = ((crypto.randomUUID && crypto.randomUUID()) ||
-        (String(Date.now()) + "-" + Math.random().toString(36).slice(2))).slice(0, 64);
+    // Idempotenz-ID an den INHALT (Bewertung) gebunden: bei GLEICHER Bewertung wird die
+    // ID eines vorherigen (evtl. schon committeten) Versuchs wiederverwendet -> ein Retry
+    // nach verlorener Antwort verbucht nicht doppelt. Bei ANDERER Bewertung eine neue ID,
+    // sonst wuerde der Server die abweichende Wiederholung als Duplikat der alten werten.
+    if (!pendingReqId.current || pendingReqId.current.rating !== rating) {
+      pendingReqId.current = { rating, id: newReqId() };
     }
-    const requestId = pendingReqId.current;
+    const requestId = pendingReqId.current.id;
     try {
       await api("/api/review", {
         method: "POST",
@@ -1288,7 +1296,9 @@ function Study({ session, setSession, finish }) {
         }),
       });
     } catch (err) {
-      // ID NICHT zuruecksetzen -> der naechste Klick nutzt sie erneut (idempotent).
+      // Bei 409 (Inhalts-Konflikt) die ID verwerfen, damit ein erneuter Versuch frisch
+      // startet; sonst ID behalten -> naechster Klick nutzt sie erneut (idempotent).
+      if (err.status === 409) pendingReqId.current = null;
       submittingRef.current = false;
       setSubmitting(false);
       setEditMsg(err.message || "Bewertung fehlgeschlagen");
@@ -2141,6 +2151,7 @@ function scoreForQuestion(scores = {}, question) {
 }
 
 function OpenExamRunner({ exam, module, onClose }) {
+  const submitReqId = useRef(null); // Idempotenz-ID, bleibt ueber Retries bis zur Bestaetigung
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState({});
   const [answers, setAnswers] = useState({});
@@ -2240,12 +2251,17 @@ function OpenExamRunner({ exam, module, onClose }) {
         };
       }),
     };
+    // Idempotenz-ID ueber Retries erhalten: geht nur die Antwort nach erfolgreichem Commit
+    // verloren, verbucht der naechste Versuch die Pruefung nicht erneut.
+    if (!submitReqId.current) submitReqId.current = newReqId();
+    payload.request_id = submitReqId.current;
     try {
       const res = await api("/api/exam/open/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      submitReqId.current = null;   // bestaetigt
       setResult(res);
     } finally {
       setSubmitting(false);
@@ -2449,6 +2465,7 @@ function OpenExamRunner({ exam, module, onClose }) {
 }
 
 function OralExamRunner({ exam, module, onClose }) {
+  const submitReqId = useRef(null); // Idempotenz-ID, bleibt ueber Retries bis zur Bestaetigung
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [scores, setScores] = useState({});
@@ -2532,12 +2549,16 @@ function OralExamRunner({ exam, module, onClose }) {
         ].filter(Boolean).join("\n\n"),
       })),
     };
+    // Idempotenz-ID ueber Retries erhalten (siehe OpenExamRunner).
+    if (!submitReqId.current) submitReqId.current = newReqId();
+    payload.request_id = submitReqId.current;
     try {
       const res = await api("/api/exam/open/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      submitReqId.current = null;   // bestaetigt
       setResult(res);
     } finally {
       setSubmitting(false);
