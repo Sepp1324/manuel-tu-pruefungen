@@ -1275,12 +1275,14 @@ function Study({ session, setSession, finish }) {
     submittingRef.current = true;
     setSubmitting(true);
     const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
-    // Idempotenz-ID an den INHALT (Bewertung) gebunden: bei GLEICHER Bewertung wird die
-    // ID eines vorherigen (evtl. schon committeten) Versuchs wiederverwendet -> ein Retry
-    // nach verlorener Antwort verbucht nicht doppelt. Bei ANDERER Bewertung eine neue ID,
-    // sonst wuerde der Server die abweichende Wiederholung als Duplikat der alten werten.
-    if (!pendingReqId.current || pendingReqId.current.rating !== rating) {
-      pendingReqId.current = { rating, id: newReqId() };
+    // Idempotenz-ID an den VOLLEN Inhalt gebunden (card, rating, source, Grund) - exakt die
+    // Felder, die der Server hasht. Bei identischem Inhalt wird die ID eines vorherigen
+    // (evtl. schon committeten) Versuchs wiederverwendet -> Retry verbucht nicht doppelt.
+    // Aendert sich IRGENDein Feld (z.B. bei "Nochmal" nur der Grund), gibt es eine neue ID,
+    // sonst wuerde der Server einen Konflikt (409) melden.
+    const reqSig = `${card.id}|${rating}|${isExam ? "exam" : "review"}|${reviewReason}`;
+    if (!pendingReqId.current || pendingReqId.current.sig !== reqSig) {
+      pendingReqId.current = { sig: reqSig, id: newReqId() };
     }
     const requestId = pendingReqId.current.id;
     try {
@@ -2251,15 +2253,16 @@ function OpenExamRunner({ exam, module, onClose }) {
         };
       }),
     };
-    // Idempotenz-ID ueber Retries erhalten: geht nur die Antwort nach erfolgreichem Commit
-    // verloren, verbucht der naechste Versuch die Pruefung nicht erneut.
-    if (!submitReqId.current) submitReqId.current = newReqId();
-    payload.request_id = submitReqId.current;
+    // Die GESAMTE Payload (inkl. request_id UND duration_seconds) beim ersten Versuch
+    // einfrieren und bei Retries unveraendert erneut senden. Sonst aendert die tickende
+    // Uhr duration_seconds -> anderer Payload-Hash -> der Server meldet faelschlich 409.
+    if (!submitReqId.current) submitReqId.current = { ...payload, request_id: newReqId() };
+    const body = submitReqId.current;
     try {
       const res = await api("/api/exam/open/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
       submitReqId.current = null;   // bestaetigt
       setResult(res);
@@ -2549,14 +2552,15 @@ function OralExamRunner({ exam, module, onClose }) {
         ].filter(Boolean).join("\n\n"),
       })),
     };
-    // Idempotenz-ID ueber Retries erhalten (siehe OpenExamRunner).
-    if (!submitReqId.current) submitReqId.current = newReqId();
-    payload.request_id = submitReqId.current;
+    // Gesamte Payload einfrieren und bei Retries unveraendert senden (siehe OpenExamRunner):
+    // sonst wuerde die tickende duration_seconds den Payload-Hash aendern -> faelschlich 409.
+    if (!submitReqId.current) submitReqId.current = { ...payload, request_id: newReqId() };
+    const body = submitReqId.current;
     try {
       const res = await api("/api/exam/open/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
       submitReqId.current = null;   // bestaetigt
       setResult(res);
