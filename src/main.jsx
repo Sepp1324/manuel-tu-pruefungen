@@ -1274,40 +1274,47 @@ function Study({ session, setSession, finish }) {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setSubmitting(true);
-    const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
-    // Idempotenz-ID an den VOLLEN Inhalt gebunden (card, rating, source, Grund) - exakt die
-    // Felder, die der Server hasht. Bei identischem Inhalt wird die ID eines vorherigen
-    // (evtl. schon committeten) Versuchs wiederverwendet -> Retry verbucht nicht doppelt.
-    // Aendert sich IRGENDein Feld (z.B. bei "Nochmal" nur der Grund), gibt es eine neue ID,
-    // sonst wuerde der Server einen Konflikt (409) melden.
-    const reqSig = `${card.id}|${rating}|${isExam ? "exam" : "review"}|${reviewReason}`;
-    if (!pendingReqId.current || pendingReqId.current.sig !== reqSig) {
-      pendingReqId.current = { sig: reqSig, id: newReqId() };
+    // Einen unbestaetigten Versuch VOLLSTAENDIG einfrieren (ID + Bewertung + Grund) und bei
+    // einem Retry EXAKT so erneut senden. Sonst koennte ein bereits committeter erster
+    // Request (dessen Antwort verloren ging) mit einer anderen Bewertung/neuen ID ein
+    // ZWEITES Review erzeugen, obwohl die UI nur einmal weiterschaltet. Erst nach eindeutiger
+    // Bestaetigung wird der Ref geloescht -> naechste Bewertung startet frisch.
+    if (!pendingReqId.current) {
+      const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
+      pendingReqId.current = {
+        id: newReqId(), card_id: card.id, rating,
+        source: isExam ? "exam" : "review", feedback_reason: reviewReason,
+      };
     }
-    const requestId = pendingReqId.current.id;
+    const req = pendingReqId.current;
     try {
       await api("/api/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          card_id: card.id,
-          rating,
-          source: isExam ? "exam" : "review",
-          feedback_reason: reviewReason,
-          request_id: requestId,
+          card_id: req.card_id,
+          rating: req.rating,
+          source: req.source,
+          feedback_reason: req.feedback_reason,
+          request_id: req.id,
         }),
       });
     } catch (err) {
-      // Bei 409 (Inhalts-Konflikt) die ID verwerfen, damit ein erneuter Versuch frisch
-      // startet; sonst ID behalten -> naechster Klick nutzt sie erneut (idempotent).
+      // Bei 409 (Inhalts-Konflikt, mit Einfrieren praktisch unmoeglich) den Ref verwerfen,
+      // damit ein erneuter Versuch frisch startet; sonst Ref behalten -> Retry sendet exakt
+      // denselben Request erneut (idempotent).
       if (err.status === 409) pendingReqId.current = null;
       submittingRef.current = false;
       setSubmitting(false);
       setEditMsg(err.message || "Bewertung fehlgeschlagen");
       return;
     }
+    // Mit den EINGEFRORENEN Werten weiterschalten (nicht dem aktuellen Klick), damit UI und
+    // Server uebereinstimmen - der Server hat req.rating verbucht.
+    const usedRating = req.rating;
+    const usedReason = req.feedback_reason;
     pendingReqId.current = null;   // bestaetigt -> naechste Bewertung bekommt eine neue ID
-    const nextResult = { card_id: card.id, rating, kap: card.kap, subname: card.subname, feedback_reason: reviewReason };
+    const nextResult = { card_id: req.card_id, rating: usedRating, kap: card.kap, subname: card.subname, feedback_reason: usedReason };
     setSession((old) => {
       const q = (old.cards || []).slice();
       const curIdx = old.idx;
@@ -1316,10 +1323,10 @@ function Study({ session, setSession, finish }) {
       // damit man sie sofort vertiefen kann (statt nur per FSRS auf Tage rausgeschoben).
       // Nur im Lernmodus, nicht in der zeitbegrenzten Pruefung.
       if (!isExam) {
-        if (rating === 1) {
+        if (usedRating === 1) {
           // "Nochmal" -> in ~4 Karten wieder
           q.splice(Math.min(nextIdx + REQUEUE_AHEAD, q.length), 0, card);
-        } else if (rating === 2) {
+        } else if (usedRating === 2) {
           // "Schwer" -> am Ende der laufenden Runde nochmal
           q.push(card);
         }
@@ -2700,6 +2707,7 @@ function OralExamRunner({ exam, module, onClose }) {
 }
 
 function ArchiveCorrectionRunner({ exam, module, onClose }) {
+  const submitReqId = useRef(null); // Idempotenz-ID, bleibt ueber Retries bis zur Bestaetigung
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [scores, setScores] = useState({});
@@ -2761,11 +2769,15 @@ function ArchiveCorrectionRunner({ exam, module, onClose }) {
         };
       }),
     };
+    // Gesamte Payload (inkl. request_id + duration_seconds) einfrieren und bei Retries
+    // unveraendert senden -> ein bereits committeter Versuch wird nicht doppelt verbucht.
+    if (!submitReqId.current) submitReqId.current = { ...payload, request_id: newReqId() };
     const res = await api("/api/exam/archive/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(submitReqId.current),
     });
+    submitReqId.current = null;   // bestaetigt
     setResult(res);
   }
 

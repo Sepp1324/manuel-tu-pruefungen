@@ -301,11 +301,12 @@ def _redis_json_cache(key: str, builder, ttl: int | None = None):
             return cached
         gen = _CACHE_GEN                       # Stand VOR dem Build (dessen DB-Lesungen)
         payload = builder()
-        # Nur cachen, wenn seit Build-Beginn NICHT invalidiert wurde - sonst koennte ein
-        # mit veralteten Daten gelaufener Build eine bereits erfolgte Invalidierung
-        # ueberholen und einen inkonsistenten Stand als Cache-Hit ausliefern.
-        if _CACHE_GEN == gen:
-            cache.set_json(key, payload, ttl or RESPONSE_CACHE_TTL)
+        # Vergleich UND Schreiben gemeinsam unter dem Gen-Lock - sonst koennte zwischen
+        # Vergleich und set_json invalidiert werden und der Build seinen veralteten Snapshot
+        # trotzdem zurueckschreiben. _bump_cache_gen() haelt denselben Lock.
+        with _CACHE_GEN_LOCK:
+            if _CACHE_GEN == gen:
+                cache.set_json(key, payload, ttl or RESPONSE_CACHE_TTL)
         if isinstance(payload, dict):
             payload.setdefault("_cache", {})["hit"] = False
         return payload
@@ -588,6 +589,7 @@ class ArchiveCorrectionSubmitIn(BaseModel):
     exam_id: str
     duration_seconds: int = 0
     results: list[ArchiveCorrectionResultIn] = Field(default_factory=list)
+    request_id: str = Field(default="", max_length=64)
 
 
 WORKSHOP_CATEGORIES = [
@@ -2856,74 +2858,88 @@ def exam_history(module: str = "organic"):
 @app.post("/api/exam/archive/submit")
 def submit_archive_correction(inp: ArchiveCorrectionSubmitIn):
     module = _valid_module(inp.module)
-    conn = db.get_conn()
-    now = _now_iso()
-    exam_meta = next((exam for exam in ARCHIVE_EXAMS.get(module, []) if exam["id"] == inp.exam_id), None)
-    question_meta = {
-        q["topic"]: q
-        for q in (exam_meta or {}).get("questions", [])
-    }
-    weights = {"full": 1.0, "partial": 0.5, "miss": 0.0}
-    earned = 0.0
-    total = 0.0
-    touched = 0
-    attempt_questions = []
-    for result in inp.results:
-        ratio = weights.get(result.score, 0.0)
-        confidence = _clean_confidence(result.confidence)
-        error_types = _clean_error_types(result.error_types)
-        rubric_scores = [score for score in result.rubric_scores if score in weights][:8]
-        earned += ratio * 4
-        total += 4
-        meta = question_meta.get(result.topic, {})
-        attempt_questions.append({
-            "topic": result.topic,
-            "block": "Archivfragen",
-            "score": result.score,
-            "pct": _score_from_label(result.score),
-            "confidence": confidence,
-            "error_types": error_types,
-            "rubric_scores": rubric_scores,
-            "card_ids": result.card_ids,
-            "repair": result.score in {"partial", "miss"},
-            "rubric": _rubric_for_prompts(meta.get("prompts", []), meta.get("points", 4)),
-        })
-        if result.score in {"partial", "miss"}:
-            for card_id in result.card_ids[:6]:
-                card = db.get_card(conn, card_id)
-                if not card or card.get("module") != module:
-                    continue
-                reason = "archiv_partial" if result.score == "partial" else "archiv_miss"
-                note = result.note or f"Archiv-Korrektur {result.topic}: {result.score}"
-                db.add_quality_event(conn, card_id, module, "archive_correction", reason, note, now)
-                for err in error_types:
-                    db.add_quality_event(conn, card_id, module, "exam_error", f"exam_{err}", EXAM_ERROR_TYPES[err], now)
-                if confidence == "sure":
-                    db.add_quality_event(conn, card_id, module, "exam_error", "exam_confidence_trap", "Sicher gefuehlt, aber Punkte verloren", now)
-                if result.score == "miss":
-                    db.mark_card_needs_review(conn, card_id, note, now)
-                db.log_mistake(conn, card_id, module, "exam",
-                               f"Pruefung {result.topic}: {result.score}", now)
-                touched += 1
-    pct_score = round(earned / total * 100) if total else 0
-    attempt_id = db.record_exam_attempt(
-        conn,
-        module,
-        "archive",
-        "archive",
-        (exam_meta or {}).get("title", "Archivbogen"),
-        inp.exam_id,
-        round(earned, 1),
-        round(total, 1),
-        pct_score,
-        inp.duration_seconds,
-        {"questions": attempt_questions},
-        now,
-    )
-    xp = db.add_xp_event(conn, max(8, round(earned * 3)), "archive_exam", f"Archiv-Korrektur: {pct_score}%", inp.exam_id, now)
-    conn.close()
+    phash = _payload_hash(inp.model_dump(exclude={"request_id"}))
+    resp = None
+    card_ids = [cid for r in inp.results for cid in r.card_ids]
+    # Per-Karten-Locks (dieselben wie Review/Open-Exam) + EINE Transaktion + Idempotenz -
+    # sonst blieben bei einem Fehler mittendrin Teil-Eintraege stehen, ein Retry
+    # verdoppelte sie, und die Verbindung leckte im Fehlerfall.
+    with _locked_cards(card_ids):
+        conn = db.get_conn()
+        try:
+            now = _now_iso()
+            batch = _NoCommitConn(conn)
+            if inp.request_id:
+                status, prev = db.claim_request(batch, inp.request_id, now, phash)
+                if status == "conflict":
+                    conn.rollback()
+                    raise HTTPException(409, "Abweichende Wiederholung derselben Korrektur (gleiche ID, anderer Inhalt).")
+                if status == "duplicate":
+                    conn.rollback()
+                    return json.loads(prev) if prev else {"ok": True, "duplicate": True}
+            exam_meta = next((exam for exam in ARCHIVE_EXAMS.get(module, []) if exam["id"] == inp.exam_id), None)
+            question_meta = {q["topic"]: q for q in (exam_meta or {}).get("questions", [])}
+            weights = {"full": 1.0, "partial": 0.5, "miss": 0.0}
+            earned = 0.0
+            total = 0.0
+            touched = 0
+            attempt_questions = []
+            for result in inp.results:
+                ratio = weights.get(result.score, 0.0)
+                confidence = _clean_confidence(result.confidence)
+                error_types = _clean_error_types(result.error_types)
+                rubric_scores = [score for score in result.rubric_scores if score in weights][:8]
+                earned += ratio * 4
+                total += 4
+                meta = question_meta.get(result.topic, {})
+                attempt_questions.append({
+                    "topic": result.topic,
+                    "block": "Archivfragen",
+                    "score": result.score,
+                    "pct": _score_from_label(result.score),
+                    "confidence": confidence,
+                    "error_types": error_types,
+                    "rubric_scores": rubric_scores,
+                    "card_ids": result.card_ids,
+                    "repair": result.score in {"partial", "miss"},
+                    "rubric": _rubric_for_prompts(meta.get("prompts", []), meta.get("points", 4)),
+                })
+                if result.score in {"partial", "miss"}:
+                    for card_id in result.card_ids[:6]:
+                        card = db.get_card(conn, card_id)
+                        if not card or card.get("module") != module:
+                            continue
+                        reason = "archiv_partial" if result.score == "partial" else "archiv_miss"
+                        note = result.note or f"Archiv-Korrektur {result.topic}: {result.score}"
+                        db.add_quality_event(batch, card_id, module, "archive_correction", reason, note, now)
+                        for err in error_types:
+                            db.add_quality_event(batch, card_id, module, "exam_error", f"exam_{err}", EXAM_ERROR_TYPES[err], now)
+                        if confidence == "sure":
+                            db.add_quality_event(batch, card_id, module, "exam_error", "exam_confidence_trap", "Sicher gefuehlt, aber Punkte verloren", now)
+                        if result.score == "miss":
+                            db.mark_card_needs_review(batch, card_id, note, now)
+                        db.log_mistake(batch, card_id, module, "exam",
+                                       f"Pruefung {result.topic}: {result.score}", now)
+                        touched += 1
+            pct_score = round(earned / total * 100) if total else 0
+            attempt_id = db.record_exam_attempt(
+                batch, module, "archive", "archive",
+                (exam_meta or {}).get("title", "Archivbogen"), inp.exam_id,
+                round(earned, 1), round(total, 1), pct_score, inp.duration_seconds,
+                {"questions": attempt_questions}, now)
+            xp = db.add_xp_event(batch, max(8, round(earned * 3)), "archive_exam", f"Archiv-Korrektur: {pct_score}%", inp.exam_id, now)
+            resp = {"ok": True, "attempt_id": attempt_id, "earned": round(earned, 1),
+                    "total": round(total, 1), "pct": pct_score, "touched": touched, "xp": xp}
+            if inp.request_id:
+                db.save_request_response(batch, inp.request_id, json.dumps(resp))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
     _invalidate_module_caches(module)
-    return {"ok": True, "attempt_id": attempt_id, "earned": round(earned, 1), "total": round(total, 1), "pct": pct_score, "touched": touched, "xp": xp}
+    return resp
 
 
 @app.post("/api/quality/autoprune")
@@ -2978,15 +2994,8 @@ def submit_open_exam(inp: OpenExamSubmitIn):
     # Per-Karten-Locks fuer ALLE bewerteten Karten (sortierte Stripes -> kein Deadlock),
     # damit auch die offene Pruefung keinen FSRS-Fortschritt gegen einen parallelen
     # Trainer-Review derselben Karte verliert - dieselben Locks wie /api/review.
+    do_sweep = False
     with _locked_cards([r.card_id for r in inp.results]):
-        # Wartungs-Sweep VOR der Schreibtransaktion (eigene Verbindung + Commit): so wird
-        # der Modul-Lock nie waehrend einer offenen SQLite-Schreibtransaktion angefordert
-        # (keine Lock-Inversion mit einem parallelen Stats-Sweep).
-        sconn = db.get_conn()
-        try:
-            moved = _locked_sweep(sconn, module, _now_iso())
-        finally:
-            sconn.close()
         conn = db.get_conn()
         try:
             now = datetime.now(timezone.utc)
@@ -3061,7 +3070,10 @@ def submit_open_exam(inp: OpenExamSubmitIn):
                     "repair": ratio < .85,
                 })
                 reviewed += 1
-            # moved wurde bereits VOR der Transaktion berechnet (siehe oben).
+            # Wartungs-Sweep laeuft erst NACH dem Commit (siehe unten) - Duplikate
+            # (oben schon per return beantwortet) loesen so keine Wartungsarbeit aus, und
+            # es gibt keine Lock-Inversion. Der Zaehler ist daher hier 0.
+            moved = 0
             pct_score = round((earned / total_points) * 100) if total_points else 0
             title = "Muendlicher Pruefermodus" if inp.mode == "oral" else "Kann ich erklaeren?" if inp.mode == "explain" else "Skizzen- und Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
             attempt_id = db.record_exam_attempt(
@@ -3093,11 +3105,23 @@ def submit_open_exam(inp: OpenExamSubmitIn):
             if inp.request_id:
                 db.save_request_response(batch, inp.request_id, json.dumps(resp))
             conn.commit()
+            do_sweep = True   # nur bei echtem (neuem) Submit, nach erfolgreichem Commit
         except Exception:
             conn.rollback()
             raise
         finally:
             conn.close()
+    # Wartungs-Sweep erst NACH Commit + Freigabe der SQLite-Schreibtransaktion, mit eigener
+    # Verbindung (keine Lock-Inversion). Fehler hier duerfen die Abgabe nicht kippen.
+    if do_sweep:
+        try:
+            sconn = db.get_conn()
+            try:
+                _locked_sweep(sconn, module, _now_iso())
+            finally:
+                sconn.close()
+        except Exception:  # noqa: BLE001 - Wartungs-Sweep ist unkritisch
+            pass
     _invalidate_module_caches(module)
     return resp
 
