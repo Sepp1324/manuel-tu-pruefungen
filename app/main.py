@@ -71,7 +71,18 @@ _AUTO_QUALITY_CACHE: dict[str, tuple[datetime, int]] = {}
 # Historieneintraege erzeugen).
 _AUTO_QUALITY_LOCKS: dict[str, threading.Lock] = {}
 _AUTO_QUALITY_LOCKS_GUARD = threading.Lock()
+# Per-Karten-Locks (Striping): serialisieren Read-Modify-Write derselben Karte, damit
+# zwei parallele Reviews nicht beide vom alten Kartenstand ausgehen und einer den
+# FSRS-Fortschritt des anderen ueberschreibt (uvicorn faehrt Sync-Endpoints im Threadpool).
+_CARD_LOCKS = [threading.Lock() for _ in range(64)]
+# Single-Flight-Locks fuer den vollstaendigen Response-Cache (gegen Cache-Stampede).
+_CACHE_BUILD_LOCKS: dict[str, threading.Lock] = {}
+_CACHE_BUILD_LOCKS_GUARD = threading.Lock()
 _KNOWLEDGE_MAP_CACHE: dict[str, tuple[datetime, dict]] = {}
+
+
+def _card_lock(card_id: str) -> threading.Lock:
+    return _CARD_LOCKS[hash(card_id) % len(_CARD_LOCKS)]
 _REQUEST_METRICS: list[dict] = []
 MAX_REQUEST_METRICS = 300
 
@@ -234,11 +245,23 @@ def _redis_json_cache(key: str, builder, ttl: int | None = None):
         if isinstance(cached, dict):
             cached.setdefault("_cache", {})["hit"] = True
         return cached
-    payload = builder()
-    cache.set_json(key, payload, ttl or RESPONSE_CACHE_TTL)
-    if isinstance(payload, dict):
-        payload.setdefault("_cache", {})["hit"] = False
-    return payload
+    # Single-Flight gegen Cache-Stampede: bei N gleichzeitigen kalten Zugriffen baut nur
+    # EINER, die anderen warten und lesen danach das Ergebnis (aus dem Cache oder direkt).
+    with _CACHE_BUILD_LOCKS_GUARD:
+        lock = _CACHE_BUILD_LOCKS.get(key)
+        if lock is None:
+            lock = _CACHE_BUILD_LOCKS[key] = threading.Lock()
+    with lock:
+        cached = cache.get_json(key)          # Double-Check: hat jemand waehrend des Wartens gebaut?
+        if cached is not None:
+            if isinstance(cached, dict):
+                cached.setdefault("_cache", {})["hit"] = True
+            return cached
+        payload = builder()
+        cache.set_json(key, payload, ttl or RESPONSE_CACHE_TTL)
+        if isinstance(payload, dict):
+            payload.setdefault("_cache", {})["hit"] = False
+        return payload
 
 
 def _invalidate_module_caches(module: str) -> None:
@@ -491,6 +514,8 @@ class OpenExamSubmitIn(BaseModel):
     exam_id: str = ""
     duration_seconds: int = 0
     results: list[OpenExamResultIn] = Field(default_factory=list)
+    # Optionaler Idempotenz-Schluessel (Netzwerk-Retry darf den Versuch nicht doppelt buchen).
+    request_id: str = Field(default="", max_length=64)
 
 
 class ArchiveCorrectionResultIn(BaseModel):
@@ -2894,85 +2919,99 @@ def workshop(module: str = "organic", limit: int = 8):
 def submit_open_exam(inp: OpenExamSubmitIn):
     module = _valid_module(inp.module)
     conn = db.get_conn()
-    now = datetime.now(timezone.utc)
-    now_iso = now.isoformat()
-    total_points = 0.0
-    earned = 0.0
-    reviewed = 0
-    attempt_questions = []
-    for result in inp.results:
-        card = db.get_card(conn, result.card_id)
-        if not card or card.get("module") != module:
-            continue
-        confidence = _clean_confidence(result.confidence)
-        error_types = _clean_error_types(result.error_types)
-        weights = {"full": 1.0, "partial": 0.5, "miss": 0.0}
-        values = [weights.get(score, 0.0) for score in result.sub_scores]
-        if not values:
-            values = [0.0]
-        ratio = sum(values) / len(values)
-        earned += ratio * 4
-        total_points += 4
-        rating = 4 if ratio >= .85 else 3 if ratio >= .6 else 2 if ratio >= .35 else 1
-        elapsed = 0.0
-        if card.get("last_review"):
-            elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
-        updated = sched.review(card, rating, now, max_interval_days=_max_fsrs_interval_days(now, module))
-        db.apply_review(conn, result.card_id, updated, rating, elapsed, deck="open_exam")
-        if rating == 1:
-            db.add_quality_event(conn, result.card_id, module, "open_exam", "pruefung_miss", "In offener Pruefung nicht beantwortet", updated["last_review"])
-        auto_missing = [str(term).strip() for term in result.auto_missing_terms if str(term).strip()][:12]
-        if result.auto_score is not None and result.auto_score < 65:
-            reason = "pruefung_miss" if result.auto_score < 40 else "archiv_partial"
-            note = f"Antwortpruefung 2.0: {result.auto_score}%"
-            if auto_missing:
-                note += f"; fehlt: {', '.join(auto_missing[:6])}"
-            db.add_quality_event(conn, result.card_id, module, "answer_review", reason, note, updated["last_review"])
-        if ratio < .85:
-            for err in error_types:
-                db.add_quality_event(conn, result.card_id, module, "exam_error", f"exam_{err}", EXAM_ERROR_TYPES[err], updated["last_review"])
-            if confidence == "sure":
-                db.add_quality_event(conn, result.card_id, module, "exam_error", "exam_confidence_trap", "Sicher gefuehlt, aber Punkte verloren", updated["last_review"])
-        attempt_questions.append({
-            "card_id": result.card_id,
-            "card_ids": [result.card_id],
-            "title": _question_title(card),
-            "topic": _question_title(card),
-            "kap": card.get("kap"),
-            "block": _exam_block(module, card.get("kap")),
-            "score": "full" if ratio >= .85 else "partial" if ratio >= .35 else "miss",
-            "pct": round(ratio * 100),
-            "rating": rating,
-            "confidence": confidence,
-            "error_types": error_types,
-            "sub_scores": result.sub_scores,
-            "auto_score": result.auto_score,
-            "auto_missing_terms": auto_missing,
-            "auto_checklist": [str(item).strip() for item in result.auto_checklist if str(item).strip()][:8],
-            "answer_note": result.answer_note[:4000],
-            "repair": ratio < .85,
-        })
-        reviewed += 1
-    moved = db.auto_quality_sweep(conn, module, _now_iso())
-    pct_score = round((earned / total_points) * 100) if total_points else 0
-    title = "Muendlicher Pruefermodus" if inp.mode == "oral" else "Kann ich erklaeren?" if inp.mode == "explain" else "Skizzen- und Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
-    attempt_id = db.record_exam_attempt(
-        conn,
-        module,
-        "open",
-        inp.mode,
-        title,
-        inp.exam_id,
-        round(earned, 1),
-        round(total_points, 1),
-        pct_score,
-        inp.duration_seconds,
-        {"questions": attempt_questions, "auto_quality_moved": moved},
-        now_iso,
-    )
-    xp_label = "Pruefermodus" if inp.mode == "oral" else "Offene Pruefung"
-    xp = db.add_xp_event(conn, max(10, round(earned * 4)), "open_exam", f"{xp_label}: {pct_score}%", inp.mode, _now_iso())
-    conn.close()
+    try:
+        now = datetime.now(timezone.utc)
+        now_iso = now.isoformat()
+        # Alle Schreibvorgaenge (Reviews, Qualitaet, Pruefungsversuch, XP) in EINER
+        # Transaktion + Idempotenz - sonst blieben bei einem Fehler mittendrin Teil-Reviews
+        # und ein Teil-Versuch stehen (ein Retry verdoppelte sie), und die Verbindung leckte
+        # im Fehlerfall (kein try/finally).
+        batch = _NoCommitConn(conn)
+        if inp.request_id and not db.claim_request(batch, inp.request_id, now_iso):
+            conn.rollback()
+            return {"ok": True, "duplicate": True}
+        total_points = 0.0
+        earned = 0.0
+        reviewed = 0
+        attempt_questions = []
+        for result in inp.results:
+            card = db.get_card(conn, result.card_id)
+            if not card or card.get("module") != module:
+                continue
+            confidence = _clean_confidence(result.confidence)
+            error_types = _clean_error_types(result.error_types)
+            weights = {"full": 1.0, "partial": 0.5, "miss": 0.0}
+            values = [weights.get(score, 0.0) for score in result.sub_scores]
+            if not values:
+                values = [0.0]
+            ratio = sum(values) / len(values)
+            earned += ratio * 4
+            total_points += 4
+            rating = 4 if ratio >= .85 else 3 if ratio >= .6 else 2 if ratio >= .35 else 1
+            elapsed = 0.0
+            if card.get("last_review"):
+                elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
+            updated = sched.review(card, rating, now, max_interval_days=_max_fsrs_interval_days(now, module))
+            db.apply_review(batch, result.card_id, updated, rating, elapsed, deck="open_exam")
+            if rating == 1:
+                db.add_quality_event(batch, result.card_id, module, "open_exam", "pruefung_miss", "In offener Pruefung nicht beantwortet", updated["last_review"])
+            auto_missing = [str(term).strip() for term in result.auto_missing_terms if str(term).strip()][:12]
+            if result.auto_score is not None and result.auto_score < 65:
+                reason = "pruefung_miss" if result.auto_score < 40 else "archiv_partial"
+                note = f"Antwortpruefung 2.0: {result.auto_score}%"
+                if auto_missing:
+                    note += f"; fehlt: {', '.join(auto_missing[:6])}"
+                db.add_quality_event(batch, result.card_id, module, "answer_review", reason, note, updated["last_review"])
+            if ratio < .85:
+                for err in error_types:
+                    db.add_quality_event(batch, result.card_id, module, "exam_error", f"exam_{err}", EXAM_ERROR_TYPES[err], updated["last_review"])
+                if confidence == "sure":
+                    db.add_quality_event(batch, result.card_id, module, "exam_error", "exam_confidence_trap", "Sicher gefuehlt, aber Punkte verloren", updated["last_review"])
+            attempt_questions.append({
+                "card_id": result.card_id,
+                "card_ids": [result.card_id],
+                "title": _question_title(card),
+                "topic": _question_title(card),
+                "kap": card.get("kap"),
+                "block": _exam_block(module, card.get("kap")),
+                "score": "full" if ratio >= .85 else "partial" if ratio >= .35 else "miss",
+                "pct": round(ratio * 100),
+                "rating": rating,
+                "confidence": confidence,
+                "error_types": error_types,
+                "sub_scores": result.sub_scores,
+                "auto_score": result.auto_score,
+                "auto_missing_terms": auto_missing,
+                "auto_checklist": [str(item).strip() for item in result.auto_checklist if str(item).strip()][:8],
+                "answer_note": result.answer_note[:4000],
+                "repair": ratio < .85,
+            })
+            reviewed += 1
+        moved = db.auto_quality_sweep(batch, module, _now_iso())
+        pct_score = round((earned / total_points) * 100) if total_points else 0
+        title = "Muendlicher Pruefermodus" if inp.mode == "oral" else "Kann ich erklaeren?" if inp.mode == "explain" else "Skizzen- und Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
+        attempt_id = db.record_exam_attempt(
+            batch,
+            module,
+            "open",
+            inp.mode,
+            title,
+            inp.exam_id,
+            round(earned, 1),
+            round(total_points, 1),
+            pct_score,
+            inp.duration_seconds,
+            {"questions": attempt_questions, "auto_quality_moved": moved},
+            now_iso,
+        )
+        xp_label = "Pruefermodus" if inp.mode == "oral" else "Offene Pruefung"
+        xp = db.add_xp_event(batch, max(10, round(earned * 4)), "open_exam", f"{xp_label}: {pct_score}%", inp.mode, _now_iso())
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
     _invalidate_module_caches(module)
     return {
         "ok": True,
@@ -3245,47 +3284,56 @@ class _NoCommitConn:
 
 @app.post("/api/review")
 def review(inp: ReviewIn):
-    conn = db.get_conn()
     module = "organic"
-    try:
-        card = db.get_card(conn, inp.card_id)
-        if not card:
-            raise HTTPException(404, "Karte nicht gefunden")
-        module = card.get("module", "organic")
-        now = datetime.now(timezone.utc)
-        # ALLE Schreibvorgaenge (Kartenfortschritt, Review, Fehlerbuch, Qualitaet, XP) in
-        # EINER Transaktion: entweder alles oder nichts. Vorher committete jeder Schritt
-        # einzeln -> schlug XP fehl, blieb der Review gespeichert, und ein Retry zaehlte
-        # reps/Reviews doppelt.
-        batch = _NoCommitConn(conn)
-        # Idempotenz: identische Wiederholung (per request_id) nicht doppelt verbuchen.
-        if inp.request_id and not db.claim_request(batch, inp.request_id, _now_iso()):
+    duplicate = False
+    # Per-Karten-Lock: Read-Modify-Write derselben Karte serialisieren, damit zwei
+    # parallele Reviews (auch mit VERSCHIEDENEN request_ids) nicht beide vom alten
+    # Kartenstand ausgehen und einer den FSRS-Fortschritt des anderen ueberschreibt.
+    # Die Karte wird INNERHALB des Locks gelesen -> stets frischer Stand.
+    with _card_lock(inp.card_id):
+        conn = db.get_conn()
+        try:
+            card = db.get_card(conn, inp.card_id)
+            if not card:
+                raise HTTPException(404, "Karte nicht gefunden")
+            module = card.get("module", "organic")
+            now = datetime.now(timezone.utc)
+            # ALLE Schreibvorgaenge (Kartenfortschritt, Review, Fehlerbuch, Qualitaet, XP)
+            # in EINER Transaktion: entweder alles oder nichts. Vorher committete jeder
+            # Schritt einzeln -> schlug XP fehl, blieb der Review gespeichert, und ein
+            # Retry zaehlte reps/Reviews doppelt.
+            batch = _NoCommitConn(conn)
+            # Idempotenz: identische Wiederholung (per request_id) nicht doppelt verbuchen.
+            if inp.request_id and not db.claim_request(batch, inp.request_id, _now_iso()):
+                conn.rollback()
+                duplicate = True
+            else:
+                elapsed = 0.0
+                if card.get("last_review"):
+                    elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
+                updated = sched.review(card, inp.rating, now, max_interval_days=_max_fsrs_interval_days(now, module))
+                db.apply_review(batch, inp.card_id, updated, inp.rating, elapsed, deck=inp.source if inp.source == "exam" else "anki")
+                if inp.feedback_reason:
+                    note = f"Lernfeedback: {inp.feedback_reason}"
+                    db.add_quality_event(batch, inp.card_id, module, "review_feedback", inp.feedback_reason, note, updated["last_review"])
+                    if inp.rating == 1 or inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
+                        db.mark_card_needs_review(batch, inp.card_id, note, updated["last_review"])
+                if inp.rating == 1:
+                    db.auto_quality_sweep(batch, module, updated["last_review"])
+                    db.log_mistake(batch, inp.card_id, module, "review",
+                                   "Im Trainer nicht gewusst", updated["last_review"])
+                elif inp.rating >= 3:
+                    db.resolve_mistake(batch, inp.card_id, updated["last_review"])
+                xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
+                xp = db.add_xp_event(batch, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
+                conn.commit()
+        except Exception:
             conn.rollback()
-            return {"ok": True, "duplicate": True}
-        elapsed = 0.0
-        if card.get("last_review"):
-            elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
-        updated = sched.review(card, inp.rating, now, max_interval_days=_max_fsrs_interval_days(now, module))
-        db.apply_review(batch, inp.card_id, updated, inp.rating, elapsed, deck=inp.source if inp.source == "exam" else "anki")
-        if inp.feedback_reason:
-            note = f"Lernfeedback: {inp.feedback_reason}"
-            db.add_quality_event(batch, inp.card_id, module, "review_feedback", inp.feedback_reason, note, updated["last_review"])
-            if inp.rating == 1 or inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
-                db.mark_card_needs_review(batch, inp.card_id, note, updated["last_review"])
-        if inp.rating == 1:
-            db.auto_quality_sweep(batch, module, updated["last_review"])
-            db.log_mistake(batch, inp.card_id, module, "review",
-                           "Im Trainer nicht gewusst", updated["last_review"])
-        elif inp.rating >= 3:
-            db.resolve_mistake(batch, inp.card_id, updated["last_review"])
-        xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
-        xp = db.add_xp_event(batch, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+            raise
+        finally:
+            conn.close()
+    if duplicate:
+        return {"ok": True, "duplicate": True}
     _invalidate_module_caches(module)
     return {"ok": True, "xp": xp, **updated}
 
