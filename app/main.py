@@ -321,7 +321,11 @@ def _seed_admin(conn) -> None:
         row = db.get_user_by_username(conn, ADMIN_USER)
         if row and auth.verify_password(_PLACEHOLDER_PW, row["password_hash"]):
             db.set_user_password(conn, row["id"], auth.hash_password(ADMIN_PASSWORD))
-            print(f"[auth] Platzhalter-Passwort von '{ADMIN_USER}' auf ADMIN_PASSWORD migriert.")
+            # Bestehende Sessions widerrufen - sonst blieben vor der Migration ausgestellte
+            # Sessions (mit dem bekannten Platzhalter-Passwort erlangt) weiter gueltig.
+            revoked = db.delete_user_sessions(conn, row["id"])
+            print(f"[auth] Platzhalter-Passwort von '{ADMIN_USER}' auf ADMIN_PASSWORD migriert; "
+                  f"{revoked} Session(s) widerrufen.")
 
 
 def _is_public(path: str) -> bool:
@@ -2144,6 +2148,35 @@ def me(request: Request):
     return {"username": user["username"] if user else None}
 
 
+class ChangePasswordIn(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=200)
+
+
+@app.post("/api/auth/change-password")
+def change_password(inp: ChangePasswordIn, request: Request):
+    """Passwort direkt in der App wechseln (authentifiziert). Prueft das aktuelle
+    Passwort, setzt das neue und widerruft ALLE anderen Sessions - die aufrufende
+    Session bleibt bestehen. Das ist der reguläre Weg fuer Passwortrotation; ADMIN_PASSWORD
+    im Deploy dient nur der Erstanlage und der Migration des Platzhalters."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(401, "Nicht angemeldet")
+    if inp.new_password == _PLACEHOLDER_PW:
+        raise HTTPException(400, "Bitte ein anderes Passwort wählen.")
+    conn = db.get_conn()
+    try:
+        row = db.get_user_by_username(conn, user["username"])
+        if not row or not auth.verify_password(inp.current_password, row["password_hash"]):
+            raise HTTPException(400, "Aktuelles Passwort ist falsch.")
+        db.set_user_password(conn, row["id"], auth.hash_password(inp.new_password))
+        token = request.cookies.get(auth.COOKIE_NAME)
+        db.delete_user_sessions(conn, row["id"], auth.hash_token(token) if token else None)
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
 @app.get("/api/performance")
 def performance():
     payload = _performance_summary()
@@ -2166,7 +2199,7 @@ def stats(module: str = "organic"):
         st = db.deck_stats(conn, now, module)
         chapters = db.chapter_stats(conn, now, module)
         weaknesses = db.weakness_heatmap(conn, now, module, chapters)
-        tags = db.tag_stats(conn, module)
+        tags = db.tag_stats(conn, module, now)
         auto_quality = _auto_quality_sweep_cached(conn, module, now)
         quality = db.quality_summary(conn, module)
         exam_score = _exam_score_projection(st, chapters, module, quality)
@@ -2197,6 +2230,9 @@ def stats(module: str = "organic"):
             "today_plan": today,
             "auto_quality": {"moved": auto_quality},
             "exam_score": exam_score,
+            # Bestehens-Prognose gleich mitliefern - die Startseite (ExamReadinessStrip)
+            # braucht sie sonst per zweitem Roundtrip auf /api/readiness-plan.
+            "pass_prediction": _pass_prediction(exam_score),
             "xp": xp,
             "streak": streak,
         }
@@ -2223,7 +2259,7 @@ def dashboard(module: str = "organic"):
             "forecast": _forecast(st, chapters, module),
             "study_plan": _study_plan(st, chapters, module),
             "weaknesses": db.weakness_heatmap(conn, now, module, chapters),
-            "tags": db.tag_stats(conn, module),
+            "tags": db.tag_stats(conn, module, now),
             "quality": quality,
             "auto_quality": {"moved": auto_quality},
             "exam_score": _exam_score_projection(st, chapters, module, quality),
@@ -3266,6 +3302,56 @@ def last_minute_sheet(module: str = "organic"):
 # Readiness plan
 # ---------------------------------------------------------------------------
 
+def _pass_prediction(exam_score: dict) -> dict:
+    """Bestehens-Prognose nach der echten Pruefungsregel: mindestens 50 % in JEDEM
+    Teil/Block UND insgesamt mindestens 50 %. Ein Teil gilt nur dann als bestanden,
+    wenn zusaetzlich die tatsaechlich GEMESSENE Antwortquote >= 50 % ist (sofern schon
+    Reviews vorliegen) - sonst wuerde reine Kartenabdeckung ein Bestehen vortaeuschen.
+    Wird sowohl von /api/readiness-plan als auch /api/stats genutzt (kein Waterfall)."""
+    PASS = 50
+    overall = int(exam_score.get("overall") or 0)
+    blocks = exam_score.get("blocks") or []
+    parts = []
+    for b in sorted(blocks, key=lambda b: b.get("block") or ""):
+        sc = int(b.get("score") or 0)
+        acc = int(b.get("hit") or 0)
+        acc_measured = bool(b.get("hit_measured"))
+        acc_ok = (not acc_measured) or acc >= PASS
+        parts.append({
+            "name": b.get("block"),
+            "score": sc,
+            "accuracy": acc if acc_measured else None,
+            "pass": sc >= PASS and acc_ok,
+            "accuracy_blocks": sc >= PASS and not acc_ok,  # Score reicht, Antwortquote nicht
+        })
+    overall_pass = overall >= PASS
+    all_parts_pass = bool(parts) and all(p["pass"] for p in parts)
+    would_pass = all_parts_pass and overall_pass
+    weakest_part = min(parts, key=lambda p: p["score"]) if parts else None
+    if would_pass:
+        verdict = "Aktuell auf Bestehenskurs – jeder Teil und die Gesamtquote liegen über 50 %."
+    elif not overall_pass:
+        verdict = "Gesamtquote noch unter 50 % – breit weiterlernen."
+    else:
+        acc_failing = [p["name"] for p in parts if p["accuracy_blocks"]]
+        failing = [p["name"] for p in parts if not p["pass"]]
+        if acc_failing:
+            verdict = (f"Stoff gesehen, aber Antwortquote unter 50 % in: {', '.join(acc_failing)} "
+                       "– dort gezielt Prüfungsfragen üben, nicht nur durchklicken.")
+        else:
+            verdict = f"Gesamt reicht, aber unter 50 % in: {', '.join(failing)} – hier ist die Bestehensgrenze der Knackpunkt."
+    return {
+        "threshold": PASS,
+        "parts": parts,
+        "overall": overall,
+        "overall_pass": overall_pass,
+        "would_pass": would_pass,
+        "weakest_part": weakest_part,
+        "verdict": verdict,
+        "rule": "≥50 % in jedem Teil und ≥50 % gesamt",
+    }
+
+
 @app.get("/api/readiness-plan")
 def readiness_plan(module: str = "organic"):
     module = _valid_module(module)
@@ -3300,52 +3386,7 @@ def readiness_plan(module: str = "organic"):
             "action": "Grundlagen sichern" if b.get("score", 0) < 55 else
                       "Prüfungsfragen üben" if b.get("score", 0) < 80 else "Halten & wiederholen",
         })
-    # Bestehens-Prognose nach der echten Pruefungsregel:
-    # mindestens 50 % in JEDEM Teil/Block UND insgesamt mindestens 50 %.
-    # Ein Teil gilt nur dann als bestanden, wenn zusaetzlich die tatsaechlich
-    # GEMESSENE Antwortquote >= 50 % ist (sofern schon Reviews vorliegen) - sonst
-    # wuerde reine Kartenabdeckung ein Bestehen vortaeuschen, obwohl die Antworten
-    # zu oft falsch sind. Ohne Review-Daten bleibt es beim Abdeckungs-Score.
-    PASS = 50
-    parts = []
-    for b in sorted(blocks, key=lambda b: b.get("block") or ""):
-        sc = int(b.get("score") or 0)
-        acc = int(b.get("hit") or 0)
-        acc_measured = bool(b.get("hit_measured"))
-        acc_ok = (not acc_measured) or acc >= PASS
-        parts.append({
-            "name": b.get("block"),
-            "score": sc,
-            "accuracy": acc if acc_measured else None,
-            "pass": sc >= PASS and acc_ok,
-            "accuracy_blocks": sc >= PASS and not acc_ok,  # Score reicht, Antwortquote nicht
-        })
-    overall_pass = overall >= PASS
-    all_parts_pass = bool(parts) and all(p["pass"] for p in parts)
-    would_pass = all_parts_pass and overall_pass
-    weakest_part = min(parts, key=lambda p: p["score"]) if parts else None
-    if would_pass:
-        verdict = "Aktuell auf Bestehenskurs – jeder Teil und die Gesamtquote liegen über 50 %."
-    elif not overall_pass:
-        verdict = "Gesamtquote noch unter 50 % – breit weiterlernen."
-    else:
-        acc_failing = [p["name"] for p in parts if p["accuracy_blocks"]]
-        failing = [p["name"] for p in parts if not p["pass"]]
-        if acc_failing:
-            verdict = (f"Stoff gesehen, aber Antwortquote unter 50 % in: {', '.join(acc_failing)} "
-                       "– dort gezielt Prüfungsfragen üben, nicht nur durchklicken.")
-        else:
-            verdict = f"Gesamt reicht, aber unter 50 % in: {', '.join(failing)} – hier ist die Bestehensgrenze der Knackpunkt."
-    pass_prediction = {
-        "threshold": PASS,
-        "parts": parts,
-        "overall": overall,
-        "overall_pass": overall_pass,
-        "would_pass": would_pass,
-        "weakest_part": weakest_part,
-        "verdict": verdict,
-        "rule": "≥50 % in jedem Teil und ≥50 % gesamt",
-    }
+    pass_prediction = _pass_prediction(exam_score)
     return {
         "module": module,
         "days_left": _days_left(module),

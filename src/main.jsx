@@ -10,6 +10,7 @@ import {
   Flame,
   ImagePlus,
   LogOut,
+  KeyRound,
   Mic,
   MicOff,
   Plus,
@@ -649,6 +650,7 @@ function ThemeToggle() {
 
 function AuthBar() {
   const [user, setUser] = useState("");
+  const [pwOpen, setPwOpen] = useState(false);
   useEffect(() => {
     api("/api/auth/me").then((j) => setUser(j.username || "")).catch(() => {});
   }, []);
@@ -660,8 +662,47 @@ function AuthBar() {
     <div className="authbar">
       <span>{user}</span>
       <ThemeToggle />
+      <button title="Passwort ändern" onClick={() => setPwOpen((v) => !v)}><KeyRound size={15} /></button>
       <button title="Abmelden" onClick={logout}><LogOut size={15} /></button>
+      {pwOpen && <PasswordChange onClose={() => setPwOpen(false)} />}
     </div>
+  );
+}
+
+function PasswordChange({ onClose }) {
+  const [cur, setCur] = useState("");
+  const [next, setNext] = useState("");
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(e) {
+    e.preventDefault();
+    if (next.length < 8) { setMsg("Neues Passwort: mindestens 8 Zeichen."); return; }
+    setBusy(true); setMsg("");
+    try {
+      await api("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current_password: cur, new_password: next }),
+      });
+      setMsg("Passwort geändert. Andere Geräte wurden abgemeldet.");
+      setCur(""); setNext("");
+    } catch (err) {
+      setMsg(err.message || "Änderung fehlgeschlagen.");
+    } finally { setBusy(false); }
+  }
+  return (
+    <form className="pw-change" onSubmit={submit}>
+      <b>Passwort ändern</b>
+      <input type="password" autoComplete="current-password" placeholder="Aktuelles Passwort"
+        value={cur} onChange={(e) => setCur(e.target.value)} />
+      <input type="password" autoComplete="new-password" placeholder="Neues Passwort (min. 8)"
+        value={next} onChange={(e) => setNext(e.target.value)} />
+      <div className="pw-change-row">
+        <button className="primary" type="submit" disabled={busy || !cur || !next}>{busy ? "…" : "Speichern"}</button>
+        <button type="button" onClick={onClose}>Schließen</button>
+      </div>
+      {msg && <span className="muted" style={{ fontSize: 12 }}>{msg}</span>}
+    </form>
   );
 }
 
@@ -955,22 +996,24 @@ function HomePlanCard({ plan: d, startSession, startExam, setRoute }) {
   );
 }
 
-function ExamReadinessStrip({ module, startSession, setRoute }) {
-  const [d, setD] = useState(null);
-  useEffect(() => { setD(null); api(`/api/readiness-plan?module=${module}`).then(setD).catch(() => {}); }, [module]);
-  const parts = d?.pass_prediction?.parts || [];
-  if (!d || !parts.length) return null;
+function ExamReadinessStrip({ data, startSession, setRoute }) {
+  // pass_prediction kommt direkt aus /api/stats (data.pass_prediction) - kein zweiter
+  // Roundtrip auf /api/readiness-plan mehr, der Deck-/Kapitel-/Qualitaets-/Prognosedaten
+  // nur neu berechnen wuerde (kein Waterfall vor dem Readiness-Bereich).
+  const pp = data?.pass_prediction;
+  const parts = pp?.parts || [];
+  if (!pp || !parts.length) return null;
   const color = (s) => (s < 50 ? "var(--bad)" : s < 65 ? "var(--warn-strong)" : "var(--ok)");
-  const weakest = d.pass_prediction.weakest_part;
-  const pass = d.pass_prediction.would_pass;
+  const weakest = pp.weakest_part;
+  const pass = pp.would_pass;
   return (
     <section className="panel exam-strip">
       <div className="exam-strip-head">
         <div>
           <b className={`exam-verdict ${pass ? "ok" : "risk"}`}>{pass ? "✓ Auf Bestehenskurs" : "✗ Noch nicht bestehenssicher"}</b>
-          <span className="muted"> · Regel: {d.pass_prediction.rule}</span>
+          <span className="muted"> · Regel: {pp.rule}</span>
         </div>
-        <div className="exam-countdown"><b>{d.days_left}</b> Tage bis zur Prüfung</div>
+        <div className="exam-countdown"><b>{data.days_until_exam}</b> Tage bis zur Prüfung</div>
       </div>
       <div className="exam-teile">
         {parts.map((p) => (
@@ -1026,7 +1069,7 @@ function Home({ data, startSession, startExam, setRoute, refresh, module, setMod
         </div>
       </section>
 
-      <ExamReadinessStrip module={module} startSession={startSession} setRoute={setRoute} />
+      <ExamReadinessStrip data={data} startSession={startSession} setRoute={setRoute} />
       <XpCard xp={data.xp} streak={data.streak} />
       <HomePlanCard plan={data.plan} startSession={startSession} startExam={startExam} setRoute={setRoute} />
       <ReadinessCoach score={data.exam_score} setRoute={setRoute} startExam={startExam} startSession={startSession} />

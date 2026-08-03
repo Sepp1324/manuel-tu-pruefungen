@@ -84,6 +84,17 @@ button:disabled { cursor: default; opacity: .48; }
   z-index: 5;
 }
 .authbar button { min-height: 30px; padding: 4px 8px; }
+.pw-change {
+  position: absolute; top: 40px; right: 0; z-index: 10;
+  display: flex; flex-direction: column; gap: 8px; width: 240px;
+  padding: 12px; border-radius: 10px;
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+.pw-change b { font-size: 13px; }
+.pw-change input { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; }
+.pw-change-row { display: flex; gap: 8px; }
+.pw-change-row button { flex: 1; min-height: 32px; }
 .tabs {
   align-items: center;
   border-bottom: 3px solid var(--ink);
