@@ -415,6 +415,11 @@ def touch_login(conn: sqlite3.Connection, user_id: int, now_iso: str) -> None:
     conn.commit()
 
 
+def set_user_password(conn: sqlite3.Connection, user_id: int, password_hash: str) -> None:
+    conn.execute("UPDATE users SET password_hash=? WHERE id=?", (password_hash, user_id))
+    conn.commit()
+
+
 def create_session(conn: sqlite3.Connection, token_hash: str, user_id: int, created_iso: str,
                    expires_iso: str, user_agent: str | None = None) -> None:
     conn.execute(
