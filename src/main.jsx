@@ -5093,9 +5093,14 @@ const pomoCfg = () => ({
 });
 
 function pomoFocus(cfg, category, action) {
-  // action: "start" | "pause"; feuert & vergisst, Fehler werden geschluckt.
+  // action: "start" | "pause"; Fehler werden geschluckt (-> false). Harter Timeout via
+  // AbortController, damit fetch IMMER terminiert - sonst koennte ein haengender Request
+  // den inFlight-Guard dauerhaft blockieren und die Synchronisation ausfallen lassen.
   const u = `${cfg.url}/api/study-time/${encodeURIComponent(category)}/focus/${action}?token=${encodeURIComponent(cfg.token)}`;
-  return fetch(u, { method: "POST", keepalive: true }).then((r) => r.ok).catch(() => false);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  return fetch(u, { method: "POST", keepalive: true, signal: ctrl.signal })
+    .then((r) => r.ok).catch(() => false).finally(() => clearTimeout(t));
 }
 
 function usePomodoroSync(module) {
@@ -5149,8 +5154,9 @@ function usePomodoroSync(module) {
         // erst nach ERFOLGREICHER Pause vergessen, sonst geht der Retry verloren.
         if (lastSent.current.run === true && lastSent.current.cat && cfg.url && cfg.token) {
           inFlight.current = true;
-          const ok = await pomoFocus(cfg, lastSent.current.cat, "pause");
-          inFlight.current = false;
+          let ok;
+          try { ok = await pomoFocus(cfg, lastSent.current.cat, "pause"); }
+          finally { inFlight.current = false; }
           if (!ok) { apply({ enabled: false, running: false, category: null, error: "Verbindungsfehler" }); return; }
         }
         lastSent.current = { run: null, cat: null };
@@ -5166,8 +5172,9 @@ function usePomodoroSync(module) {
       if (active) {
         if (lastSent.current.run !== true || lastSent.current.cat !== cat) {
           inFlight.current = true;
-          const ok = await pomoFocus(cfg, cat, "start");
-          inFlight.current = false;
+          let ok;
+          try { ok = await pomoFocus(cfg, cat, "start"); }
+          finally { inFlight.current = false; }
           // lastSent NUR bei Erfolg umstellen -> ein fehlgeschlagener Start wird beim
           // naechsten Tick erneut versucht (statt faelschlich als "laeuft" zu gelten).
           if (ok) lastSent.current = { run: true, cat };
@@ -5177,8 +5184,9 @@ function usePomodoroSync(module) {
         }
       } else if (lastSent.current.run !== false) {
         inFlight.current = true;
-        const ok = await pomoFocus(cfg, cat, "pause");
-        inFlight.current = false;
+        let ok;
+        try { ok = await pomoFocus(cfg, cat, "pause"); }
+        finally { inFlight.current = false; }
         // Nur bei erfolgreicher Pause als pausiert merken - sonst Retry beim naechsten
         // Tick, damit ein extern weiterlaufender Timer nicht unbemerkt bleibt.
         if (ok) lastSent.current = { run: false, cat };
@@ -5192,13 +5200,14 @@ function usePomodoroSync(module) {
     return () => {
       stopped = true;
       clearInterval(id);
-      // Modulwechsel/Unmount: den laufenden Fokus des BISHERIGEN Moduls pausieren.
-      // Der neu montierte Effekt startet danach den Fokus des neuen Moduls. Ohne das
-      // liefe die alte Kategorie extern weiter, bis der naechste Tick zufaellig umschaltet.
+      // Modulwechsel/Unmount: den laufenden Fokus des BISHERIGEN Moduls best-effort
+      // pausieren. lastSent wird NICHT umgestellt (das Ergebnis kann im synchronen
+      // Cleanup nicht abgewartet werden) -> der neu montierte Effekt gleicht anhand des
+      // echten lastSent ab: schlaegt die Pause fehl, holt der naechste Tick sie nach;
+      // bei Modulwechsel schaltet der Start des neuen Moduls den (einen) Server-Timer um.
       const cfg = pomoCfg();
       if (cfg.enabled && cfg.url && cfg.token && lastSent.current.run === true && lastSent.current.cat) {
         pomoFocus(cfg, lastSent.current.cat, "pause");
-        lastSent.current = { run: false, cat: lastSent.current.cat };
       }
     };
   }, [module]);

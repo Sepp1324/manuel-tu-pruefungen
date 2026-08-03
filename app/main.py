@@ -2390,7 +2390,10 @@ class MockResultIn(BaseModel):
     # aber auch numerisch sein - daher str|int (Pydantic-Smart-Union behaelt den Typ bei).
     card_id: str | int | None = None
     kap: int | None = None
-    rating: int = Field(0, ge=1, le=4)
+    # rating ist ERFORDERLICH (Field(...)) und auf 1-4 begrenzt: ein fehlendes Feld
+    # liefert 422 statt still als 0 verarbeitet zu werden; Defaults werden von Pydantic
+    # nicht validiert, ein Pflichtfeld dagegen schon.
+    rating: int = Field(..., ge=1, le=4)
 
 
 class MockGradeIn(BaseModel):
@@ -2459,9 +2462,16 @@ def mock_exam_grade(inp: MockGradeIn):
     if composition_missing:
         # Ohne die volle Zusammenstellung laesst sich die Bestehensregel NICHT ehrlich
         # bewerten (unbeantwortete Karten fehlen -> eine einzige richtige Antwort ergaebe
-        # sonst 100% / "bestanden"). Daher hier KEIN Bestehen vortaeuschen - das UI zeigt
-        # anhand composition_missing einen entsprechenden Hinweis statt eines Ergebnisses.
+        # sonst 100% / "bestanden"). Daher die GESAMTE Antwort konsistent auf "nicht
+        # auswertbar" setzen - nicht nur would_pass. Sonst widerspraechen sich overall/
+        # overall_pass (100/true) und would_pass (false), was andere Clients falsch deuten.
         would_pass = False
+        overall = 0
+        overall_pass = False
+        parts = []
+        failing = []
+        total = 0
+        correct = 0
         verdict = ("Auswertung nicht möglich – die Prüfungszusammenstellung ist nicht mehr "
                    "vorhanden (Server-Neustart oder Sitzung abgelaufen). Bitte die Prüfung neu starten.")
 

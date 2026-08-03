@@ -84,7 +84,7 @@ jobs:
             --docker-password="${{ secrets.REGISTRY_PASSWORD }}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: App-Secret sicherstellen (nur anlegen, NIE ueberschreiben)
+      - name: App-Secret sicherstellen (anlegen, Platzhalter migrieren, optionale Keys aktivieren)
         env:
           ADMIN_USER_SECRET: ${{ secrets.ADMIN_USER }}
           ADMIN_PASSWORD_SECRET: ${{ secrets.ADMIN_PASSWORD }}
@@ -92,28 +92,61 @@ jobs:
           ANTHROPIC_API_KEY_SECRET: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
-          # WICHTIG: k8s/15-secret.yaml wird NICHT mehr angewendet - es enthaelt nur
-          # Platzhalter (admin-password: change-me-before-deploy). Wuerde es bei jedem
-          # Deploy angewendet, entstuende bei neuer/verlorener DB ein oeffentlich
-          # erreichbarer Benutzer mit BEKANNTEM Passwort. Das Secret wird stattdessen
-          # EINMALIG aus GitHub-Actions-Secrets angelegt und danach nie mehr angefasst.
-          if kubectl -n "$NAMESPACE" get secret organicsr-secrets >/dev/null 2>&1; then
-            echo "Secret organicsr-secrets existiert bereits - unveraendert gelassen."
+          # k8s/15-secret.yaml (Platzhalter admin-password: change-me-before-deploy) wird
+          # NICHT angewendet. Dieser Schritt legt organicsr-secrets aus GitHub-Actions-
+          # Secrets an; ein bereits mit dem Platzhalter befuelltes Alt-Secret wird auf ein
+          # starkes Passwort MIGRIERT (sonst wuerde bei DB-Verlust wieder das bekannte
+          # Passwort ausgerollt), und optionale Keys lassen sich nachtraeglich aktivieren.
+          # Geheimwerte werden nie geloggt.
+          SECRET=organicsr-secrets
+          PLACEHOLDER="change-me-before-deploy"
+          b64() { printf '%s' "$1" | base64 | tr -d '\n'; }
+
+          if ! kubectl -n "$NAMESPACE" get secret "$SECRET" >/dev/null 2>&1; then
+            # ---- Erstanlage ----
+            if [ -z "${ADMIN_PASSWORD_SECRET:-}" ]; then
+              echo "FEHLER: $SECRET fehlt UND ADMIN_PASSWORD (GitHub-Actions-Secret) ist leer."
+              echo "Bitte ein starkes ADMIN_PASSWORD (optional ADMIN_USER/NOTIFY_TOKEN/ANTHROPIC_API_KEY) hinterlegen."
+              exit 1
+            fi
+            kubectl -n "$NAMESPACE" create secret generic "$SECRET" \
+              --from-literal=admin-user="${ADMIN_USER_SECRET:-manuel}" \
+              --from-literal=admin-password="$ADMIN_PASSWORD_SECRET" \
+              --from-literal=notify-token="${NOTIFY_TOKEN_SECRET:-}" \
+              --from-literal=anthropic-api-key="${ANTHROPIC_API_KEY_SECRET:-}"
+            echo "$SECRET erstmalig aus GitHub-Actions-Secrets angelegt."
             exit 0
           fi
-          if [ -z "${ADMIN_PASSWORD_SECRET:-}" ]; then
-            echo "FEHLER: organicsr-secrets fehlt UND das GitHub-Actions-Secret ADMIN_PASSWORD ist leer."
-            echo "Bitte in GitHub -> Settings -> Secrets and variables -> Actions ein starkes"
-            echo "ADMIN_PASSWORD (und optional ADMIN_USER/NOTIFY_TOKEN/ANTHROPIC_API_KEY) hinterlegen."
-            echo "So wird niemals ein bekanntes Default-Passwort ausgerollt."
-            exit 1
+
+          echo "$SECRET existiert - pruefe Platzhalter & optionale Keys (Werte werden NICHT geloggt)."
+          # admin-password lesen (nicht ausgeben) und auf Platzhalter/fehlend pruefen.
+          STORED_PW="$(kubectl -n "$NAMESPACE" get secret "$SECRET" -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null || true)"
+          if [ -z "$STORED_PW" ] || [ "$STORED_PW" = "$PLACEHOLDER" ]; then
+            if [ -z "${ADMIN_PASSWORD_SECRET:-}" ]; then
+              echo "FEHLER: $SECRET enthaelt das bekannte Platzhalter-Passwort (oder admin-password fehlt),"
+              echo "aber ADMIN_PASSWORD (GitHub-Actions-Secret) ist leer. Bitte ein starkes ADMIN_PASSWORD"
+              echo "hinterlegen, damit bei Datenbankverlust kein bekanntes Passwort ausgerollt wird."
+              exit 1
+            fi
+            kubectl -n "$NAMESPACE" patch secret "$SECRET" --type=merge \
+              -p "{\"data\":{\"admin-user\":\"$(b64 "${ADMIN_USER_SECRET:-manuel}")\",\"admin-password\":\"$(b64 "$ADMIN_PASSWORD_SECRET")\"}}"
+            echo "Platzhalter-Passwort migriert (admin-password aus ADMIN_PASSWORD gesetzt)."
+          else
+            echo "admin-password ist bereits gesetzt (kein Platzhalter) - unveraendert."
           fi
-          kubectl -n "$NAMESPACE" create secret generic organicsr-secrets \
-            --from-literal=admin-user="${ADMIN_USER_SECRET:-manuel}" \
-            --from-literal=admin-password="$ADMIN_PASSWORD_SECRET" \
-            --from-literal=notify-token="${NOTIFY_TOKEN_SECRET:-}" \
-            --from-literal=anthropic-api-key="${ANTHROPIC_API_KEY_SECRET:-}"
-          echo "Secret organicsr-secrets erstmalig aus GitHub-Actions-Secrets angelegt."
+
+          # Optionale Keys nachtraeglich aktivieren - nur wenn das jeweilige GH-Secret gesetzt
+          # ist. Der spaetere rollout restart laesst den Pod die neuen Werte uebernehmen.
+          if [ -n "${NOTIFY_TOKEN_SECRET:-}" ]; then
+            kubectl -n "$NAMESPACE" patch secret "$SECRET" --type=merge \
+              -p "{\"data\":{\"notify-token\":\"$(b64 "$NOTIFY_TOKEN_SECRET")\"}}"
+            echo "notify-token aus GitHub-Actions-Secret aktualisiert."
+          fi
+          if [ -n "${ANTHROPIC_API_KEY_SECRET:-}" ]; then
+            kubectl -n "$NAMESPACE" patch secret "$SECRET" --type=merge \
+              -p "{\"data\":{\"anthropic-api-key\":\"$(b64 "$ANTHROPIC_API_KEY_SECRET")\"}}"
+            echo "anthropic-api-key aus GitHub-Actions-Secret aktualisiert."
+          fi
 
       - name: Manifeste anwenden
         run: |
