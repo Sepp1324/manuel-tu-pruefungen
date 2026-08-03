@@ -361,6 +361,13 @@ def migrate(conn: sqlite3.Connection) -> None:
     -- (attempt_type!='mock' oder leeres ref_id) sind ausgenommen -> keine Kollision.
     CREATE UNIQUE INDEX IF NOT EXISTS uq_exam_attempts_mock_ref
         ON exam_attempts(ref_id) WHERE attempt_type='mock' AND ref_id != '';
+    -- Idempotenz-Schluessel fuer schreibende Requests (z.B. /api/review): eine mit
+    -- derselben request_id wiederholte Einreichung wird nicht doppelt verbucht.
+    CREATE TABLE IF NOT EXISTS request_dedup (
+        request_id TEXT PRIMARY KEY,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_request_dedup_created ON request_dedup(created_at);
     CREATE TABLE IF NOT EXISTS fehlerbuch (
         card_id       TEXT PRIMARY KEY,
         module        TEXT NOT NULL,
@@ -417,14 +424,28 @@ def touch_login(conn: sqlite3.Connection, user_id: int, now_iso: str) -> None:
 
 def set_password_and_revoke_sessions(conn: sqlite3.Connection, user_id: int,
                                      password_hash: str,
-                                     keep_token_hash: str | None = None) -> int:
+                                     keep_token_hash: str | None = None,
+                                     expected_hash: str | None = None) -> int | None:
     """Passwort setzen UND (andere) Sessions widerrufen ATOMAR - beides in EINER
     Transaktion, sonst koennte das neue Passwort schon aktiv sein, waehrend eine alte
     Session gueltig bleibt (und ein Neustart repariert das nicht mehr, weil der Hash dann
     kein Platzhalter ist). keep_token_hash behaelt die aktuelle Session (In-App-Wechsel);
-    ohne keep werden ALLE widerrufen. Gibt die Zahl widerrufener Sessions zurueck."""
+    ohne keep werden ALLE widerrufen.
+
+    expected_hash macht das Update zu einem Compare-and-Set: nur setzen, wenn der Hash
+    noch dem erwarteten entspricht. So gewinnt bei zwei parallelen Wechseln genau EINER;
+    der Verlierer bekommt None zurueck (nichts geaendert), statt beide Passwoerter zu
+    ueberschreiben. Gibt sonst die Zahl widerrufener Sessions zurueck."""
     try:
-        conn.execute("UPDATE users SET password_hash=? WHERE id=?", (password_hash, user_id))
+        if expected_hash is not None:
+            cur = conn.execute(
+                "UPDATE users SET password_hash=? WHERE id=? AND password_hash=?",
+                (password_hash, user_id, expected_hash))
+            if cur.rowcount == 0:
+                conn.rollback()   # CAS fehlgeschlagen: Hash wurde zwischenzeitlich geaendert
+                return None
+        else:
+            conn.execute("UPDATE users SET password_hash=? WHERE id=?", (password_hash, user_id))
         if keep_token_hash:
             cur = conn.execute("DELETE FROM sessions WHERE user_id=? AND token_hash<>?",
                                (user_id, keep_token_hash))
@@ -468,6 +489,23 @@ def delete_session(conn: sqlite3.Connection, token_hash: str) -> None:
 
 def purge_expired_sessions(conn: sqlite3.Connection, now_iso: str) -> int:
     cur = conn.execute("DELETE FROM sessions WHERE expires_at<=?", (now_iso,))
+    conn.commit()
+    return cur.rowcount
+
+
+def claim_request(conn: sqlite3.Connection, request_id: str, created_at: str) -> bool:
+    """Idempotenz-Claim: True, wenn die request_id NEU ist (erstmals verbucht), False bei
+    Wiederholung. Committet NICHT selbst - laeuft in der Transaktion des Aufrufers, damit
+    Claim und die eigentliche Verbuchung gemeinsam persistiert bzw. zurueckgerollt werden."""
+    cur = conn.execute(
+        "INSERT OR IGNORE INTO request_dedup(request_id, created_at) VALUES(?,?)",
+        (request_id, created_at))
+    return cur.rowcount > 0
+
+
+def purge_old_request_dedup(conn: sqlite3.Connection, cutoff_iso: str) -> int:
+    """Alte Idempotenz-Schluessel aufraeumen (die Tabelle waechst sonst unbegrenzt)."""
+    cur = conn.execute("DELETE FROM request_dedup WHERE created_at<?", (cutoff_iso,))
     conn.commit()
     return cur.rowcount
 
