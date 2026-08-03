@@ -3292,12 +3292,21 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
 .process-solution { margin: 6px 0 0; padding-left: 20px; }
 .process-solution li { font-size: 14px; margin: 2px 0; }
 
-/* Konfigurierbare Session-Groesse im Hero */
+/* Konfigurierbare Session-Groesse im Hero. Der Hero ist in BEIDEN Themes dunkel
+   (color: white), daher feste helle Farben statt var(--card) - sonst wuerde der Text
+   im Dark Mode dunkel und niedrigkontrastig. Eigener Pfeil + appearance:none, damit der
+   native Pfeil den Text nicht ueberlappt/abschneidet. */
 .hero .session-size select {
-  background: rgba(255,255,255,.12); color: var(--card); border: 1px solid rgba(255,255,255,.35);
-  border-radius: 6px; padding: 8px 10px; min-height: 38px; font: inherit; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-color: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.38);
+  border-radius: 6px; padding: 8px 32px 8px 12px; min-height: 38px; font: inherit; cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat; background-position: right 10px center;
 }
-.hero .session-size select option { color: var(--ink); }
+.hero .session-size select:hover { background-color: rgba(255,255,255,.18); }
+.hero .session-size select:focus-visible { outline: 2px solid rgba(255,255,255,.7); outline-offset: 1px; }
+/* Aufgeklappte Liste in beiden Themes lesbar. */
+.hero .session-size select option { color: var(--ink); background: var(--card); }
 
 /* Selektor auf hellem Panel (z.B. Antwort-Check-Header) */
 .session-size.light { display: inline-flex; align-items: center; white-space: nowrap; }
