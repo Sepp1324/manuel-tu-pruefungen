@@ -455,6 +455,20 @@ def purge_expired_sessions(conn: sqlite3.Connection, now_iso: str) -> int:
     return cur.rowcount
 
 
+def delete_user_sessions(conn: sqlite3.Connection, user_id: int,
+                         keep_token_hash: str | None = None) -> int:
+    """Alle Sessions eines Benutzers loeschen (z.B. nach Passwortwechsel/-migration).
+    keep_token_hash behaelt EINE Session (die aktuelle) - fuer den In-App-Wechsel, damit
+    man sich nicht selbst ausloggt. Ohne keep werden ALLE widerrufen."""
+    if keep_token_hash:
+        cur = conn.execute("DELETE FROM sessions WHERE user_id=? AND token_hash<>?",
+                           (user_id, keep_token_hash))
+    else:
+        cur = conn.execute("DELETE FROM sessions WHERE user_id=?", (user_id,))
+    conn.commit()
+    return cur.rowcount
+
+
 def seed(conn: sqlite3.Connection) -> int:
     payload = json.loads(SEED_PATH.read_text(encoding="utf-8"))
     seed_ids = {card["id"] for card in payload["cards"]}
@@ -1506,7 +1520,8 @@ def exam_candidates(conn: sqlite3.Connection, module: str = "organic", limit: in
     return [row_to_card(r) for r in rows]
 
 
-def tag_stats(conn: sqlite3.Connection, module: str = "organic") -> list[dict]:
+def tag_stats(conn: sqlite3.Connection, module: str = "organic",
+              now_iso: str | None = None) -> list[dict]:
     rows = conn.execute(
         """SELECT * FROM cards
            WHERE module=? AND deck='anki' AND status='active'""",
@@ -1518,7 +1533,11 @@ def tag_stats(conn: sqlite3.Connection, module: str = "organic") -> list[dict]:
         for tag in infer_tags(card):
             item = counts.setdefault(tag, {"tag": tag, "total": 0, "due": 0, "again": 0})
             item["total"] += 1
-            if card.get("due") is not None:
+            due = card.get("due")
+            # Nur WIRKLICH faellige Karten zaehlen (due<=jetzt) - nicht jede Karte mit
+            # gesetztem due-Datum. Sonst wuerde eine in der Zukunft terminierte Karte die
+            # Faelligkeit erhoehen und die als Schwaechen praesentierten Themen falsch sortieren.
+            if due is not None and (now_iso is None or due <= now_iso):
                 item["due"] += 1
             item["again"] += card.get("lapses", 0) or 0
     return sorted(counts.values(), key=lambda x: (-x["again"], -x["due"], -x["total"], x["tag"]))
