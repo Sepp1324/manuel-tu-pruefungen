@@ -1381,6 +1381,14 @@ function Study({ session, setSession, finish }) {
         <h2>{session.mock ? "Volle Prüfung abgeschlossen" : isExam ? "Pruefungsmodus abgeschlossen" : "Tagesabschluss"}</h2>
         {session.mock && (
           session.mockGrading ? <p className="muted">Auswertung läuft…</p>
+          : session.mockReport && session.mockReport.composition_missing ? (
+            <div className="mock-report fail">
+              <div className="mock-report-head"><b>Auswertung nicht möglich</b></div>
+              <p>{session.mockReport.verdict}</p>
+              <p className="muted mock-rule">Die Prüfungszusammenstellung war nicht mehr im Server (Neustart/abgelaufen), daher lässt sich die Bestehensregel nicht ehrlich prüfen.</p>
+              <button className="primary" onClick={() => finish?.()}>Zurück</button>
+            </div>
+          )
           : session.mockReport ? (
             <div className={`mock-report ${session.mockReport.would_pass ? "pass" : "fail"}`}>
               <div className="mock-report-head">
@@ -5094,6 +5102,7 @@ function usePomodoroSync(module) {
   const [status, setStatus] = useState({ enabled: false, running: false, category: null, error: null });
   const lastActivity = useRef(Date.now());
   const lastSent = useRef({ run: null, cat: null });
+  const inFlight = useRef(false); // verhindert ueberlappende Aufrufe bei langsamen Requests
   const moduleRef = useRef(module);
   moduleRef.current = module;
 
@@ -5112,9 +5121,10 @@ function usePomodoroSync(module) {
       const cfg = pomoCfg();
       if (!cfg.enabled || !cfg.token) return;
       const cat = cfg.cat[moduleRef.current];
-      if (cat && lastSent.current.run !== false) {
+      if (cat && lastSent.current.run === true) {
+        // Best-effort-Sofortpause; lastSent NICHT umstellen -> schlaegt die Pause fehl,
+        // holt der periodische Abgleich sie beim naechsten sichtbaren Tick nach.
         pomoFocus(cfg, cat, "pause");
-        lastSent.current = { run: false, cat };
       }
     };
     document.addEventListener("visibilitychange", onHide);
@@ -5131,13 +5141,17 @@ function usePomodoroSync(module) {
       (s.enabled === next.enabled && s.running === next.running &&
        s.category === next.category && s.error === next.error) ? s : next);
     async function tick() {
-      if (stopped) return;
+      if (stopped || inFlight.current) return;   // keine ueberlappenden Aufrufe
       const cfg = pomoCfg();
       if (!cfg.enabled || !cfg.url || !cfg.token) {
         // Beim Deaktivieren einen noch laufenden Fokus sauber pausieren, bevor wir den
-        // Zustand vergessen - sonst liefe der externe Timer unbemerkt weiter.
+        // Zustand vergessen - sonst liefe der externe Timer unbemerkt weiter. lastSent
+        // erst nach ERFOLGREICHER Pause vergessen, sonst geht der Retry verloren.
         if (lastSent.current.run === true && lastSent.current.cat && cfg.url && cfg.token) {
-          pomoFocus(cfg, lastSent.current.cat, "pause");
+          inFlight.current = true;
+          const ok = await pomoFocus(cfg, lastSent.current.cat, "pause");
+          inFlight.current = false;
+          if (!ok) { apply({ enabled: false, running: false, category: null, error: "Verbindungsfehler" }); return; }
         }
         lastSent.current = { run: null, cat: null };
         apply({ enabled: false, running: false, category: null, error: null });
@@ -5151,16 +5165,24 @@ function usePomodoroSync(module) {
       const active = (Date.now() - lastActivity.current) < cfg.idle * 1000;
       if (active) {
         if (lastSent.current.run !== true || lastSent.current.cat !== cat) {
+          inFlight.current = true;
           const ok = await pomoFocus(cfg, cat, "start");
-          lastSent.current = { run: true, cat };
-          apply({ enabled: true, running: true, category: cat, error: ok ? null : "Verbindungsfehler" });
+          inFlight.current = false;
+          // lastSent NUR bei Erfolg umstellen -> ein fehlgeschlagener Start wird beim
+          // naechsten Tick erneut versucht (statt faelschlich als "laeuft" zu gelten).
+          if (ok) lastSent.current = { run: true, cat };
+          apply({ enabled: true, running: ok, category: cat, error: ok ? null : "Verbindungsfehler" });
         } else {
           apply({ enabled: true, running: true, category: cat, error: null });
         }
       } else if (lastSent.current.run !== false) {
+        inFlight.current = true;
         const ok = await pomoFocus(cfg, cat, "pause");
-        lastSent.current = { run: false, cat };
-        apply({ enabled: true, running: false, category: cat, error: ok ? null : "Verbindungsfehler" });
+        inFlight.current = false;
+        // Nur bei erfolgreicher Pause als pausiert merken - sonst Retry beim naechsten
+        // Tick, damit ein extern weiterlaufender Timer nicht unbemerkt bleibt.
+        if (ok) lastSent.current = { run: false, cat };
+        apply({ enabled: true, running: !ok, category: cat, error: ok ? null : "Verbindungsfehler" });
       } else {
         apply({ enabled: true, running: false, category: cat, error: null });
       }

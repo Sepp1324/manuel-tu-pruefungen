@@ -84,6 +84,37 @@ jobs:
             --docker-password="${{ secrets.REGISTRY_PASSWORD }}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: App-Secret sicherstellen (nur anlegen, NIE ueberschreiben)
+        env:
+          ADMIN_USER_SECRET: ${{ secrets.ADMIN_USER }}
+          ADMIN_PASSWORD_SECRET: ${{ secrets.ADMIN_PASSWORD }}
+          NOTIFY_TOKEN_SECRET: ${{ secrets.NOTIFY_TOKEN }}
+          ANTHROPIC_API_KEY_SECRET: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          # WICHTIG: k8s/15-secret.yaml wird NICHT mehr angewendet - es enthaelt nur
+          # Platzhalter (admin-password: change-me-before-deploy). Wuerde es bei jedem
+          # Deploy angewendet, entstuende bei neuer/verlorener DB ein oeffentlich
+          # erreichbarer Benutzer mit BEKANNTEM Passwort. Das Secret wird stattdessen
+          # EINMALIG aus GitHub-Actions-Secrets angelegt und danach nie mehr angefasst.
+          if kubectl -n "$NAMESPACE" get secret organicsr-secrets >/dev/null 2>&1; then
+            echo "Secret organicsr-secrets existiert bereits - unveraendert gelassen."
+            exit 0
+          fi
+          if [ -z "${ADMIN_PASSWORD_SECRET:-}" ]; then
+            echo "FEHLER: organicsr-secrets fehlt UND das GitHub-Actions-Secret ADMIN_PASSWORD ist leer."
+            echo "Bitte in GitHub -> Settings -> Secrets and variables -> Actions ein starkes"
+            echo "ADMIN_PASSWORD (und optional ADMIN_USER/NOTIFY_TOKEN/ANTHROPIC_API_KEY) hinterlegen."
+            echo "So wird niemals ein bekanntes Default-Passwort ausgerollt."
+            exit 1
+          fi
+          kubectl -n "$NAMESPACE" create secret generic organicsr-secrets \
+            --from-literal=admin-user="${ADMIN_USER_SECRET:-manuel}" \
+            --from-literal=admin-password="$ADMIN_PASSWORD_SECRET" \
+            --from-literal=notify-token="${NOTIFY_TOKEN_SECRET:-}" \
+            --from-literal=anthropic-api-key="${ANTHROPIC_API_KEY_SECRET:-}"
+          echo "Secret organicsr-secrets erstmalig aus GitHub-Actions-Secrets angelegt."
+
       - name: Manifeste anwenden
         run: |
           set -euo pipefail
@@ -95,7 +126,9 @@ jobs:
           # Service) jetzt wieder angewendet - sonst rollen strukturelle Aenderungen
           # (Probes, Ressourcen, Volumes, Env, Service) NIE aus und geloeschte
           # Ressourcen lassen sich nicht wiederherstellen.
-          for f in 00-namespace 10-storage-local 15-secret 30-ingress 50-cronjob-ntfy; do
+          # 15-secret bewusst NICHT hier - das App-Secret wird im Schritt davor nur
+          # einmalig aus GitHub-Actions-Secrets angelegt (kein Platzhalter-Passwort).
+          for f in 00-namespace 10-storage-local 30-ingress 50-cronjob-ntfy; do
             [ -f "k8s/$f.yaml" ] && kubectl -n "$NAMESPACE" apply -f "k8s/$f.yaml"
           done
           # Deployment + Service mit dem AKTUELLEN Image-Tag anwenden (der Platzhalter-
