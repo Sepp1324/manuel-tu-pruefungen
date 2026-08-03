@@ -5164,7 +5164,21 @@ function usePomodoroSync(module) {
         return;
       }
       const cat = cfg.cat[module];
-      if (!cat) { apply({ enabled: true, running: false, category: null, error: "Kategorie für dieses Modul nicht gesetzt" }); return; }
+      if (!cat) {
+        // Kein Ziel fuers aktuelle Modul: einen evtl. noch laufenden Fokus (z.B. aus dem
+        // vorherigen Modul, dessen Cleanup-Pause fehlschlug) ZUVERLAESSIG pausieren -
+        // sonst liefe der externe Timer dauerhaft weiter. Mit Retry, da wir lastSent nur
+        // bei Erfolg umstellen.
+        if (lastSent.current.run === true && lastSent.current.cat) {
+          inFlight.current = true;
+          let ok;
+          try { ok = await pomoFocus(cfg, lastSent.current.cat, "pause"); }
+          finally { inFlight.current = false; }
+          if (ok) lastSent.current = { run: false, cat: lastSent.current.cat };
+        }
+        apply({ enabled: true, running: false, category: null, error: "Kategorie für dieses Modul nicht gesetzt" });
+        return;
+      }
       // Aktiv = kürzlich Aktivität. Ein versteckter Tab bekommt keine Maus-/
       // Tastenaktivität -> pausiert nach Ablauf ohnehin; zusätzlich pausiert der
       // visibilitychange-Handler sofort beim Wegwechseln.

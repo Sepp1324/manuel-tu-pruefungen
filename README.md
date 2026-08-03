@@ -85,17 +85,27 @@ PYTHONPATH=app python3 tools/contextualize_seed_cards.py
 
 ## Deployment
 
-Die k3s-Manifeste liegen in `k8s/` und sind auf eine separate Instanz
-ausgelegt. Vor dem Deploy anpassen:
+Die k3s-Manifeste liegen in `k8s/`. Der GitHub-Actions-Workflow
+(`.github/workflows/deploy-k3s.yml`) baut das Image, prueft es per Smoke-Test,
+wendet die Infrastruktur-Manifeste einzeln an und rollt das Deployment per
+`kubectl set image` + `rollout restart` aus – **kein** `apply -k`. Vor dem ersten
+Deploy anpassen:
 
-- `k8s/15-secret.yaml`: starkes `admin-password` setzen
-- `k8s/10-storage-nfs.yaml`: NFS-Pfad pruefen
+- `k8s/10-storage-local.yaml`: lokalen Storage-Pfad pruefen
 - `k8s/30-ingress.yaml`: Hostname setzen
-- `k8s/kustomization.yaml`: Image-Tag setzen
+- `k8s/kustomization.yaml`: Image-Tag – nur fuer manuelles `apply -k`; der Workflow
+  setzt den Tag selbst
 
-```bash
-kubectl apply -k k8s/
-```
+**Admin-Zugang / Secrets:** `k8s/15-secret.yaml` ist nur eine Vorlage und wird vom
+Workflow **nicht** angewendet (Platzhalter-Passwort). Stattdessen in GitHub →
+Settings → Secrets and variables → Actions hinterlegen:
+
+- `ADMIN_PASSWORD` (**erforderlich**) – starkes Admin-Passwort
+- optional `ADMIN_USER` (Default `manuel`), `NOTIFY_TOKEN`, `ANTHROPIC_API_KEY`
+
+Der Deploy legt `organicsr-secrets` einmalig daraus an, **migriert** ein noch
+gesetztes Platzhalter-Passwort auf `ADMIN_PASSWORD` (auch der gespeicherte
+Benutzer-Hash wird beim Start umgestellt) und aktiviert optionale Keys nachtraeglich.
 
 SQLite bleibt bei `replicas: 1` und `strategy: Recreate`, damit nie zwei Pods
 gleichzeitig in dieselbe DB schreiben.

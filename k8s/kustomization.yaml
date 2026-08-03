@@ -5,7 +5,12 @@ namespace: organicsr
 resources:
   - 00-namespace.yaml
   - 10-storage-local.yaml
-  - 15-secret.yaml
+  # 15-secret.yaml BEWUSST NICHT hier: es enthaelt nur ein Platzhalter-Passwort.
+  # Das App-Secret (organicsr-secrets) wird vom Deploy-Workflow aus GitHub-Actions-
+  # Secrets angelegt/migriert. Fuer ein manuelles Setup das Secret separat mit einem
+  # STARKEN Passwort erzeugen, z.B.:
+  #   kubectl -n organicsr create secret generic organicsr-secrets \
+  #     --from-literal=admin-user=manuel --from-literal=admin-password="$(openssl rand -base64 18)"
   - 20-deployment.yaml
   - 30-ingress.yaml
   - 50-cronjob-ntfy.yaml

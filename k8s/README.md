@@ -2,8 +2,12 @@
 
 ## Laufender Betrieb
 Der GitHub-Actions-Workflow (`.github/workflows/deploy-k3s.yml`) baut das Image,
-prueft es per Smoke-Test und rollt es via `kubectl apply -k k8s` aus. Für den
-normalen Betrieb ist nichts manuell zu tun.
+prueft es per Smoke-Test, wendet die Infrastruktur-Manifeste einzeln an und rollt
+das Deployment per `kubectl set image` + `rollout restart` aus (**kein** `apply -k`).
+Das App-Secret `organicsr-secrets` wird dabei aus GitHub-Actions-Secrets angelegt
+bzw. ein Platzhalter-Passwort migriert. Fuer den normalen Betrieb ist nichts
+manuell zu tun – nur das GitHub-Secret `ADMIN_PASSWORD` muss gesetzt sein
+(optional `ADMIN_USER`, `NOTIFY_TOKEN`, `ANTHROPIC_API_KEY`).
 
 ## Neuen Cluster aufsetzen (einmalig, in dieser Reihenfolge)
 
@@ -11,13 +15,23 @@ normalen Betrieb ist nichts manuell zu tun.
    für die TLS-Automatik.
 2. **DNS** von `chemie.stoegerer-home.cloud` auf die Traefik-LoadBalancer-IP
    zeigen lassen (`kubectl -n kube-system get svc traefik`).
-3. **App-Basis anlegen** (u. a. Namespace + Secret):
+3. **App-Basis anlegen** (Namespace, Storage, Ingress, CronJob):
 
    ```bash
    kubectl apply -k k8s
    ```
 
-   Vorher `k8s/15-secret.yaml` mit echten Werten füllen (Admin-Passwort etc.).
+   `k8s/kustomization.yaml` enthaelt das Secret **bewusst nicht** (nur Platzhalter).
+   Das App-Secret separat mit einem **starken** Passwort erzeugen:
+
+   ```bash
+   kubectl -n organicsr create secret generic organicsr-secrets \
+     --from-literal=admin-user=manuel \
+     --from-literal=admin-password="$(openssl rand -base64 18)"
+   ```
+
+   Alternativ das GitHub-Secret `ADMIN_PASSWORD` setzen und den Deploy-Workflow
+   laufen lassen – der legt `organicsr-secrets` selbst an.
 4. **TLS-Bootstrap anwenden** (ClusterIssuer + Certificate → Secret `organicsr-tls`):
 
    ```bash

@@ -299,14 +299,29 @@ def _max_fsrs_interval_days(now: datetime | None = None, module: str = "organic"
     return max((_exam_date(module) - now.date()).days, 0)
 
 
+# Bekanntes Platzhalter-Passwort aus k8s/15-secret.yaml. Wurde es je (aus dem alten
+# Deploy) real als Benutzerpasswort angelegt, muss es beim Start migriert werden - das
+# blosse Ersetzen des k8s-Secrets aendert den bereits gespeicherten Hash NICHT.
+_PLACEHOLDER_PW = "change-me-before-deploy"
+
+
 def _seed_admin(conn) -> None:
-    if db.count_users(conn) > 0:
+    if db.count_users(conn) == 0:
+        if not ADMIN_USER or not ADMIN_PASSWORD:
+            print("[auth] Kein Benutzer vorhanden. Setze ADMIN_USER=manuel und ADMIN_PASSWORD.")
+            return
+        db.create_user(conn, ADMIN_USER, auth.hash_password(ADMIN_PASSWORD), _now_iso())
+        print(f"[auth] Benutzer '{ADMIN_USER}' angelegt.")
         return
-    if not ADMIN_USER or not ADMIN_PASSWORD:
-        print("[auth] Kein Benutzer vorhanden. Setze ADMIN_USER=manuel und ADMIN_PASSWORD.")
-        return
-    db.create_user(conn, ADMIN_USER, auth.hash_password(ADMIN_PASSWORD), _now_iso())
-    print(f"[auth] Benutzer '{ADMIN_USER}' angelegt.")
+    # Sicherheits-Migration: traegt der Admin noch EXAKT das bekannte Platzhalter-Passwort,
+    # auf ADMIN_PASSWORD umstellen. Ein selbst gesetztes Passwort bleibt unberuehrt (der
+    # Hash verifiziert dann nicht gegen den Platzhalter). Idempotent - nach der Migration
+    # verifiziert der Hash nicht mehr gegen den Platzhalter.
+    if ADMIN_USER and ADMIN_PASSWORD and ADMIN_PASSWORD != _PLACEHOLDER_PW:
+        row = db.get_user_by_username(conn, ADMIN_USER)
+        if row and auth.verify_password(_PLACEHOLDER_PW, row["password_hash"]):
+            db.set_user_password(conn, row["id"], auth.hash_password(ADMIN_PASSWORD))
+            print(f"[auth] Platzhalter-Passwort von '{ADMIN_USER}' auf ADMIN_PASSWORD migriert.")
 
 
 def _is_public(path: str) -> bool:
@@ -2480,6 +2495,7 @@ def mock_exam_grade(inp: MockGradeIn):
     # die Quote unzuverlaessig). Das "recorded"-Flag lebt in der In-Memory-Composition.
     already_recorded = bool(composition and composition.get("recorded"))
     if not composition_missing and not already_recorded:
+        conn = None
         try:
             conn = db.get_conn()
             # exam_id als ref_id + unique_ref: der partielle UNIQUE-Index macht das
@@ -2490,11 +2506,18 @@ def mock_exam_grade(inp: MockGradeIn):
                                    {"parts": parts, "would_pass": would_pass}, _now_iso(),
                                    unique_ref=True)
             conn.commit()
-            conn.close()
             composition["recorded"] = True
             _invalidate_module_caches(module)
         except Exception:  # noqa: BLE001 - Speichern darf die Auswertung nie verhindern
             pass
+        finally:
+            # Verbindung IMMER schliessen - sonst leckt bei wiederholten Fehlern (z.B.
+            # PostgreSQL/Dateisystem) der Pool.
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:  # noqa: BLE001
+                    pass
 
     return {
         "module": module, "threshold": PASS,
