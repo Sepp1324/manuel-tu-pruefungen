@@ -80,6 +80,12 @@ _CARD_LOCKS = [threading.Lock() for _ in range(64)]
 # Single-Flight-Locks fuer den vollstaendigen Response-Cache (gegen Cache-Stampede).
 _CACHE_BUILD_LOCKS: dict[str, threading.Lock] = {}
 _CACHE_BUILD_LOCKS_GUARD = threading.Lock()
+# Generations-Zaehler: jede Cache-Invalidierung erhoeht ihn. Ein Build cached sein
+# Ergebnis nur, wenn der Zaehler seit Build-Beginn UNVERAENDERT ist - sonst wurde
+# waehrend des (evtl. mit veralteten Daten laufenden) Builds invalidiert und das
+# Ergebnis darf NICHT gecacht werden (sonst ueberholt der Build die Invalidierung).
+_CACHE_GEN = 0
+_CACHE_GEN_LOCK = threading.Lock()
 _KNOWLEDGE_MAP_CACHE: dict[str, tuple[datetime, dict]] = {}
 
 
@@ -293,22 +299,35 @@ def _redis_json_cache(key: str, builder, ttl: int | None = None):
             if isinstance(cached, dict):
                 cached.setdefault("_cache", {})["hit"] = True
             return cached
+        gen = _CACHE_GEN                       # Stand VOR dem Build (dessen DB-Lesungen)
         payload = builder()
-        cache.set_json(key, payload, ttl or RESPONSE_CACHE_TTL)
+        # Nur cachen, wenn seit Build-Beginn NICHT invalidiert wurde - sonst koennte ein
+        # mit veralteten Daten gelaufener Build eine bereits erfolgte Invalidierung
+        # ueberholen und einen inkonsistenten Stand als Cache-Hit ausliefern.
+        if _CACHE_GEN == gen:
+            cache.set_json(key, payload, ttl or RESPONSE_CACHE_TTL)
         if isinstance(payload, dict):
             payload.setdefault("_cache", {})["hit"] = False
         return payload
 
 
+def _bump_cache_gen() -> None:
+    global _CACHE_GEN
+    with _CACHE_GEN_LOCK:
+        _CACHE_GEN += 1
+
+
 def _invalidate_module_caches(module: str) -> None:
     _AUTO_QUALITY_CACHE.pop(module, None)
     _KNOWLEDGE_MAP_CACHE.pop(module, None)
+    _bump_cache_gen()   # laufende Builds duerfen ihr (evtl. veraltetes) Ergebnis nicht mehr cachen
     cache.delete_pattern(f"chem:*:{module}")
 
 
 def _invalidate_all_caches() -> None:
     _AUTO_QUALITY_CACHE.clear()
     _KNOWLEDGE_MAP_CACHE.clear()
+    _bump_cache_gen()
     cache.delete_pattern("chem:*")
 
 
@@ -2960,6 +2979,14 @@ def submit_open_exam(inp: OpenExamSubmitIn):
     # damit auch die offene Pruefung keinen FSRS-Fortschritt gegen einen parallelen
     # Trainer-Review derselben Karte verliert - dieselben Locks wie /api/review.
     with _locked_cards([r.card_id for r in inp.results]):
+        # Wartungs-Sweep VOR der Schreibtransaktion (eigene Verbindung + Commit): so wird
+        # der Modul-Lock nie waehrend einer offenen SQLite-Schreibtransaktion angefordert
+        # (keine Lock-Inversion mit einem parallelen Stats-Sweep).
+        sconn = db.get_conn()
+        try:
+            moved = _locked_sweep(sconn, module, _now_iso())
+        finally:
+            sconn.close()
         conn = db.get_conn()
         try:
             now = datetime.now(timezone.utc)
@@ -3034,7 +3061,7 @@ def submit_open_exam(inp: OpenExamSubmitIn):
                     "repair": ratio < .85,
                 })
                 reviewed += 1
-            moved = _locked_sweep(batch, module, _now_iso())
+            # moved wurde bereits VOR der Transaktion berechnet (siehe oben).
             pct_score = round((earned / total_points) * 100) if total_points else 0
             title = "Muendlicher Pruefermodus" if inp.mode == "oral" else "Kann ich erklaeren?" if inp.mode == "explain" else "Skizzen- und Formeltrainer" if inp.mode == "formula" else "Schwaechen-Mini-Pruefung" if inp.mode == "mini" else "Offene Pruefungssimulation"
             attempt_id = db.record_exam_attempt(
@@ -3336,6 +3363,7 @@ class _NoCommitConn:
 def review(inp: ReviewIn):
     module = "organic"
     result = None
+    sweep_ts = None   # gesetzt bei rating==1 -> Sweep NACH dem Commit (keine Lock-Inversion)
     phash = _payload_hash({
         "card_id": inp.card_id, "rating": inp.rating,
         "source": inp.source, "feedback_reason": inp.feedback_reason,
@@ -3373,7 +3401,10 @@ def review(inp: ReviewIn):
                 if inp.rating == 1 or inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
                     db.mark_card_needs_review(batch, inp.card_id, note, updated["last_review"])
             if inp.rating == 1:
-                _locked_sweep(batch, module, updated["last_review"])
+                # Sweep NICHT hier (haelt schon die SQLite-Schreibtransaktion) - sonst
+                # Lock-Inversion mit einem parallelen Stats-Sweep (der den Modul-Lock haelt
+                # und auf SQLite wartet). Merken und erst nach dem Commit ausfuehren.
+                sweep_ts = updated["last_review"]
                 db.log_mistake(batch, inp.card_id, module, "review",
                                "Im Trainer nicht gewusst", updated["last_review"])
             elif inp.rating >= 3:
@@ -3389,6 +3420,17 @@ def review(inp: ReviewIn):
             raise
         finally:
             conn.close()
+    # Sweep erst NACH Commit + Freigabe der SQLite-Schreibtransaktion (und ausserhalb der
+    # Karten-Locks), mit eigener Verbindung. Fehler hier duerfen den Review nicht kippen.
+    if sweep_ts:
+        try:
+            sconn = db.get_conn()
+            try:
+                _locked_sweep(sconn, module, sweep_ts)
+            finally:
+                sconn.close()
+        except Exception:  # noqa: BLE001 - Wartungs-Sweep ist unkritisch
+            pass
     _invalidate_module_caches(module)
     return result
 
