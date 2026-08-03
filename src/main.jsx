@@ -1264,6 +1264,10 @@ function Study({ session, setSession, finish }) {
     submittingRef.current = true;
     setSubmitting(true);
     const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
+    // Idempotenz-Schluessel pro Bewertung: ein Netzwerk-Retry mit identischem Body wird
+    // serverseitig nicht doppelt verbucht.
+    const requestId = ((crypto.randomUUID && crypto.randomUUID()) ||
+      (String(Date.now()) + "-" + Math.random().toString(36).slice(2))).slice(0, 64);
     try {
       await api("/api/review", {
         method: "POST",
@@ -1273,6 +1277,7 @@ function Study({ session, setSession, finish }) {
           rating,
           source: isExam ? "exam" : "review",
           feedback_reason: reviewReason,
+          request_id: requestId,
         }),
       });
     } catch (err) {
@@ -5371,6 +5376,7 @@ function App() {
   const [module, setModule] = useState("organic");
   const [data, setData] = useState(null);
   const [loadError, setLoadError] = useState(false);
+  const loadSeq = useRef(0); // Sequenz-Guard gegen verspaetete Stats-Antworten (Modulwechsel)
   const [session, setSession] = useState(null);
   const [lightbox, setLightbox] = useState(null);
   // Konfigurierbare Session-Groesse (Anzahl Karten pro Lernsession), im Browser gespeichert.
@@ -5387,10 +5393,18 @@ function App() {
   const pomoStatus = usePomodoroSync(module);
 
   async function load() {
+    // Sequenz-Guard: nur die Antwort des ZULETZT gestarteten load() zaehlt. Sonst koennte
+    // eine verspaetete Antwort fuers alte Modul (nach einem Modulwechsel waehrend des
+    // Ladens) die neuen Daten ueberschreiben - inkl. falschem Titel/Pruefungstermin.
+    const seq = ++loadSeq.current;
+    const reqModule = module;
     setLoadError(false);
     try {
-      setData(await api(`/api/stats?module=${encodeURIComponent(module)}`));
+      const res = await api(`/api/stats?module=${encodeURIComponent(reqModule)}`);
+      if (seq !== loadSeq.current) return;   // veraltete Antwort verwerfen
+      setData(res);
     } catch (err) {
+      if (seq !== loadSeq.current) return;
       // Ohne Fehlerzustand bliebe data null und die App haengt dauerhaft bei "Laedt...".
       setLoadError(true);
     }

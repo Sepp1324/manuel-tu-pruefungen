@@ -6,6 +6,7 @@ import io
 import json
 import re
 import time
+import threading
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
@@ -65,6 +66,11 @@ KNOWLEDGE_MAP_TTL_SECONDS = int(os.environ.get("KNOWLEDGE_MAP_TTL_SECONDS", "90"
 PHOTO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|webp|gif)$", re.I)
 PHOTO_URL_RE = re.compile(r"/uploads/cards/([^\"'\s<>]+)", re.I)
 _AUTO_QUALITY_CACHE: dict[str, tuple[datetime, int]] = {}
+# Single-Flight-Locks pro Modul: verhindern, dass mehrere gleichzeitige Aufrufe zwischen
+# Cache-Pruefung und Sweep alle denselben Sweep ausfuehren (und doppelte Qualitaets-
+# Historieneintraege erzeugen).
+_AUTO_QUALITY_LOCKS: dict[str, threading.Lock] = {}
+_AUTO_QUALITY_LOCKS_GUARD = threading.Lock()
 _KNOWLEDGE_MAP_CACHE: dict[str, tuple[datetime, dict]] = {}
 _REQUEST_METRICS: list[dict] = []
 MAX_REQUEST_METRICS = 300
@@ -181,18 +187,37 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _auto_quality_lock(module: str) -> threading.Lock:
+    with _AUTO_QUALITY_LOCKS_GUARD:
+        lock = _AUTO_QUALITY_LOCKS.get(module)
+        if lock is None:
+            lock = _AUTO_QUALITY_LOCKS[module] = threading.Lock()
+        return lock
+
+
+def _auto_quality_fresh(now: datetime, module: str) -> bool:
+    cached = _AUTO_QUALITY_CACHE.get(module)
+    return bool(cached and (now - cached[0]).total_seconds() < AUTO_QUALITY_TTL_SECONDS)
+
+
 def _auto_quality_sweep_cached(conn, module: str, now_iso: str) -> int:
     if AUTO_QUALITY_TTL_SECONDS <= 0:
         return db.auto_quality_sweep(conn, module, now_iso)
     now = datetime.now(timezone.utc)
-    cached = _AUTO_QUALITY_CACHE.get(module)
-    if cached and (now - cached[0]).total_seconds() < AUTO_QUALITY_TTL_SECONDS:
+    if _auto_quality_fresh(now, module):
         return 0
-    moved = db.auto_quality_sweep(conn, module, now_iso)
-    _AUTO_QUALITY_CACHE[module] = (now, moved)
-    if moved:
-        _KNOWLEDGE_MAP_CACHE.pop(module, None)
-    return moved
+    # Single-Flight: nur EIN Thread sweept pro Modul; die anderen warten und sehen danach
+    # den frischen Cache. Ohne den Lock liefen bei N gleichzeitigen Aufrufen N Sweeps
+    # (und erzeugten doppelte Qualitaets-Historieneintraege).
+    with _auto_quality_lock(module):
+        now = datetime.now(timezone.utc)
+        if _auto_quality_fresh(now, module):   # Double-Check nach dem Warten
+            return 0
+        moved = db.auto_quality_sweep(conn, module, now_iso)
+        _AUTO_QUALITY_CACHE[module] = (now, moved)
+        if moved:
+            _KNOWLEDGE_MAP_CACHE.pop(module, None)
+        return moved
 
 
 RESPONSE_CACHE_TTL = int(os.environ.get("RESPONSE_CACHE_TTL", "10") or "10")
@@ -326,9 +351,13 @@ def _seed_admin(conn) -> None:
             # zurueckgerollt (Hash bleibt Platzhalter) und der naechste Start migriert erneut.
             try:
                 revoked = db.set_password_and_revoke_sessions(
-                    conn, row["id"], auth.hash_password(ADMIN_PASSWORD))
-                print(f"[auth] Platzhalter-Passwort von '{ADMIN_USER}' auf ADMIN_PASSWORD "
-                      f"migriert; {revoked} Session(s) widerrufen.")
+                    conn, row["id"], auth.hash_password(ADMIN_PASSWORD),
+                    expected_hash=row["password_hash"])
+                if revoked is None:
+                    print("[auth] Passwort wurde zwischenzeitlich geaendert - Migration uebersprungen.")
+                else:
+                    print(f"[auth] Platzhalter-Passwort von '{ADMIN_USER}' auf ADMIN_PASSWORD "
+                          f"migriert; {revoked} Session(s) widerrufen.")
             except Exception as exc:  # noqa: BLE001 - Boot nicht verhindern, naechster Start migriert erneut
                 print(f"[auth] Passwort-Migration fehlgeschlagen (zurueckgerollt): {exc}")
 
@@ -343,6 +372,8 @@ def startup() -> None:
     conn = db.get_conn()
     db.init_auth_tables(conn)
     db.purge_expired_sessions(conn, _now_iso())
+    # Idempotenz-Schluessel aelter als 2 Tage aufraeumen (Tabelle waechst sonst unbegrenzt).
+    db.purge_old_request_dedup(conn, (datetime.now(timezone.utc) - timedelta(days=2)).isoformat())
     _seed_admin(conn)
     conn.close()
 
@@ -405,6 +436,9 @@ class ReviewIn(BaseModel):
     rating: int = Field(ge=1, le=4)
     source: str = "review"
     feedback_reason: str = ""
+    # Optionaler Idempotenz-Schluessel: eine mit derselben request_id wiederholte
+    # Einreichung (z.B. Netzwerk-Retry) wird nicht doppelt verbucht.
+    request_id: str = Field(default="", max_length=64)
 
 
 class CardEditIn(BaseModel):
@@ -2177,8 +2211,14 @@ def change_password(inp: ChangePasswordIn, request: Request):
         token = request.cookies.get(auth.COOKIE_NAME)
         keep = auth.hash_token(token) if token else None
         # Passwort setzen UND andere Sessions widerrufen ATOMAR (eine Transaktion) - sonst
-        # koennte das neue Passwort schon aktiv sein, waehrend eine alte Session gueltig bleibt.
-        db.set_password_and_revoke_sessions(conn, row["id"], auth.hash_password(inp.new_password), keep)
+        # koennte das neue Passwort schon aktiv sein, waehrend eine alte Session gueltig
+        # bleibt. expected_hash = Compare-and-Set: bei zwei parallelen Wechseln gewinnt
+        # genau einer, der andere bekommt 409 (statt beide Passwoerter zu ueberschreiben).
+        result = db.set_password_and_revoke_sessions(
+            conn, row["id"], auth.hash_password(inp.new_password), keep,
+            expected_hash=row["password_hash"])
+        if result is None:
+            raise HTTPException(409, "Passwort wurde zwischenzeitlich geändert. Bitte erneut versuchen.")
     finally:
         conn.close()
     return {"ok": True}
@@ -3189,34 +3229,64 @@ def preview(card_id: str):
     return sched.preview(card, max_interval_days=_max_fsrs_interval_days(module=card.get("module", "organic")))
 
 
+class _NoCommitConn:
+    """Proxy auf die echte DB-Verbindung, der commit() unterdrueckt. Damit laufen mehrere
+    db-Funktionen (die sonst je einzeln committen) in EINER Transaktion; der Aufrufer
+    committet genau einmal am Ende bzw. rollt bei einem Fehler alles zurueck."""
+    def __init__(self, real):
+        object.__setattr__(self, "_real", real)
+
+    def commit(self):  # Zwischen-Commits unterdruecken
+        pass
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
 @app.post("/api/review")
 def review(inp: ReviewIn):
     conn = db.get_conn()
-    card = db.get_card(conn, inp.card_id)
-    if not card:
+    module = "organic"
+    try:
+        card = db.get_card(conn, inp.card_id)
+        if not card:
+            raise HTTPException(404, "Karte nicht gefunden")
+        module = card.get("module", "organic")
+        now = datetime.now(timezone.utc)
+        # ALLE Schreibvorgaenge (Kartenfortschritt, Review, Fehlerbuch, Qualitaet, XP) in
+        # EINER Transaktion: entweder alles oder nichts. Vorher committete jeder Schritt
+        # einzeln -> schlug XP fehl, blieb der Review gespeichert, und ein Retry zaehlte
+        # reps/Reviews doppelt.
+        batch = _NoCommitConn(conn)
+        # Idempotenz: identische Wiederholung (per request_id) nicht doppelt verbuchen.
+        if inp.request_id and not db.claim_request(batch, inp.request_id, _now_iso()):
+            conn.rollback()
+            return {"ok": True, "duplicate": True}
+        elapsed = 0.0
+        if card.get("last_review"):
+            elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
+        updated = sched.review(card, inp.rating, now, max_interval_days=_max_fsrs_interval_days(now, module))
+        db.apply_review(batch, inp.card_id, updated, inp.rating, elapsed, deck=inp.source if inp.source == "exam" else "anki")
+        if inp.feedback_reason:
+            note = f"Lernfeedback: {inp.feedback_reason}"
+            db.add_quality_event(batch, inp.card_id, module, "review_feedback", inp.feedback_reason, note, updated["last_review"])
+            if inp.rating == 1 or inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
+                db.mark_card_needs_review(batch, inp.card_id, note, updated["last_review"])
+        if inp.rating == 1:
+            db.auto_quality_sweep(batch, module, updated["last_review"])
+            db.log_mistake(batch, inp.card_id, module, "review",
+                           "Im Trainer nicht gewusst", updated["last_review"])
+        elif inp.rating >= 3:
+            db.resolve_mistake(batch, inp.card_id, updated["last_review"])
+        xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
+        xp = db.add_xp_event(batch, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-        raise HTTPException(404, "Karte nicht gefunden")
-    now = datetime.now(timezone.utc)
-    elapsed = 0.0
-    if card.get("last_review"):
-        elapsed = max((now - datetime.fromisoformat(card["last_review"])).total_seconds() / 86400, 0.0)
-    updated = sched.review(card, inp.rating, now, max_interval_days=_max_fsrs_interval_days(now, card.get("module", "organic")))
-    db.apply_review(conn, inp.card_id, updated, inp.rating, elapsed, deck=inp.source if inp.source == "exam" else "anki")
-    if inp.feedback_reason:
-        note = f"Lernfeedback: {inp.feedback_reason}"
-        db.add_quality_event(conn, inp.card_id, card.get("module", "organic"), "review_feedback", inp.feedback_reason, note, updated["last_review"])
-        if inp.rating == 1 or inp.feedback_reason in {"frage_unklar", "karte_schlecht"}:
-            db.mark_card_needs_review(conn, inp.card_id, note, updated["last_review"])
-    if inp.rating == 1:
-        db.auto_quality_sweep(conn, card.get("module", "organic"), updated["last_review"])
-        db.log_mistake(conn, inp.card_id, card.get("module", "organic"), "review",
-                       "Im Trainer nicht gewusst", updated["last_review"])
-    elif inp.rating >= 3:
-        db.resolve_mistake(conn, inp.card_id, updated["last_review"])
-    xp_amount = 6 + inp.rating * 3 + (5 if inp.rating >= 3 else 0)
-    xp = db.add_xp_event(conn, xp_amount, "review", f"Karte bewertet: {inp.rating}", inp.card_id, updated["last_review"])
-    conn.close()
-    _invalidate_module_caches(card.get("module", "organic"))
+    _invalidate_module_caches(module)
     return {"ok": True, "xp": xp, **updated}
 
 
