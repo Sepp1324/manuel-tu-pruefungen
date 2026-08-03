@@ -320,12 +320,17 @@ def _seed_admin(conn) -> None:
     if ADMIN_USER and ADMIN_PASSWORD and ADMIN_PASSWORD != _PLACEHOLDER_PW:
         row = db.get_user_by_username(conn, ADMIN_USER)
         if row and auth.verify_password(_PLACEHOLDER_PW, row["password_hash"]):
-            db.set_user_password(conn, row["id"], auth.hash_password(ADMIN_PASSWORD))
-            # Bestehende Sessions widerrufen - sonst blieben vor der Migration ausgestellte
-            # Sessions (mit dem bekannten Platzhalter-Passwort erlangt) weiter gueltig.
-            revoked = db.delete_user_sessions(conn, row["id"])
-            print(f"[auth] Platzhalter-Passwort von '{ADMIN_USER}' auf ADMIN_PASSWORD migriert; "
-                  f"{revoked} Session(s) widerrufen.")
+            # Passwort setzen UND alte Sessions widerrufen ATOMAR - sonst koennte nach
+            # einem Fehler dazwischen das neue Passwort aktiv sein, waehrend eine mit dem
+            # Platzhalter erlangte Session gueltig bleibt. Schlaegt es fehl, wird
+            # zurueckgerollt (Hash bleibt Platzhalter) und der naechste Start migriert erneut.
+            try:
+                revoked = db.set_password_and_revoke_sessions(
+                    conn, row["id"], auth.hash_password(ADMIN_PASSWORD))
+                print(f"[auth] Platzhalter-Passwort von '{ADMIN_USER}' auf ADMIN_PASSWORD "
+                      f"migriert; {revoked} Session(s) widerrufen.")
+            except Exception as exc:  # noqa: BLE001 - Boot nicht verhindern, naechster Start migriert erneut
+                print(f"[auth] Passwort-Migration fehlgeschlagen (zurueckgerollt): {exc}")
 
 
 def _is_public(path: str) -> bool:
@@ -2169,9 +2174,11 @@ def change_password(inp: ChangePasswordIn, request: Request):
         row = db.get_user_by_username(conn, user["username"])
         if not row or not auth.verify_password(inp.current_password, row["password_hash"]):
             raise HTTPException(400, "Aktuelles Passwort ist falsch.")
-        db.set_user_password(conn, row["id"], auth.hash_password(inp.new_password))
         token = request.cookies.get(auth.COOKIE_NAME)
-        db.delete_user_sessions(conn, row["id"], auth.hash_token(token) if token else None)
+        keep = auth.hash_token(token) if token else None
+        # Passwort setzen UND andere Sessions widerrufen ATOMAR (eine Transaktion) - sonst
+        # koennte das neue Passwort schon aktiv sein, waehrend eine alte Session gueltig bleibt.
+        db.set_password_and_revoke_sessions(conn, row["id"], auth.hash_password(inp.new_password), keep)
     finally:
         conn.close()
     return {"ok": True}
@@ -2196,11 +2203,14 @@ def stats(module: str = "organic"):
         modules = _module_catalog()
         conn = db.get_conn()
         now = _now_iso()
+        # Auto-Quality-Sweep ZUERST - er kann Karten verschieben (aktiv/needs_review).
+        # Liefe er nach deck_/chapter_/tag_stats, waere die Antwort in sich widerspruechlich
+        # (z.B. anki.total=533, aber quality.active=532) und wuerde so 10s gecacht.
+        auto_quality = _auto_quality_sweep_cached(conn, module, now)
         st = db.deck_stats(conn, now, module)
         chapters = db.chapter_stats(conn, now, module)
         weaknesses = db.weakness_heatmap(conn, now, module, chapters)
         tags = db.tag_stats(conn, module, now)
-        auto_quality = _auto_quality_sweep_cached(conn, module, now)
         quality = db.quality_summary(conn, module)
         exam_score = _exam_score_projection(st, chapters, module, quality)
         today = _today_work_plan(conn, module, st, chapters, quality, exam_score)
@@ -2247,9 +2257,11 @@ def dashboard(module: str = "organic"):
     def build():
         conn = db.get_conn()
         now = _now_iso()
+        # Sweep ZUERST (kann Karten verschieben) - sonst waeren stats/chapters vs. quality
+        # in derselben Antwort inkonsistent. Siehe /api/stats.
+        auto_quality = _auto_quality_sweep_cached(conn, module, now)
         st = db.deck_stats(conn, now, module)
         chapters = db.chapter_stats(conn, now, module)
-        auto_quality = _auto_quality_sweep_cached(conn, module, now)
         quality = db.quality_summary(conn, module)
         out = {
             "module": module,
@@ -2955,7 +2967,7 @@ def cards(status: str = "needs_review", limit: int = 80, kap: int | None = None,
 def triage(module: str = "organic", limit: int = 10, tag: str = ""):
     module = _valid_module(module)
     conn = db.get_conn()
-    out = db.triage_cards(conn, module, max(1, min(limit, 30)), tag.strip())
+    out = db.triage_cards(conn, module, max(1, min(limit, 30)), tag.strip(), _now_iso())
     conn.close()
     return out
 

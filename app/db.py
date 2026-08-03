@@ -415,9 +415,26 @@ def touch_login(conn: sqlite3.Connection, user_id: int, now_iso: str) -> None:
     conn.commit()
 
 
-def set_user_password(conn: sqlite3.Connection, user_id: int, password_hash: str) -> None:
-    conn.execute("UPDATE users SET password_hash=? WHERE id=?", (password_hash, user_id))
-    conn.commit()
+def set_password_and_revoke_sessions(conn: sqlite3.Connection, user_id: int,
+                                     password_hash: str,
+                                     keep_token_hash: str | None = None) -> int:
+    """Passwort setzen UND (andere) Sessions widerrufen ATOMAR - beides in EINER
+    Transaktion, sonst koennte das neue Passwort schon aktiv sein, waehrend eine alte
+    Session gueltig bleibt (und ein Neustart repariert das nicht mehr, weil der Hash dann
+    kein Platzhalter ist). keep_token_hash behaelt die aktuelle Session (In-App-Wechsel);
+    ohne keep werden ALLE widerrufen. Gibt die Zahl widerrufener Sessions zurueck."""
+    try:
+        conn.execute("UPDATE users SET password_hash=? WHERE id=?", (password_hash, user_id))
+        if keep_token_hash:
+            cur = conn.execute("DELETE FROM sessions WHERE user_id=? AND token_hash<>?",
+                               (user_id, keep_token_hash))
+        else:
+            cur = conn.execute("DELETE FROM sessions WHERE user_id=?", (user_id,))
+        conn.commit()
+        return cur.rowcount
+    except Exception:
+        conn.rollback()
+        raise
 
 
 def create_session(conn: sqlite3.Connection, token_hash: str, user_id: int, created_iso: str,
@@ -451,20 +468,6 @@ def delete_session(conn: sqlite3.Connection, token_hash: str) -> None:
 
 def purge_expired_sessions(conn: sqlite3.Connection, now_iso: str) -> int:
     cur = conn.execute("DELETE FROM sessions WHERE expires_at<=?", (now_iso,))
-    conn.commit()
-    return cur.rowcount
-
-
-def delete_user_sessions(conn: sqlite3.Connection, user_id: int,
-                         keep_token_hash: str | None = None) -> int:
-    """Alle Sessions eines Benutzers loeschen (z.B. nach Passwortwechsel/-migration).
-    keep_token_hash behaelt EINE Session (die aktuelle) - fuer den In-App-Wechsel, damit
-    man sich nicht selbst ausloggt. Ohne keep werden ALLE widerrufen."""
-    if keep_token_hash:
-        cur = conn.execute("DELETE FROM sessions WHERE user_id=? AND token_hash<>?",
-                           (user_id, keep_token_hash))
-    else:
-        cur = conn.execute("DELETE FROM sessions WHERE user_id=?", (user_id,))
     conn.commit()
     return cur.rowcount
 
@@ -1598,7 +1601,7 @@ def list_cards(conn: sqlite3.Connection, status: str = "needs_review", limit: in
 
 
 def triage_cards(conn: sqlite3.Connection, module: str = "organic", limit: int = 10,
-                 tag: str = "") -> dict:
+                 tag: str = "", now_iso: str | None = None) -> dict:
     rows = conn.execute(
         """SELECT * FROM cards
            WHERE module=? AND deck='anki' AND status IN ('active', 'needs_review')
@@ -1618,7 +1621,8 @@ def triage_cards(conn: sqlite3.Connection, module: str = "organic", limit: int =
              AND quality_checked_at IS NULL""",
         (module,),
     ).fetchone()["c"]
-    return {"cards": cards[:limit], "remaining": unchecked or 0, "tags": tag_stats(conn, module)}
+    return {"cards": cards[:limit], "remaining": unchecked or 0,
+            "tags": tag_stats(conn, module, now_iso)}
 
 
 def update_card(conn: sqlite3.Connection, card_id: str, q: str, a: str,
