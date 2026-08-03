@@ -322,6 +322,13 @@ def migrate(conn: sqlite3.Connection) -> None:
     for col, sql in migrations.items():
         if col not in cols:
             conn.execute(sql)
+    # request_dedup ist in einer frueheren Version ohne payload_hash/response entstanden -
+    # fuer bestehende DBs nachziehen (idempotenter Inhalts-/Antwort-Abgleich).
+    dd_cols = {r["name"] for r in conn.execute("PRAGMA table_info(request_dedup)").fetchall()}
+    if dd_cols and "payload_hash" not in dd_cols:
+        conn.execute("ALTER TABLE request_dedup ADD COLUMN payload_hash TEXT NOT NULL DEFAULT ''")
+    if dd_cols and "response" not in dd_cols:
+        conn.execute("ALTER TABLE request_dedup ADD COLUMN response TEXT")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module ON cards(module)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module_deck_status_due ON cards(module, deck, status, due)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_module_deck_status_kap ON cards(module, deck, status, kap)")
@@ -363,9 +370,13 @@ def migrate(conn: sqlite3.Connection) -> None:
         ON exam_attempts(ref_id) WHERE attempt_type='mock' AND ref_id != '';
     -- Idempotenz-Schluessel fuer schreibende Requests (z.B. /api/review): eine mit
     -- derselben request_id wiederholte Einreichung wird nicht doppelt verbucht.
+    -- payload_hash bindet die ID an den Inhalt (abweichende Wiederholung -> Konflikt);
+    -- response speichert die urspruengliche Antwort fuer idempotente Wiederholungen.
     CREATE TABLE IF NOT EXISTS request_dedup (
         request_id TEXT PRIMARY KEY,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        payload_hash TEXT NOT NULL DEFAULT '',
+        response TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_request_dedup_created ON request_dedup(created_at);
     CREATE TABLE IF NOT EXISTS fehlerbuch (
@@ -493,14 +504,34 @@ def purge_expired_sessions(conn: sqlite3.Connection, now_iso: str) -> int:
     return cur.rowcount
 
 
-def claim_request(conn: sqlite3.Connection, request_id: str, created_at: str) -> bool:
-    """Idempotenz-Claim: True, wenn die request_id NEU ist (erstmals verbucht), False bei
-    Wiederholung. Committet NICHT selbst - laeuft in der Transaktion des Aufrufers, damit
-    Claim und die eigentliche Verbuchung gemeinsam persistiert bzw. zurueckgerollt werden."""
+def claim_request(conn: sqlite3.Connection, request_id: str, created_at: str,
+                  payload_hash: str = "") -> tuple[str, str | None]:
+    """Idempotenz-Claim. Committet NICHT selbst (laeuft in der Transaktion des Aufrufers).
+    Rueckgabe (status, response):
+      ("new", None)        -> erstmals gesehen: verbuchen und danach save_request_response()
+      ("duplicate", resp)  -> gleiche request_id UND gleicher payload_hash: gespeicherte
+                              Antwort zurueckgeben (idempotente Wiederholung)
+      ("conflict", None)   -> gleiche request_id, aber ANDERER Inhalt: abweichende
+                              Wiederholung -> vom Aufrufer mit 409 ablehnen
+    """
     cur = conn.execute(
-        "INSERT OR IGNORE INTO request_dedup(request_id, created_at) VALUES(?,?)",
-        (request_id, created_at))
-    return cur.rowcount > 0
+        "INSERT OR IGNORE INTO request_dedup(request_id, created_at, payload_hash) VALUES(?,?,?)",
+        (request_id, created_at, payload_hash))
+    if cur.rowcount > 0:
+        return ("new", None)
+    row = conn.execute(
+        "SELECT payload_hash, response FROM request_dedup WHERE request_id=?",
+        (request_id,)).fetchone()
+    if row is not None and payload_hash and row["payload_hash"] and row["payload_hash"] != payload_hash:
+        return ("conflict", None)
+    return ("duplicate", row["response"] if row is not None else None)
+
+
+def save_request_response(conn: sqlite3.Connection, request_id: str, response_json: str) -> None:
+    """Antwort zu einer request_id speichern (fuer idempotente Wiederholungen). Committet
+    NICHT selbst - Teil der Transaktion des Aufrufers."""
+    conn.execute("UPDATE request_dedup SET response=? WHERE request_id=?",
+                 (response_json, request_id))
 
 
 def purge_old_request_dedup(conn: sqlite3.Connection, cutoff_iso: str) -> int:
