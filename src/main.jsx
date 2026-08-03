@@ -1155,6 +1155,9 @@ function Study({ session, setSession, finish }) {
   const [savingEdit, setSavingEdit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  // Idempotenz-ID bleibt ueber Retries erhalten: geht nach erfolgreichem Commit nur die
+  // HTTP-Antwort verloren, verwendet der naechste Klick DIESELBE ID -> der Server dedupt.
+  const pendingReqId = useRef(null);
   const [secondsLeft, setSecondsLeft] = useState((session.minutes || 0) * 60);
   const isExam = session.deck === "exam";
   const isTimedExam = isExam && Number(session.minutes || 0) > 0;
@@ -1264,10 +1267,14 @@ function Study({ session, setSession, finish }) {
     submittingRef.current = true;
     setSubmitting(true);
     const reviewReason = rating === 1 ? (feedbackReason || "begriff_nicht_gewusst") : "";
-    // Idempotenz-Schluessel pro Bewertung: ein Netzwerk-Retry mit identischem Body wird
-    // serverseitig nicht doppelt verbucht.
-    const requestId = ((crypto.randomUUID && crypto.randomUUID()) ||
-      (String(Date.now()) + "-" + Math.random().toString(36).slice(2))).slice(0, 64);
+    // Idempotenz-Schluessel pro Bewertung. Bereits vergebene ID (aus einem vorherigen,
+    // evtl. schon committeten Versuch) WIEDERVERWENDEN - sonst wuerde ein Retry mit neuer
+    // ID einen bereits verbuchten Review doppelt zaehlen, wenn nur die Antwort verloren ging.
+    if (!pendingReqId.current) {
+      pendingReqId.current = ((crypto.randomUUID && crypto.randomUUID()) ||
+        (String(Date.now()) + "-" + Math.random().toString(36).slice(2))).slice(0, 64);
+    }
+    const requestId = pendingReqId.current;
     try {
       await api("/api/review", {
         method: "POST",
@@ -1281,11 +1288,13 @@ function Study({ session, setSession, finish }) {
         }),
       });
     } catch (err) {
+      // ID NICHT zuruecksetzen -> der naechste Klick nutzt sie erneut (idempotent).
       submittingRef.current = false;
       setSubmitting(false);
       setEditMsg(err.message || "Bewertung fehlgeschlagen");
       return;
     }
+    pendingReqId.current = null;   // bestaetigt -> naechste Bewertung bekommt eine neue ID
     const nextResult = { card_id: card.id, rating, kap: card.kap, subname: card.subname, feedback_reason: reviewReason };
     setSession((old) => {
       const q = (old.cards || []).slice();
