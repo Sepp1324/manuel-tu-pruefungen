@@ -355,6 +355,12 @@ def migrate(conn: sqlite3.Connection) -> None:
         payload      TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_exam_attempts_module ON exam_attempts(module, created_at);
+    -- Ein Mock-Exam-Versuch (mit exam_id in ref_id) darf nur EINMAL gespeichert werden.
+    -- Der partielle UNIQUE-Index macht das Verbuchen nebenlaeufig-sicher: parallele
+    -- identische Submits (INSERT OR IGNORE) erzeugen genau eine Zeile. Aeltere Zeilen
+    -- (attempt_type!='mock' oder leeres ref_id) sind ausgenommen -> keine Kollision.
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_exam_attempts_mock_ref
+        ON exam_attempts(ref_id) WHERE attempt_type='mock' AND ref_id != '';
     CREATE TABLE IF NOT EXISTS fehlerbuch (
         card_id       TEXT PRIMARY KEY,
         module        TEXT NOT NULL,
@@ -1259,10 +1265,14 @@ def quality_summary(conn: sqlite3.Connection, module: str = "organic") -> dict:
 def record_exam_attempt(conn: sqlite3.Connection, module: str, attempt_type: str, mode: str,
                         title: str, ref_id: str, earned: float, total: float,
                         pct_score: int, duration_seconds: int, payload: dict,
-                        created_at: str) -> str:
+                        created_at: str, unique_ref: bool = False) -> str:
+    """Verbucht einen Pruefungsversuch. Mit unique_ref=True wird ueber den partiellen
+    UNIQUE-Index (attempt_type='mock', ref_id) nebenlaeufig-sicher hoechstens EINE Zeile
+    je ref_id geschrieben (INSERT OR IGNORE) - gibt "" zurueck, wenn bereits vorhanden."""
     attempt_id = f"attempt:{secrets.token_hex(8)}"
-    conn.execute(
-        """INSERT INTO exam_attempts(id, module, attempt_type, mode, title, ref_id, earned,
+    verb = "INSERT OR IGNORE INTO" if unique_ref else "INSERT INTO"
+    cur = conn.execute(
+        f"""{verb} exam_attempts(id, module, attempt_type, mode, title, ref_id, earned,
                   total, pct, duration_seconds, created_at, payload)
            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
@@ -1272,7 +1282,7 @@ def record_exam_attempt(conn: sqlite3.Connection, module: str, attempt_type: str
         ),
     )
     conn.commit()
-    return attempt_id
+    return attempt_id if cur.rowcount else ""
 
 
 def exam_attempt_history(conn: sqlite3.Connection, module: str = "organic",

@@ -2384,13 +2384,13 @@ def mock_exam(module: str = "organic"):
 
 
 class MockResultIn(BaseModel):
-    # Ein einzelnes eingereichtes Ergebnis. rating ist als int typisiert, damit ein
-    # unsinniger Wert (z.B. "bad") sauber 422 liefert statt in int() einen 500 zu werfen.
-    # card_id ist ein String-Slug (z.B. "organic-example-2024"), kann aber auch numerisch
-    # sein - daher str|int (Pydantic-Smart-Union behaelt den Eingabetyp bei).
+    # Ein einzelnes eingereichtes Ergebnis. rating ist als int mit Grenzen 1-4 typisiert:
+    # "bad" -> 422 (statt int()-500), und 999 wird abgelehnt statt als richtige Antwort
+    # (>=3) gewertet zu werden. card_id ist ein String-Slug (z.B. "org:de8afb..."), kann
+    # aber auch numerisch sein - daher str|int (Pydantic-Smart-Union behaelt den Typ bei).
     card_id: str | int | None = None
     kap: int | None = None
-    rating: int = 0
+    rating: int = Field(0, ge=1, le=4)
 
 
 class MockGradeIn(BaseModel):
@@ -2456,6 +2456,15 @@ def mock_exam_grade(inp: MockGradeIn):
     else:
         verdict = f"Nicht bestanden – unter 50 % in: {', '.join(failing)}. Diese Teile gezielt üben."
 
+    if composition_missing:
+        # Ohne die volle Zusammenstellung laesst sich die Bestehensregel NICHT ehrlich
+        # bewerten (unbeantwortete Karten fehlen -> eine einzige richtige Antwort ergaebe
+        # sonst 100% / "bestanden"). Daher hier KEIN Bestehen vortaeuschen - das UI zeigt
+        # anhand composition_missing einen entsprechenden Hinweis statt eines Ergebnisses.
+        would_pass = False
+        verdict = ("Auswertung nicht möglich – die Prüfungszusammenstellung ist nicht mehr "
+                   "vorhanden (Server-Neustart oder Sitzung abgelaufen). Bitte die Prüfung neu starten.")
+
     # Nur EINMAL je Zusammenstellung in die Statistik schreiben (Retry/Reload/Doppel-
     # Submit sollen keine weiteren Versuche verbuchen) und NICHT im Fallback (dort ist
     # die Quote unzuverlaessig). Das "recorded"-Flag lebt in der In-Memory-Composition.
@@ -2463,9 +2472,13 @@ def mock_exam_grade(inp: MockGradeIn):
     if not composition_missing and not already_recorded:
         try:
             conn = db.get_conn()
-            db.record_exam_attempt(conn, module, "mock", "mixed", "Volle Prüfung", "",
+            # exam_id als ref_id + unique_ref: der partielle UNIQUE-Index macht das
+            # Verbuchen nebenlaeufig-sicher (parallele identische Submits -> genau EINE
+            # Zeile), unabhaengig vom In-Memory-Flag "recorded".
+            db.record_exam_attempt(conn, module, "mock", "mixed", "Volle Prüfung", inp.exam_id,
                                    correct, total, overall, max(0, int(inp.duration_seconds or 0)),
-                                   {"parts": parts, "would_pass": would_pass}, _now_iso())
+                                   {"parts": parts, "would_pass": would_pass}, _now_iso(),
+                                   unique_ref=True)
             conn.commit()
             conn.close()
             composition["recorded"] = True
