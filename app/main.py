@@ -16,6 +16,7 @@ from html import escape
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
+from starlette.concurrency import run_in_threadpool
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -87,6 +88,9 @@ _CACHE_BUILD_LOCKS_GUARD = threading.Lock()
 _CACHE_GEN = 0
 _CACHE_GEN_LOCK = threading.Lock()
 _KNOWLEDGE_MAP_CACHE: dict[str, tuple[datetime, dict]] = {}
+# Single-Flight-Locks pro Modul fuer den Wissenslandkarten-Cache (analog Sweep/Response).
+_KNOWLEDGE_MAP_LOCKS: dict[str, threading.Lock] = {}
+_KNOWLEDGE_MAP_LOCKS_GUARD = threading.Lock()
 
 
 def _card_lock(card_id: str) -> threading.Lock:
@@ -457,6 +461,22 @@ def startup() -> None:
     conn.close()
 
 
+def _lookup_session_user(token: str):
+    """Synchroner Session-Lookup (SQLite) - laeuft im Threadpool, damit die async-Middleware
+    den Event-Loop nicht blockiert. Verbindung wird immer geschlossen."""
+    conn = db.get_conn()
+    try:
+        token_hash = auth.hash_token(token)
+        user = db.get_session_user(conn, token_hash, _now_iso())
+        if user and auth.session_refresh_due(user["expires_at"]):
+            # Nur gelegentlich verlaengern (siehe session_refresh_due) statt bei jedem
+            # Request - spart ein SQLite-UPDATE+COMMIT pro Anfrage.
+            db.refresh_session(conn, token_hash, auth.session_expiry().isoformat())
+        return user
+    finally:
+        conn.close()
+
+
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     path = request.url.path
@@ -466,14 +486,10 @@ async def auth_middleware(request: Request, call_next):
     token = request.cookies.get(auth.COOKIE_NAME)
     user = None
     if token:
-        conn = db.get_conn()
-        token_hash = auth.hash_token(token)
-        user = db.get_session_user(conn, token_hash, _now_iso())
-        if user and auth.session_refresh_due(user["expires_at"]):
-            # Nur gelegentlich verlaengern (siehe session_refresh_due) statt bei jedem
-            # Request - spart ein SQLite-UPDATE+COMMIT pro Anfrage.
-            db.refresh_session(conn, token_hash, auth.session_expiry().isoformat())
-        conn.close()
+        # Synchrone SQLite-Zugriffe (Lookup + evtl. Refresh-Commit) in den Threadpool
+        # auslagern - sonst blockiert bei langsamer Platte/DB-Contention ein Request die
+        # gesamte async-Schleife und unabhaengige Requests warten seriell.
+        user = await run_in_threadpool(_lookup_session_user, token)
 
     if not user:
         if path.startswith("/api/"):
@@ -2163,6 +2179,14 @@ def _knowledge_map(conn, module: str) -> dict:
     }
 
 
+def _knowledge_map_lock(module: str) -> threading.Lock:
+    with _KNOWLEDGE_MAP_LOCKS_GUARD:
+        lock = _KNOWLEDGE_MAP_LOCKS.get(module)
+        if lock is None:
+            lock = _KNOWLEDGE_MAP_LOCKS[module] = threading.Lock()
+        return lock
+
+
 def _knowledge_map_cached(conn, module: str) -> dict:
     if KNOWLEDGE_MAP_TTL_SECONDS <= 0:
         return _knowledge_map(conn, module)
@@ -2170,9 +2194,21 @@ def _knowledge_map_cached(conn, module: str) -> dict:
     cached = _KNOWLEDGE_MAP_CACHE.get(module)
     if cached and (now - cached[0]).total_seconds() < KNOWLEDGE_MAP_TTL_SECONDS:
         return cached[1]
-    out = _knowledge_map(conn, module)
-    _KNOWLEDGE_MAP_CACHE[module] = (now, out)
-    return out
+    # Single-Flight: nur EIN Build pro Modul; die anderen warten und sehen den frischen
+    # Cache. Generations-Check (wie beim Response-Cache): das Ergebnis wird nur gecacht,
+    # wenn seit Build-Beginn NICHT invalidiert wurde - sonst koennte ein mit veralteten
+    # Daten gelaufener Build den alten Stand nach einer Invalidierung erneut zuruecklegen.
+    with _knowledge_map_lock(module):
+        now = datetime.now(timezone.utc)
+        cached = _KNOWLEDGE_MAP_CACHE.get(module)
+        if cached and (now - cached[0]).total_seconds() < KNOWLEDGE_MAP_TTL_SECONDS:
+            return cached[1]
+        gen = _CACHE_GEN
+        out = _knowledge_map(conn, module)
+        with _CACHE_GEN_LOCK:
+            if _CACHE_GEN == gen:
+                _KNOWLEDGE_MAP_CACHE[module] = (now, out)
+        return out
 
 
 def _weekly_plan(conn, module: str) -> dict:
@@ -2975,15 +3011,28 @@ def source_audit(module: str = "organic", limit: int = 12):
 @app.get("/api/workshop")
 def workshop(module: str = "organic", limit: int = 8):
     module = _valid_module(module)
-    conn = db.get_conn()
-    # Gecachter Sweep (TTL-gedrosselt) statt bei jedem Oeffnen ein voller Durchlauf ueber
-    # alle Karten - das war der langsamste Pfad (~75 ms).
-    moved = _auto_quality_sweep_cached(conn, module, _now_iso())
-    out = _workshop_data(conn, module, max(3, min(limit, 20)))
-    conn.close()
+    lim = max(3, min(limit, 20))
+    # Gecachter Sweep (TTL-gedrosselt); bewegt er Karten, den Modul-Cache invalidieren,
+    # BEVOR das (evtl. gecachte) Workshop-Ergebnis gebaut/gelesen wird.
+    sconn = db.get_conn()
+    try:
+        moved = _auto_quality_sweep_cached(sconn, module, _now_iso())
+    finally:
+        sconn.close()
     if moved:
         _invalidate_module_caches(module)
-    return out
+
+    def build():
+        conn = db.get_conn()
+        try:
+            # _workshop_data normalisiert/bewertet/gruppiert bis zu ~1.200 Karten (~770 ms
+            # warm) - deshalb ueber den Response-Cache statt bei jedem Aufruf neu.
+            return _workshop_data(conn, module, lim)
+        finally:
+            conn.close()
+
+    # Key endet auf ":{module}" -> wird vom Invalidierungsmuster chem:*:{module} erfasst.
+    return _redis_json_cache(f"chem:workshop-{lim}:{module}", build)
 
 
 @app.post("/api/exam/open/submit")
@@ -3990,19 +4039,28 @@ class QuestClaimIn(BaseModel):
 def claim_quest(inp: QuestClaimIn):
     module = _valid_module(inp.module)
     conn = db.get_conn()
-    quests = {q["key"]: q for q in _quest_defs(conn, module)}
-    quest = quests.get(inp.key)
-    if not quest:
+    try:
+        quests = {q["key"]: q for q in _quest_defs(conn, module)}
+        quest = quests.get(inp.key)
+        if not quest:
+            raise HTTPException(404, "Quest nicht gefunden")
+        if quest["progress"] < quest["goal"]:
+            raise HTTPException(400, "Quest noch nicht abgeschlossen")
+        # Claim UND XP in EINER Transaktion: entweder beide oder keine. Vorher committete
+        # der Claim sofort; schlug danach die XP-Buchung fehl, galt die Quest dauerhaft als
+        # abgeholt, ohne je XP zu vergeben (Retry meldete ok=false).
+        batch = _NoCommitConn(conn)
+        ok = db.claim_quest(batch, quest["key"], quest["period_start"], module, quest["xp"], _now_iso())
+        if ok:
+            xp = db.add_xp_event(batch, quest["xp"], "quest", f"Quest: {quest['title']}", quest["key"], _now_iso())
+            conn.commit()
+        else:
+            xp = db.xp_summary(conn)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-        raise HTTPException(404, "Quest nicht gefunden")
-    if quest["progress"] < quest["goal"]:
-        conn.close()
-        raise HTTPException(400, "Quest noch nicht abgeschlossen")
-    ok = db.claim_quest(conn, quest["key"], quest["period_start"], module, quest["xp"], _now_iso())
-    xp = db.xp_summary(conn)
-    if ok:
-        xp = db.add_xp_event(conn, quest["xp"], "quest", f"Quest: {quest['title']}", quest["key"], _now_iso())
-    conn.close()
     return {"ok": ok, "xp": xp, "awarded": quest["xp"] if ok else 0}
 
 

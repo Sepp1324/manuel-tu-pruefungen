@@ -138,7 +138,11 @@ def _memory_set_json(key: str, value: Any, ttl: int | None = None) -> bool:
 
 
 def _memory_delete_pattern(pattern: str) -> int:
-    keys = [key for key in _memory_cache if fnmatch.fnmatch(key, pattern)]
+    # Erst einen atomaren Schnappschuss der Keys ziehen (list(dict) laeuft unter dem GIL
+    # ununterbrochen), DANN mit fnmatch filtern. Sonst kann ein paralleler Request das
+    # Dict waehrend der Iteration aendern -> "dictionary keys changed during iteration"
+    # (500er, obwohl die Aenderung des Clients laengst gespeichert ist).
+    keys = [key for key in list(_memory_cache.keys()) if fnmatch.fnmatch(key, pattern)]
     for key in keys:
         _memory_cache.pop(key, None)
     return len(keys)
