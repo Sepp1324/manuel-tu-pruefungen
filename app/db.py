@@ -318,6 +318,12 @@ def migrate(conn: sqlite3.Connection) -> None:
         "review_note": "ALTER TABLE cards ADD COLUMN review_note TEXT NOT NULL DEFAULT ''",
         "updated_at": "ALTER TABLE cards ADD COLUMN updated_at TEXT",
         "quality_checked_at": "ALTER TABLE cards ADD COLUMN quality_checked_at TEXT",
+        # Echte Benutzerbearbeitung (Text/Q&A) - NUR vom Werkstatt-Edit gesetzt, NICHT von
+        # automatischen Qualitaetslaeufen. Der Seeder ueberschreibt Kartentext nur, wenn
+        # user_edited=0 (statt frueher updated_at IS NULL, das Auto-Quality ebenfalls setzte
+        # -> Release-Korrekturen erreichten solche Karten nie). Bestehende Karten starten
+        # bei 0 -> Release-Korrekturen werden beim naechsten Seed nachgezogen (Migration).
+        "user_edited": "ALTER TABLE cards ADD COLUMN user_edited INTEGER NOT NULL DEFAULT 0",
     }
     for col, sql in migrations.items():
         if col not in cols:
@@ -546,9 +552,13 @@ def seed(conn: sqlite3.Connection) -> int:
     seed_ids = {card["id"] for card in payload["cards"]}
     added = 0
     for card in payload["cards"]:
-        exists = conn.execute("SELECT updated_at, status, review_note FROM cards WHERE id=?", (card["id"],)).fetchone()
+        exists = conn.execute("SELECT user_edited, status, review_note FROM cards WHERE id=?", (card["id"],)).fetchone()
         if exists:
-            if exists["updated_at"] is None:
+            # Kartentext nur ueberschreiben, wenn ihn der Benutzer NICHT selbst bearbeitet
+            # hat. Frueher stand hier `updated_at IS NULL` - das setzten aber auch
+            # automatische Qualitaetslaeufe, sodass Release-Korrekturen solche Karten nie
+            # erreichten.
+            if not exists["user_edited"]:
                 synced = dict(card)
                 synced["status"] = exists["status"] or card.get("status", "active")
                 conn.execute(
@@ -1703,8 +1713,10 @@ def update_card(conn: sqlite3.Connection, card_id: str, q: str, a: str,
     payload["q"] = q
     payload["a"] = a
     payload["status"] = status
+    # Echte Benutzerbearbeitung -> user_edited=1, damit der Seeder den Text nicht wieder
+    # mit der Release-Version ueberschreibt.
     conn.execute(
-        """UPDATE cards SET status=?, review_note=?, updated_at=?,
+        """UPDATE cards SET status=?, review_note=?, updated_at=?, user_edited=1,
            quality_checked_at=CASE WHEN ?='active' THEN ? ELSE quality_checked_at END,
            payload=?
            WHERE id=?""",
@@ -1729,10 +1741,16 @@ def triage_card(conn: sqlite3.Connection, card_id: str, action: str, updated_at:
     if a is not None:
         payload["a"] = a
     payload["status"] = status
+    # Nur wenn hier tatsaechlich Text bearbeitet wurde (q/a gesetzt), gilt die Karte als
+    # benutzerbearbeitet -> Seeder haelt sich fern. Reine Status-Triage (approve/suspend)
+    # NICHT, damit Release-Textkorrekturen solche Karten weiter erreichen (der Status
+    # bleibt vom Seeder ohnehin unangetastet).
+    content_edited = 1 if (q is not None or a is not None) else 0
     conn.execute(
-        """UPDATE cards SET status=?, review_note=?, updated_at=?, quality_checked_at=?, payload=?
+        """UPDATE cards SET status=?, review_note=?, updated_at=?, quality_checked_at=?, payload=?,
+           user_edited=CASE WHEN ?=1 THEN 1 ELSE user_edited END
            WHERE id=?""",
-        (status, review_note, updated_at, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
+        (status, review_note, updated_at, updated_at, json.dumps(payload, ensure_ascii=False), content_edited, card_id),
     )
     conn.commit()
     if reason:
@@ -2168,18 +2186,16 @@ def fsrs_insights(conn: sqlite3.Connection, module: str = "organic", days: int =
 
 def claim_quest(conn: sqlite3.Connection, quest_key: str, period_start: str,
                 module: str, amount: int, created_at: str) -> bool:
-    exists = conn.execute(
-        "SELECT 1 FROM quest_claims WHERE quest_key=? AND period_start=? AND module=?",
-        (quest_key, period_start, module),
-    ).fetchone()
-    if exists:
-        return False
-    conn.execute(
-        "INSERT INTO quest_claims(quest_key, period_start, module, claimed_at, amount) VALUES(?,?,?,?,?)",
+    # Atomar & nebenlaeufig sicher: INSERT OR IGNORE gegen den PRIMARY KEY/UNIQUE-Constraint
+    # (quest_key, period_start, module). rowcount>0 heisst "erstmals beansprucht". Vorher
+    # trennte ein SELECT den Existenz-Check vom INSERT -> zwei parallele Claims konnten
+    # beide den Check passieren und der zweite lief in "UNIQUE constraint failed" (500).
+    # Committet NICHT selbst - laeuft in der Transaktion des Aufrufers (Claim + XP atomar).
+    cur = conn.execute(
+        "INSERT OR IGNORE INTO quest_claims(quest_key, period_start, module, claimed_at, amount) VALUES(?,?,?,?,?)",
         (quest_key, period_start, module, created_at, amount),
     )
-    conn.commit()
-    return True
+    return cur.rowcount > 0
 
 
 def claimed_quests(conn: sqlite3.Connection, period_starts: list[str], module: str) -> set[str]:

@@ -2172,6 +2172,7 @@ function OpenExamRunner({ exam, module, onClose }) {
   const [secondsLeft, setSecondsLeft] = useState((exam.minutes || 0) * 60);
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const question = exam.questions[idx];
   const earned = (exam.questions || []).reduce((sum, q) => sum + scoreForQuestion(scores[q.card_id] || {}, q), 0);
 
@@ -2196,9 +2197,12 @@ function OpenExamRunner({ exam, module, onClose }) {
   }, [result]);
 
   useEffect(() => {
-    if (result || submitting || secondsLeft > 0) return;
+    // submitError ist TERMINAL: nach einem Fehlschlag NICHT automatisch neu senden, sonst
+    // haemmert der Browser bei einem Backend-Ausfall ohne Pause weiter. Manueller Retry
+    // ueber den Button (setzt submitError zurueck).
+    if (result || submitting || submitError || secondsLeft > 0) return;
     finish();
-  }, [secondsLeft, result, submitting]);
+  }, [secondsLeft, result, submitting, submitError]);
 
   function mark(subId, value) {
     setScores((old) => ({
@@ -2235,6 +2239,7 @@ function OpenExamRunner({ exam, module, onClose }) {
   async function finish() {
     if (submitting) return;
     setSubmitting(true);
+    setSubmitError("");
     const checklistLabel = (key) => EXAM_CHECKLIST.find(([item]) => item === key)?.[1] || key;
     const payload = {
       module,
@@ -2273,6 +2278,10 @@ function OpenExamRunner({ exam, module, onClose }) {
       });
       submitReqId.current = null;   // bestaetigt
       setResult(res);
+    } catch (err) {
+      // Terminaler Fehlerzustand statt sofortigem Auto-Retry (Endlosschleife). submitReqId
+      // bleibt erhalten -> der manuelle Retry sendet dieselbe (eingefrorene) Payload erneut.
+      setSubmitError(err.message || "Abgabe fehlgeschlagen");
     } finally {
       setSubmitting(false);
     }
@@ -2446,8 +2455,9 @@ function OpenExamRunner({ exam, module, onClose }) {
           </button>
           <button disabled={idx === 0} onClick={() => setIdx(idx - 1)}>Zurueck</button>
           <button disabled={idx + 1 >= exam.questions.length} onClick={() => setIdx(idx + 1)}>Weiter</button>
-          <button className="primary" disabled={submitting} onClick={finish}>{submitting ? "Wertet aus..." : "Auswerten"}</button>
+          <button className="primary" disabled={submitting} onClick={finish}>{submitting ? "Wertet aus..." : (submitError ? "Erneut senden" : "Auswerten")}</button>
         </div>
+        {submitError && <p className="muted" style={{ color: "var(--bad)" }}>Abgabe fehlgeschlagen: {submitError}. Bitte „Erneut senden" klicken.</p>}
         {revealed[question.card_id] && (
           <div className="exam-solution">
             <h3>Antwort-Geruest</h3>
@@ -2487,6 +2497,7 @@ function OralExamRunner({ exam, module, onClose }) {
   const [secondsLeft, setSecondsLeft] = useState((exam.minutes || 0) * 60);
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const question = exam.questions[idx];
   const currentKey = question?.card_id || "";
   const prompts = question?.oral_prompts || [];
@@ -2522,9 +2533,12 @@ function OralExamRunner({ exam, module, onClose }) {
   }, [result]);
 
   useEffect(() => {
-    if (result || submitting || secondsLeft > 0) return;
+    // submitError ist TERMINAL: nach einem Fehlschlag NICHT automatisch neu senden, sonst
+    // haemmert der Browser bei einem Backend-Ausfall ohne Pause weiter. Manueller Retry
+    // ueber den Button (setzt submitError zurueck).
+    if (result || submitting || submitError || secondsLeft > 0) return;
     finish();
-  }, [secondsLeft, result, submitting]);
+  }, [secondsLeft, result, submitting, submitError]);
 
   function mark(subId, value) {
     setScores((old) => ({
@@ -2543,6 +2557,7 @@ function OralExamRunner({ exam, module, onClose }) {
   async function finish() {
     if (submitting) return;
     setSubmitting(true);
+    setSubmitError("");
     const payload = {
       module,
       mode: "oral",
@@ -2571,6 +2586,10 @@ function OralExamRunner({ exam, module, onClose }) {
       });
       submitReqId.current = null;   // bestaetigt
       setResult(res);
+    } catch (err) {
+      // Terminaler Fehlerzustand statt sofortigem Auto-Retry (Endlosschleife). submitReqId
+      // bleibt erhalten -> der manuelle Retry sendet dieselbe (eingefrorene) Payload erneut.
+      setSubmitError(err.message || "Abgabe fehlgeschlagen");
     } finally {
       setSubmitting(false);
     }
@@ -2690,8 +2709,9 @@ function OralExamRunner({ exam, module, onClose }) {
           </button>
           <button disabled={idx === 0} onClick={() => setIdx(idx - 1)}>Zurueck</button>
           <button disabled={idx + 1 >= exam.questions.length} onClick={() => setIdx(idx + 1)}>Weiter</button>
-          <button className="primary" disabled={submitting} onClick={finish}>{submitting ? "Wertet aus..." : "Pruefermodus abschliessen"}</button>
+          <button className="primary" disabled={submitting} onClick={finish}>{submitting ? "Wertet aus..." : (submitError ? "Erneut senden" : "Pruefermodus abschliessen")}</button>
         </div>
+        {submitError && <p className="muted" style={{ color: "var(--bad)" }}>Abgabe fehlgeschlagen: {submitError}. Bitte „Erneut senden" klicken.</p>}
         {revealed[currentKey] && (
           <div className="exam-solution">
             <h3>Musterantwort und Geruest</h3>
@@ -4469,6 +4489,8 @@ function QuestsPage({ module }) {
   const [d, setD] = useState(null);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState(false);
+  const [claiming, setClaiming] = useState("");
+  const claimingRef = useRef(false); // synchroner Guard gegen Doppel-Klick
   async function load() {
     setError(false);
     try { setD(await api(`/api/gamification?module=${module}`)); }
@@ -4476,6 +4498,11 @@ function QuestsPage({ module }) {
   }
   useEffect(() => { setD(null); load(); }, [module]);
   async function claim(key) {
+    // Zwei schnelle Klicks wuerden sonst zwei Claim-Requests ausloesen. Der Server ist
+    // zwar atomar (INSERT OR IGNORE), aber der Guard vermeidet den doppelten Request.
+    if (claimingRef.current) return;
+    claimingRef.current = true;
+    setClaiming(key);
     setMsg("");
     try {
       const res = await api("/api/gamification/quests/claim", {
@@ -4483,8 +4510,9 @@ function QuestsPage({ module }) {
         body: JSON.stringify({ key, module }),
       });
       setMsg(res.ok ? `+${res.awarded} XP!` : "Bereits abgeholt.");
-      load().catch(() => {});
+      await load().catch(() => {});
     } catch (err) { setMsg(err.message); }
+    finally { claimingRef.current = false; setClaiming(""); }
   }
   if (!d) return error
     ? <LoadError onRetry={load} label="Quests konnten nicht geladen werden." />
@@ -4513,7 +4541,7 @@ function QuestsPage({ module }) {
             <small className="muted">{q.progress}/{q.goal} · +{q.xp} XP</small>
           </div>
           {q.claimed ? <span style={{ color: "var(--ok)" }}><Check size={16} /> abgeholt</span>
-            : q.done ? <button className="primary" onClick={() => claim(q.key)}>Abholen</button>
+            : q.done ? <button className="primary" disabled={claiming === q.key} onClick={() => claim(q.key)}>{claiming === q.key ? "…" : "Abholen"}</button>
             : <span className="muted">offen</span>}
         </div>
       ))}

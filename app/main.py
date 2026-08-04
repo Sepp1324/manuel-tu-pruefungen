@@ -463,16 +463,20 @@ def startup() -> None:
 
 def _lookup_session_user(token: str):
     """Synchroner Session-Lookup (SQLite) - laeuft im Threadpool, damit die async-Middleware
-    den Event-Loop nicht blockiert. Verbindung wird immer geschlossen."""
+    den Event-Loop nicht blockiert. Verbindung wird immer geschlossen. Gibt (user, refreshed)
+    zurueck: refreshed=True, wenn die Session verlaengert wurde -> der Aufrufer muss dann ein
+    frisches Cookie mit voller Max-Age setzen."""
     conn = db.get_conn()
     try:
         token_hash = auth.hash_token(token)
         user = db.get_session_user(conn, token_hash, _now_iso())
+        refreshed = False
         if user and auth.session_refresh_due(user["expires_at"]):
             # Nur gelegentlich verlaengern (siehe session_refresh_due) statt bei jedem
             # Request - spart ein SQLite-UPDATE+COMMIT pro Anfrage.
             db.refresh_session(conn, token_hash, auth.session_expiry().isoformat())
-        return user
+            refreshed = True
+        return user, refreshed
     finally:
         conn.close()
 
@@ -485,11 +489,12 @@ async def auth_middleware(request: Request, call_next):
 
     token = request.cookies.get(auth.COOKIE_NAME)
     user = None
+    refreshed = False
     if token:
         # Synchrone SQLite-Zugriffe (Lookup + evtl. Refresh-Commit) in den Threadpool
         # auslagern - sonst blockiert bei langsamer Platte/DB-Contention ein Request die
         # gesamte async-Schleife und unabhaengige Requests warten seriell.
-        user = await run_in_threadpool(_lookup_session_user, token)
+        user, refreshed = await run_in_threadpool(_lookup_session_user, token)
 
     if not user:
         if path.startswith("/api/"):
@@ -497,7 +502,21 @@ async def auth_middleware(request: Request, call_next):
         return RedirectResponse("/login", status_code=302)
 
     request.state.user = user
-    return await call_next(request)
+    response = await call_next(request)
+    if refreshed:
+        # Gleitendes Cookie: bei jeder Verlaengerung der DB-Session auch das Browser-Cookie
+        # mit voller Max-Age neu setzen. Sonst lief das Cookie exakt 30 Tage nach dem LOGIN
+        # ab (nur dort gesetzt) und Manuel waere trotz taeglicher Nutzung ausgeloggt worden.
+        response.set_cookie(
+            auth.COOKIE_NAME,
+            token,
+            max_age=auth.cookie_max_age(),
+            httponly=True,
+            secure=auth.COOKIE_SECURE,
+            samesite="lax",
+            path="/",
+        )
+    return response
 
 
 @app.middleware("http")
@@ -2565,7 +2584,10 @@ _MOCK_EXAM_TTL_SECONDS = 3 * 3600
 
 
 def _purge_mock_exams(now: datetime) -> None:
-    stale = [k for k, v in _MOCK_EXAMS.items()
+    # Erst einen atomaren Schnappschuss ziehen (list(dict.items()) laeuft unter dem GIL
+    # ununterbrochen), DANN filtern - sonst kann ein paralleler Request _MOCK_EXAMS waehrend
+    # der Iteration aendern -> "dictionary keys changed during iteration".
+    stale = [k for k, v in list(_MOCK_EXAMS.items())
              if (now - v["created"]).total_seconds() > _MOCK_EXAM_TTL_SECONDS]
     for k in stale:
         _MOCK_EXAMS.pop(k, None)
@@ -3494,12 +3516,15 @@ def review(inp: ReviewIn):
         finally:
             conn.close()
     # Sweep erst NACH Commit + Freigabe der SQLite-Schreibtransaktion (und ausserhalb der
-    # Karten-Locks), mit eigener Verbindung. Fehler hier duerfen den Review nicht kippen.
+    # Karten-Locks), mit eigener Verbindung. TTL-GEDROSSELT (_auto_quality_sweep_cached)
+    # statt bei jedem "Nochmal" ein voller Scan ueber alle Karten - die betroffene Karte
+    # ist ohnehin schon direkt als Review-Kandidat markiert. Fehler duerfen den Review
+    # nicht kippen.
     if sweep_ts:
         try:
             sconn = db.get_conn()
             try:
-                _locked_sweep(sconn, module, sweep_ts)
+                _auto_quality_sweep_cached(sconn, module, sweep_ts)
             finally:
                 sconn.close()
         except Exception:  # noqa: BLE001 - Wartungs-Sweep ist unkritisch
