@@ -328,6 +328,24 @@ def migrate(conn: sqlite3.Connection) -> None:
     for col, sql in migrations.items():
         if col not in cols:
             conn.execute(sql)
+    # EINMALIGE Re-Klassifikation + Sicherung von user_edited (Runde 14). Die erste Version
+    # (Runde 13) setzte user_edited pauschal auf 0 -> der Seeder haette manuell bearbeitete
+    # Karten (inkl. eingefuegter Fotos) mit dem Release-Text ueberschrieben. Diese laeuft
+    # VOR seed() (siehe init_db) und genau EINMAL (per meta-Flag):
+    #   1) Karten mit Benutzer-Fotos/Bildern (im Payload) als user_edited=1 schuetzen.
+    #   2) Alle beruehrten Karten (updated_at gesetzt) in cards_content_backup sichern -
+    #      Netz gegen Textverlust, falls doch etwas ueberschrieben wird (recoverbar).
+    migrated = conn.execute(
+        "SELECT value FROM meta WHERE key='cards_user_edited_migrated'").fetchone()
+    if not migrated:
+        conn.execute("""CREATE TABLE IF NOT EXISTS cards_content_backup(
+            card_id TEXT, payload TEXT, updated_at TEXT, backed_up_at TEXT)""")
+        conn.execute("""INSERT INTO cards_content_backup(card_id, payload, updated_at, backed_up_at)
+            SELECT id, payload, updated_at, datetime('now') FROM cards WHERE updated_at IS NOT NULL""")
+        conn.execute("""UPDATE cards SET user_edited=1
+            WHERE payload LIKE '%/uploads/cards/%' OR payload LIKE '%<img%'""")
+        conn.execute(
+            "INSERT OR REPLACE INTO meta(key, value) VALUES('cards_user_edited_migrated', '1')")
     # request_dedup ist in einer frueheren Version ohne payload_hash/response entstanden -
     # fuer bestehende DBs nachziehen (idempotenter Inhalts-/Antwort-Abgleich).
     dd_cols = {r["name"] for r in conn.execute("PRAGMA table_info(request_dedup)").fetchall()}
@@ -552,13 +570,16 @@ def seed(conn: sqlite3.Connection) -> int:
     seed_ids = {card["id"] for card in payload["cards"]}
     added = 0
     for card in payload["cards"]:
-        exists = conn.execute("SELECT user_edited, status, review_note FROM cards WHERE id=?", (card["id"],)).fetchone()
+        exists = conn.execute("SELECT user_edited, status, review_note, payload FROM cards WHERE id=?", (card["id"],)).fetchone()
         if exists:
             # Kartentext nur ueberschreiben, wenn ihn der Benutzer NICHT selbst bearbeitet
             # hat. Frueher stand hier `updated_at IS NULL` - das setzten aber auch
             # automatische Qualitaetslaeufe, sodass Release-Korrekturen solche Karten nie
-            # erreichten.
-            if not exists["user_edited"]:
+            # erreichten. Zusaetzlich NIE Karten mit eingefuegten Fotos/Bildern
+            # ueberschreiben (die stecken als /uploads/... bzw. <img> im Payload-Text).
+            existing_payload = exists["payload"] or ""
+            has_user_media = "/uploads/cards/" in existing_payload or "<img" in existing_payload.lower()
+            if not exists["user_edited"] and not has_user_media:
                 synced = dict(card)
                 synced["status"] = exists["status"] or card.get("status", "active")
                 conn.execute(
