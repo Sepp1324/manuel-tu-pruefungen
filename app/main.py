@@ -44,6 +44,7 @@ NOTIFY_TOKEN = os.environ.get("NOTIFY_TOKEN", "")
 # starten/halten (getrennte Projekte je Modul). POMODORO_TOKEN = persoenlicher
 # API-Token in Pomodoro (Einstellungen -> Konto -> API-Token). Ohne Token
 # passiert nichts. Fire-and-forget: darf einen Review nie verzoegern/brechen.
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -220,7 +221,7 @@ ARCHIVE_EXAMS = {
     ],
 }
 
-PUBLIC_EXACT = {"/healthz", "/login", "/api/auth/login", "/api/notify/digest"}
+PUBLIC_EXACT = {"/healthz", "/login", "/api/auth/login", "/api/notify/digest", "/api/pomodoro/status"}
 PUBLIC_PREFIXES = ("/assets/", "/static/")
 
 EXAM_ERROR_TYPES = {
@@ -2325,6 +2326,41 @@ def healthz():
     # damit der Deploy-Live-Check verifizieren kann, dass Produktion wirklich den
     # neuen Stand faehrt (und nicht ein altes Image/veraltetes Frontend).
     return {"ok": True, "build": os.environ.get("BUILD_ID", "dev")}
+
+
+@app.get("/api/pomodoro/status")
+def pomodoro_status():
+    """Diagnose der Pomodoro-Kopplung: ist ein Token konfiguriert, und erreicht
+    dieser Pod die Pomodoro-App? Fuehrt einen echten Heartbeat-Testaufruf aus und
+    gibt HTTP-Status/Fehler zurueck (ohne den Token preiszugeben)."""
+    out = {"configured": bool(POMODORO_TOKEN), "url": POMODORO_URL,
+           "category": "Organische Chemie"}
+    if not POMODORO_TOKEN:
+        out["hint"] = "POMODORO_TOKEN fehlt im Pod — Secret setzen und neu deployen."
+        return out
+    url = (
+        f"{POMODORO_URL}/api/study-time/"
+        f"{urllib.parse.quote('Organische Chemie')}/focus/heartbeat"
+        f"?token={urllib.parse.quote(POMODORO_TOKEN)}"
+    )
+    try:
+        resp = urllib.request.urlopen(
+            urllib.request.Request(url, method="POST", data=b""), timeout=6
+        )
+        out["status"] = resp.status
+        out["ok"] = 200 <= resp.status < 300
+    except urllib.error.HTTPError as e:  # 401/404/…
+        out["status"] = e.code
+        out["ok"] = False
+        out["error"] = f"HTTP {e.code}"
+        if e.code == 401:
+            out["hint"] = "Token ungueltig oder gehoert einem anderen Konto."
+    except Exception as e:  # noqa: BLE001 - Netzwerk/DNS
+        out["status"] = None
+        out["ok"] = False
+        out["error"] = f"{type(e).__name__}: {e}"
+        out["hint"] = "Pod erreicht Pomodoro nicht (DNS/Netzwerk/Hairpin) — ggf. Cluster-internen URL nutzen."
+    return out
 
 
 @app.post("/api/auth/login")
