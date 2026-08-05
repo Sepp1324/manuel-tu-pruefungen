@@ -1734,14 +1734,17 @@ def update_card(conn: sqlite3.Connection, card_id: str, q: str, a: str,
     payload["q"] = q
     payload["a"] = a
     payload["status"] = status
-    # Echte Benutzerbearbeitung -> user_edited=1, damit der Seeder den Text nicht wieder
-    # mit der Release-Version ueberschreibt.
+    # user_edited NUR setzen, wenn der Text SICH TATSAECHLICH aendert. Sonst wuerde jedes
+    # Speichern ohne Textaenderung (z.B. reine Status-Aktion) die Karte faelschlich als
+    # bearbeitet markieren und kuenftige Release-Korrekturen blockieren.
+    text_changed = 1 if (q != (card.get("q") or "") or a != (card.get("a") or "")) else 0
     conn.execute(
-        """UPDATE cards SET status=?, review_note=?, updated_at=?, user_edited=1,
+        """UPDATE cards SET status=?, review_note=?, updated_at=?,
+           user_edited=CASE WHEN ?=1 THEN 1 ELSE user_edited END,
            quality_checked_at=CASE WHEN ?='active' THEN ? ELSE quality_checked_at END,
            payload=?
            WHERE id=?""",
-        (status, review_note, updated_at, status, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
+        (status, review_note, updated_at, text_changed, status, updated_at, json.dumps(payload, ensure_ascii=False), card_id),
     )
     conn.commit()
     return get_card(conn, card_id)
@@ -1762,11 +1765,14 @@ def triage_card(conn: sqlite3.Connection, card_id: str, action: str, updated_at:
     if a is not None:
         payload["a"] = a
     payload["status"] = status
-    # Nur wenn hier tatsaechlich Text bearbeitet wurde (q/a gesetzt), gilt die Karte als
-    # benutzerbearbeitet -> Seeder haelt sich fern. Reine Status-Triage (approve/suspend)
-    # NICHT, damit Release-Textkorrekturen solche Karten weiter erreichen (der Status
-    # bleibt vom Seeder ohnehin unangetastet).
-    content_edited = 1 if (q is not None or a is not None) else 0
+    # Nur wenn sich der Text WIRKLICH aendert, gilt die Karte als benutzerbearbeitet ->
+    # Seeder haelt sich fern. Reine Status-Triage ("Gut"/"Aus"/...) schickt q/a zwar mit,
+    # aendert sie aber nicht - dann NICHT markieren, sonst bekaeme die Karte nie wieder eine
+    # Release-Korrektur (der Status bleibt vom Seeder ohnehin unangetastet).
+    content_edited = 1 if (
+        (q is not None and q != (card.get("q") or "")) or
+        (a is not None and a != (card.get("a") or ""))
+    ) else 0
     conn.execute(
         """UPDATE cards SET status=?, review_note=?, updated_at=?, quality_checked_at=?, payload=?,
            user_edited=CASE WHEN ?=1 THEN 1 ELSE user_edited END
@@ -1777,6 +1783,55 @@ def triage_card(conn: sqlite3.Connection, card_id: str, action: str, updated_at:
     if reason:
         add_quality_event(conn, card_id, card.get("module", "organic"), "triage", reason, review_note, updated_at)
     return get_card(conn, card_id)
+
+
+def _has_content_backup(conn: sqlite3.Connection) -> bool:
+    return conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='cards_content_backup'"
+    ).fetchone() is not None
+
+
+def list_overwritten_backups(conn: sqlite3.Connection) -> list[dict]:
+    """Karten, deren gesicherter (Pre-Migrations-)Text vom AKTUELLEN abweicht - der Seeder
+    hat sie also ueberschrieben. Basis fuer die manuelle Wiederherstellung."""
+    if not _has_content_backup(conn):
+        return []
+    rows = conn.execute("""
+        SELECT b.card_id AS card_id, b.payload AS backup_payload, c.payload AS current_payload,
+               c.module AS module
+        FROM cards_content_backup b JOIN cards c ON c.id=b.card_id
+        WHERE b.payload IS NOT NULL AND b.payload <> c.payload
+    """).fetchall()
+    out = []
+    for r in rows:
+        try:
+            bp = json.loads(r["backup_payload"]); cp = json.loads(r["current_payload"])
+        except Exception:
+            continue
+        if (bp.get("q") or "") == (cp.get("q") or "") and (bp.get("a") or "") == (cp.get("a") or ""):
+            continue  # nur echte Textunterschiede anzeigen
+        out.append({
+            "card_id": r["card_id"], "module": r["module"],
+            "backup": {"q": bp.get("q", ""), "a": bp.get("a", "")},
+            "current": {"q": cp.get("q", ""), "a": cp.get("a", "")},
+        })
+    return out
+
+
+def restore_card_from_backup(conn: sqlite3.Connection, card_id: str, updated_at: str) -> bool:
+    """Setzt eine Karte auf ihren gesicherten Pre-Migrations-Stand zurueck und markiert sie
+    als user_edited (der Seeder ueberschreibt sie danach nicht mehr)."""
+    if not _has_content_backup(conn):
+        return False
+    row = conn.execute(
+        "SELECT payload FROM cards_content_backup WHERE card_id=? ORDER BY backed_up_at DESC LIMIT 1",
+        (card_id,)).fetchone()
+    if not row or not row["payload"]:
+        return False
+    conn.execute("UPDATE cards SET payload=?, user_edited=1, updated_at=? WHERE id=?",
+                 (row["payload"], updated_at, card_id))
+    conn.commit()
+    return True
 
 
 def add_manual_card(conn: sqlite3.Connection, kap: int, question: str, answer: str,

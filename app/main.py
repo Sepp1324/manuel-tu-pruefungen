@@ -173,7 +173,7 @@ ARCHIVE_EXAMS = {
     ],
 }
 
-PUBLIC_EXACT = {"/healthz", "/login", "/api/auth/login", "/api/notify/digest"}
+PUBLIC_EXACT = {"/healthz", "/readyz", "/login", "/api/auth/login", "/api/notify/digest"}
 PUBLIC_PREFIXES = ("/assets/", "/static/")
 
 EXAM_ERROR_TYPES = {
@@ -2274,9 +2274,28 @@ def _weekly_plan(conn, module: str) -> dict:
 
 @app.get("/healthz")
 def healthz():
-    # BUILD_ID wird im Docker-Image aus dem Git-SHA gesetzt. Oeffentlich abrufbar,
-    # damit der Deploy-Live-Check verifizieren kann, dass Produktion wirklich den
-    # neuen Stand faehrt (und nicht ein altes Image/veraltetes Frontend).
+    # LIVENESS: nur "Prozess laeuft". BUILD_ID wird im Docker-Image aus dem Git-SHA gesetzt,
+    # damit der Deploy-Live-Check verifizieren kann, dass Produktion den neuen Stand faehrt.
+    # Bewusst OHNE DB-Zugriff: eine kaputte/korrupte DB soll den Pod nicht in eine
+    # Restart-Schleife schicken (das behebt eine beschaedigte PVC nicht).
+    return {"ok": True, "build": os.environ.get("BUILD_ID", "dev")}
+
+
+@app.get("/readyz")
+def readyz():
+    # READINESS: prueft die DB mit einem winzigen Schreib-Ping (deckt gesperrt, korrupt UND
+    # read-only ab). Faellt sie aus, liefert der Probe 503 -> der Pod wird aus dem Service
+    # genommen, statt weiter 500er auszuliefern. Nur fuer die readinessProbe gedacht.
+    try:
+        conn = db.get_conn()
+        try:
+            conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES('readyz_ping', ?)",
+                         (str(time.time()),))
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse({"ok": False, "db": str(exc)[:200]}, status_code=503)
     return {"ok": True, "build": os.environ.get("BUILD_ID", "dev")}
 
 
@@ -3023,6 +3042,31 @@ def quality_audit(module: str = "organic", limit: int = 12):
     out = _quality_audit(conn, module, max(3, min(limit, 30)))
     conn.close()
     return out
+
+
+# --- Wiederherstellung ueberschriebener Kartentexte (Pre-Migrations-Backup) ---
+@app.get("/api/content-backup")
+def content_backup_list():
+    conn = db.get_conn()
+    try:
+        items = db.list_overwritten_backups(conn)
+    finally:
+        conn.close()
+    return {"count": len(items), "items": items}
+
+
+@app.post("/api/content-backup/{card_id:path}/restore")
+def content_backup_restore(card_id: str):
+    conn = db.get_conn()
+    try:
+        ok = db.restore_card_from_backup(conn, card_id, _now_iso())
+    finally:
+        conn.close()
+    if not ok:
+        raise HTTPException(404, "Kein Backup fuer diese Karte gefunden")
+    _invalidate_module_caches("organic")
+    _invalidate_module_caches("inorganic")
+    return {"ok": True, "card_id": card_id}
 
 
 @app.get("/api/source-audit")

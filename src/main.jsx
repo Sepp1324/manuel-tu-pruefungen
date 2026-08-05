@@ -6,6 +6,7 @@ import {
   BookOpenCheck,
   Check,
   ClipboardList,
+  RotateCcw,
   Edit3,
   Flame,
   ImagePlus,
@@ -3425,6 +3426,47 @@ function CardReviewPage({ onDone, module }) {
   );
 }
 
+function ContentBackupPage({ onDone }) {
+  const [d, setD] = useState(null);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState("");
+  const load = () => api("/api/content-backup").then(setD).catch(() => setD({ count: 0, items: [] }));
+  useEffect(() => { load(); }, []);
+  async function restore(id) {
+    setBusy(id); setMsg("");
+    try {
+      await api(`/api/content-backup/${encodeURIComponent(id)}/restore`, { method: "POST" });
+      setMsg("Wiederhergestellt.");
+      await load(); onDone?.();
+    } catch (e) { setMsg(e.message); }
+    finally { setBusy(""); }
+  }
+  if (!d) return <div className="loading">Laedt...</div>;
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div><h2><RotateCcw size={18} /> Ueberschriebene Kartentexte</h2>
+          <p>Karten, deren manuell bearbeiteter Text durch ein Release-Update ersetzt wurde. Der Originaltext (vor der Migration) ist hier wiederherstellbar.</p></div>
+      </div>
+      {msg && <div className="form-msg">{msg}</div>}
+      {!d.items.length && <p className="muted">Nichts zu tun – keine ueberschriebenen Kartentexte gefunden.</p>}
+      {(d.items || []).map((it) => (
+        <div key={it.card_id} style={{ borderBottom: "1px solid var(--line)", padding: "12px 0", display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <div style={{ flex: 1 }}>
+            <small className="muted">Dein Text (Sicherung):</small>
+            <div style={{ whiteSpace: "pre-wrap" }}>{it.backup.q}</div>
+            <small className="muted" style={{ marginTop: 8, display: "block" }}>Aktuell (Release):</small>
+            <div style={{ whiteSpace: "pre-wrap", color: "var(--muted)" }}>{it.current.q}</div>
+          </div>
+          <button className="primary" disabled={busy === it.card_id} onClick={() => restore(it.card_id)}>
+            {busy === it.card_id ? "…" : "Wiederherstellen"}
+          </button>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function WorkshopPage({ module, onDone }) {
   const [data, setData] = useState({ categories: [], queue: [], duplicates: [] });
   const [category, setCategory] = useState("queue");
@@ -5118,6 +5160,7 @@ const NAV_GROUPS = [
       { route: "triage", label: "Triage", icon: ClipboardList },
       { route: "quality", label: "Kartenqualitaet", icon: ClipboardList },
       { route: "photos", label: "Fotopool", icon: ImagePlus },
+      { route: "restore", label: "Wiederherstellen", icon: RotateCcw },
       { route: "add", label: "Eigene Karte", icon: Plus },
       { route: "import", label: "Import", icon: ClipboardList },
     ],
@@ -5550,6 +5593,7 @@ function App() {
     if (route === "exam") return <ExamPage startExam={startExam} startMockExam={startMockExam} startSession={startSession} module={module} />;
     if (route === "quality-center") return <QualityCenter data={data} setRoute={setRoute} module={module} startSession={startSession} />;
     if (route === "workshop") return <WorkshopPage module={module} onDone={load} />;
+    if (route === "restore") return <ContentBackupPage onDone={load} />;
     if (route === "triage") return <TriagePage module={module} onDone={load} />;
     if (route === "quality") return <CardReviewPage onDone={load} module={module} />;
     if (route === "photos") return <PhotoPoolPage onDone={load} startSession={startSession} />;
