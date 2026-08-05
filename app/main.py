@@ -323,7 +323,11 @@ def _bump_cache_gen() -> None:
 
 
 def _invalidate_module_caches(module: str) -> None:
-    _AUTO_QUALITY_CACHE.pop(module, None)
+    # _AUTO_QUALITY_CACHE (Sweep-THROTTLE) hier NICHT loeschen: der Review-Pfad ruft direkt
+    # nach _auto_quality_sweep_cached() diese Funktion auf - wuerde sie den gerade gesetzten
+    # Throttle-Eintrag poppen, liefe bei jedem "Nochmal" trotz 300s-TTL ein voller Sweep.
+    # Der Sweep ist reine Wartung; die TTL darf halten. Nur der Response-/Landkarten-Cache
+    # (echte Datenfrische) wird invalidiert.
     _KNOWLEDGE_MAP_CACHE.pop(module, None)
     _bump_cache_gen()   # laufende Builds duerfen ihr (evtl. veraltetes) Ergebnis nicht mehr cachen
     cache.delete_pattern(f"chem:*:{module}")
@@ -4421,7 +4425,9 @@ async def upload_photo(file: UploadFile = File(...)):
     target_dir = _cards_photo_dir()
     filename = f"{uuid.uuid4().hex}{ext}"
     target = target_dir / filename
-    target.write_bytes(data)
+    # Synchrones Schreiben (langsame PVC!) in den Threadpool - sonst blockiert es den
+    # async-Event-Loop und unabhaengige Requests warten seriell.
+    await run_in_threadpool(target.write_bytes, data)
     url = f"/uploads/cards/{filename}"
     alt = _safe_alt_text(file.filename)
     return {
