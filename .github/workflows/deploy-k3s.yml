@@ -3,6 +3,7 @@ name: build-and-deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch: {}  # manuell ausloesbar (z.B. nach Aendern eines Secrets)
 
 concurrency:
   group: organicsr-deploy-main
