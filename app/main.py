@@ -39,6 +39,53 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 COACH_MODEL = os.environ.get("COACH_MODEL", "claude-haiku-4-5-20251001")
 NOTIFY_TOKEN = os.environ.get("NOTIFY_TOKEN", "")
 
+# --- Pomodoro-Kopplung -------------------------------------------------------
+# Waehrend gelernt wird, den Fokus-Timer der Pomodoro-App per Heartbeat
+# starten/halten (getrennte Projekte je Modul). POMODORO_TOKEN = persoenlicher
+# API-Token in Pomodoro (Einstellungen -> Konto -> API-Token). Ohne Token
+# passiert nichts. Fire-and-forget: darf einen Review nie verzoegern/brechen.
+import urllib.parse
+import urllib.request
+
+POMODORO_URL = os.environ.get(
+    "POMODORO_URL", "https://pomodoro.stoegerer-home.cloud"
+).rstrip("/")
+POMODORO_TOKEN = os.environ.get("POMODORO_TOKEN", "")
+_POMODORO_CATEGORY = {"organic": "Organische Chemie", "inorganic": "Anorganische Chemie"}
+_POMODORO_THROTTLE = 20.0  # s pro Modul (die Pomodoro-Seite ist idempotent)
+_pomodoro_last = {"module": None, "t": 0.0}
+_pomodoro_lock = threading.Lock()
+
+
+def _pomodoro_heartbeat(module: str) -> None:
+    """Pingt Pomodoro, damit dort der Fokus fuer 'Organische'/'Anorganische
+    Chemie' laeuft, solange Karten gelernt werden. Bei Modulwechsel sofort,
+    sonst gedrosselt. Nicht blockierend, schluckt jeden Fehler."""
+    if not POMODORO_URL or not POMODORO_TOKEN:
+        return
+    category = _POMODORO_CATEGORY.get(module, "Chemie")
+    now = time.monotonic()
+    with _pomodoro_lock:
+        # Modulwechsel -> sofort senden (richtiges Projekt starten), sonst drosseln.
+        if module == _pomodoro_last["module"] and now - _pomodoro_last["t"] < _POMODORO_THROTTLE:
+            return
+        _pomodoro_last.update(module=module, t=now)
+    url = (
+        f"{POMODORO_URL}/api/study-time/"
+        f"{urllib.parse.quote(category)}/focus/heartbeat"
+        f"?token={urllib.parse.quote(POMODORO_TOKEN)}"
+    )
+
+    def _send() -> None:
+        try:
+            urllib.request.urlopen(
+                urllib.request.Request(url, method="POST", data=b""), timeout=4
+            )
+        except Exception:  # noqa: BLE001 - Kopplung ist unkritisch
+            pass
+
+    threading.Thread(target=_send, daemon=True).start()
+
 
 app = FastAPI(title="TU Chemie SR-Trainer")
 app.add_middleware(GZipMiddleware, minimum_size=1024)
@@ -3198,6 +3245,7 @@ def submit_open_exam(inp: OpenExamSubmitIn):
         except Exception:  # noqa: BLE001 - Wartungs-Sweep ist unkritisch
             pass
     _invalidate_module_caches(module)
+    _pomodoro_heartbeat(module)  # offene Pruefung ist auch Lernen -> Fokus halten
     return resp
 
 
@@ -3534,6 +3582,8 @@ def review(inp: ReviewIn):
         except Exception:  # noqa: BLE001 - Wartungs-Sweep ist unkritisch
             pass
     _invalidate_module_caches(module)
+    # Manuel lernt gerade -> Pomodoro-Fokus fuer dieses Modul starten/halten.
+    _pomodoro_heartbeat(module)
     return result
 
 

@@ -66,6 +66,18 @@ spec:
                   name: organicsr-secrets
                   key: anthropic-api-key
                   optional: true
+            # Optional: Pomodoro-Kopplung. Beim Kartenlernen startet/haelt der
+            # Fokus-Timer der Pomodoro-App (Projekt je Modul). URL hat einen
+            # Default; nur das Token (Manuels API-Token in Pomodoro) muss ins
+            # Secret. Ohne Token -> Feature aus.
+            - name: POMODORO_URL
+              value: "https://pomodoro.stoegerer-home.cloud"
+            - name: POMODORO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: organicsr-secrets
+                  key: pomodoro-token
+                  optional: true
           readinessProbe:
             httpGet:
               path: /healthz

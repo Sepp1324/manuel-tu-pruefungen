@@ -102,6 +102,7 @@ Settings → Secrets and variables → Actions hinterlegen:
 
 - `ADMIN_PASSWORD` (**erforderlich**) – starkes Admin-Passwort
 - optional `ADMIN_USER` (Default `manuel`), `NOTIFY_TOKEN`, `ANTHROPIC_API_KEY`
+- optional `POMODORO_TOKEN` – siehe „Pomodoro-Kopplung" unten
 
 Der Deploy legt `organicsr-secrets` einmalig daraus an, **migriert** ein noch
 gesetztes Platzhalter-Passwort auf `ADMIN_PASSWORD` (auch der gespeicherte
@@ -109,3 +110,18 @@ Benutzer-Hash wird beim Start umgestellt) und aktiviert optionale Keys nachtraeg
 
 SQLite bleibt bei `replicas: 1` und `strategy: Recreate`, damit nie zwei Pods
 gleichzeitig in dieselbe DB schreiben.
+
+## Pomodoro-Kopplung (Fokus-Timer startet automatisch)
+
+Sobald Karten gelernt werden (`POST /api/review` bzw. offene Pruefung), pingt
+der Trainer die [Pomodoro-App](https://pomodoro.stoegerer-home.cloud) per
+Heartbeat. Dort startet dann der Fokus-Timer fuer das passende Projekt —
+**„Organische Chemie"** oder **„Anorganische Chemie"** (getrennte Projekte) —
+und pausiert ~90 s nach der letzten gelernten Karte automatisch wieder.
+
+Aktivieren: in Pomodoro unter *Einstellungen → Konto → API-Token* Manuels Token
+holen und als GitHub-Actions-Secret **`POMODORO_TOKEN`** hinterlegen (oder direkt
+im `organicsr-secrets` als Key `pomodoro-token`). Ohne Token ist die Kopplung
+einfach aus. Die Ziel-URL steht im Deployment als `POMODORO_URL` (Default
+`https://pomodoro.stoegerer-home.cloud`). Die Aufrufe sind fire-and-forget: sie
+verzoegern oder brechen einen Review nie.

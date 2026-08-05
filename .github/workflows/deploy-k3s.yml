@@ -90,6 +90,7 @@ jobs:
           ADMIN_PASSWORD_SECRET: ${{ secrets.ADMIN_PASSWORD }}
           NOTIFY_TOKEN_SECRET: ${{ secrets.NOTIFY_TOKEN }}
           ANTHROPIC_API_KEY_SECRET: ${{ secrets.ANTHROPIC_API_KEY }}
+          POMODORO_TOKEN_SECRET: ${{ secrets.POMODORO_TOKEN }}
         run: |
           set -euo pipefail
           # k8s/15-secret.yaml (Platzhalter admin-password: change-me-before-deploy) wird
@@ -113,7 +114,8 @@ jobs:
               --from-literal=admin-user="${ADMIN_USER_SECRET:-manuel}" \
               --from-literal=admin-password="$ADMIN_PASSWORD_SECRET" \
               --from-literal=notify-token="${NOTIFY_TOKEN_SECRET:-}" \
-              --from-literal=anthropic-api-key="${ANTHROPIC_API_KEY_SECRET:-}"
+              --from-literal=anthropic-api-key="${ANTHROPIC_API_KEY_SECRET:-}" \
+              --from-literal=pomodoro-token="${POMODORO_TOKEN_SECRET:-}"
             echo "$SECRET erstmalig aus GitHub-Actions-Secrets angelegt."
             exit 0
           fi
@@ -146,6 +148,11 @@ jobs:
             kubectl -n "$NAMESPACE" patch secret "$SECRET" --type=merge \
               -p "{\"data\":{\"anthropic-api-key\":\"$(b64 "$ANTHROPIC_API_KEY_SECRET")\"}}"
             echo "anthropic-api-key aus GitHub-Actions-Secret aktualisiert."
+          fi
+          if [ -n "${POMODORO_TOKEN_SECRET:-}" ]; then
+            kubectl -n "$NAMESPACE" patch secret "$SECRET" --type=merge \
+              -p "{\"data\":{\"pomodoro-token\":\"$(b64 "$POMODORO_TOKEN_SECRET")\"}}"
+            echo "pomodoro-token aus GitHub-Actions-Secret aktualisiert."
           fi
 
       - name: Manifeste anwenden
