@@ -2333,33 +2333,21 @@ def pomodoro_status():
     """Diagnose der Pomodoro-Kopplung: ist ein Token konfiguriert, und erreicht
     dieser Pod die Pomodoro-App? Fuehrt einen echten Heartbeat-Testaufruf aus und
     gibt HTTP-Status/Fehler zurueck (ohne den Token preiszugeben)."""
-    out = {"configured": bool(POMODORO_TOKEN), "url": POMODORO_URL,
-           "category": "Organische Chemie"}
+    out = {"configured": bool(POMODORO_TOKEN), "url": POMODORO_URL}
     if not POMODORO_TOKEN:
         out["hint"] = "POMODORO_TOKEN fehlt im Pod — Secret setzen und neu deployen."
         return out
-    url = (
-        f"{POMODORO_URL}/api/study-time/"
-        f"{urllib.parse.quote('Organische Chemie')}/focus/heartbeat"
-        f"?token={urllib.parse.quote(POMODORO_TOKEN)}"
-    )
+    # Nicht-mutierend: nur Erreichbarkeit pruefen (GET /healthz), KEIN Fokus-Start
+    # als Nebeneffekt. Der echte Heartbeat laeuft ausschliesslich beim Lernen.
     try:
-        resp = urllib.request.urlopen(
-            urllib.request.Request(url, method="POST", data=b""), timeout=6
-        )
+        resp = urllib.request.urlopen(f"{POMODORO_URL}/api/healthz", timeout=6)
+        out["reachable"] = 200 <= resp.status < 300
         out["status"] = resp.status
-        out["ok"] = 200 <= resp.status < 300
-    except urllib.error.HTTPError as e:  # 401/404/…
-        out["status"] = e.code
-        out["ok"] = False
-        out["error"] = f"HTTP {e.code}"
-        if e.code == 401:
-            out["hint"] = "Token ungueltig oder gehoert einem anderen Konto."
     except Exception as e:  # noqa: BLE001 - Netzwerk/DNS
-        out["status"] = None
-        out["ok"] = False
+        out["reachable"] = False
         out["error"] = f"{type(e).__name__}: {e}"
         out["hint"] = "Pod erreicht Pomodoro nicht (DNS/Netzwerk/Hairpin) — ggf. Cluster-internen URL nutzen."
+    out["ok"] = bool(out.get("reachable"))
     return out
 
 
