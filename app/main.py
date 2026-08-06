@@ -2351,6 +2351,46 @@ def pomodoro_status():
     return out
 
 
+def _pomodoro_request(path: str, method: str = "GET") -> dict:
+    """Server-seitiger Proxy zur Pomodoro-App (der Token bleibt im Pod). Gibt die
+    geparste JSON-Antwort zurueck; Fehler werden als {configured, error} gemeldet."""
+    if not POMODORO_TOKEN:
+        return {"configured": False}
+    sep = "&" if "?" in path else "?"
+    url = f"{POMODORO_URL}{path}{sep}token={urllib.parse.quote(POMODORO_TOKEN)}"
+    try:
+        req = urllib.request.Request(
+            url, method=method, data=(b"" if method == "POST" else None)
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            body = resp.read().decode("utf-8")
+        data = json.loads(body) if body else {}
+        if isinstance(data, dict):
+            data["configured"] = True
+            return data
+        return {"configured": True, "data": data}
+    except Exception as e:  # noqa: BLE001 - Kopplung ist unkritisch
+        return {"configured": True, "error": f"{type(e).__name__}: {e}"}
+
+
+@app.get("/api/pomodoro/timer")
+def pomodoro_timer():
+    """Aktueller Pomodoro-Timer-Zustand (fuer die Anzeige unter der Karte)."""
+    return _pomodoro_request("/api/study-time/timer")
+
+
+@app.post("/api/pomodoro/pause")
+def pomodoro_pause():
+    """„Stopp" — laufenden Fokus pausieren (bleibt pausiert trotz Heartbeats)."""
+    return _pomodoro_request("/api/study-time/timer/pause", "POST")
+
+
+@app.post("/api/pomodoro/resume")
+def pomodoro_resume():
+    """„Weiter" — pausierten Fokus fortsetzen."""
+    return _pomodoro_request("/api/study-time/timer/resume", "POST")
+
+
 @app.post("/api/auth/login")
 def login(inp: LoginIn, request: Request, response: Response):
     conn = db.get_conn()
