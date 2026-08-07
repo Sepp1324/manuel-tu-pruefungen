@@ -71,6 +71,14 @@ jobs:
           [ "$be" = "$TAG" ] || { echo "FEHLER: Backend-build ist '$be', erwartet '$TAG'"; exit 1; }
           echo "Smoke-Test OK (Frontend+Backend build-id = $TAG)"
 
+      # Upgrade-Migrations-Test: seedet, macht eine manuelle Textaenderung + fuegt ein Foto
+      # ein, laesst dann migrate()+seed() ERNEUT laufen (wie ein Deploy gegen eine
+      # BESTEHENDE DB) und prueft, dass beides erhalten bleibt. Der reine Boot-Smoke oben
+      # laeuft nur gegen eine frische DB und wuerde genau diese Datenverlust-Regression
+      # (Runde 13/14) nicht bemerken.
+      - name: Upgrade-Migrations-Test (bestehende manuelle Aenderungen bleiben erhalten)
+        run: docker run --rm "$IMAGE:$TAG" python tests/test_upgrade_migration.py
+
       - name: Image pushen
         run: docker push "$IMAGE:$TAG"
 
