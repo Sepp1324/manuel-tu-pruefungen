@@ -39,6 +39,54 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 COACH_MODEL = os.environ.get("COACH_MODEL", "claude-haiku-4-5-20251001")
 NOTIFY_TOKEN = os.environ.get("NOTIFY_TOKEN", "")
 
+# --- Pomodoro-Kopplung -------------------------------------------------------
+# Waehrend gelernt wird, den Fokus-Timer der Pomodoro-App per Heartbeat
+# starten/halten (getrennte Projekte je Modul). POMODORO_TOKEN = persoenlicher
+# API-Token in Pomodoro (Einstellungen -> Konto -> API-Token). Ohne Token
+# passiert nichts. Fire-and-forget: darf einen Review nie verzoegern/brechen.
+import urllib.error
+import urllib.parse
+import urllib.request
+
+POMODORO_URL = os.environ.get(
+    "POMODORO_URL", "https://pomodoro.stoegerer-home.cloud"
+).rstrip("/")
+POMODORO_TOKEN = os.environ.get("POMODORO_TOKEN", "")
+_POMODORO_CATEGORY = {"organic": "Organische Chemie", "inorganic": "Anorganische Chemie"}
+_POMODORO_THROTTLE = 20.0  # s pro Modul (die Pomodoro-Seite ist idempotent)
+_pomodoro_last = {"module": None, "t": 0.0}
+_pomodoro_lock = threading.Lock()
+
+
+def _pomodoro_heartbeat(module: str) -> None:
+    """Pingt Pomodoro, damit dort der Fokus fuer 'Organische'/'Anorganische
+    Chemie' laeuft, solange Karten gelernt werden. Bei Modulwechsel sofort,
+    sonst gedrosselt. Nicht blockierend, schluckt jeden Fehler."""
+    if not POMODORO_URL or not POMODORO_TOKEN:
+        return
+    category = _POMODORO_CATEGORY.get(module, "Chemie")
+    now = time.monotonic()
+    with _pomodoro_lock:
+        # Modulwechsel -> sofort senden (richtiges Projekt starten), sonst drosseln.
+        if module == _pomodoro_last["module"] and now - _pomodoro_last["t"] < _POMODORO_THROTTLE:
+            return
+        _pomodoro_last.update(module=module, t=now)
+    url = (
+        f"{POMODORO_URL}/api/study-time/"
+        f"{urllib.parse.quote(category)}/focus/heartbeat"
+        f"?token={urllib.parse.quote(POMODORO_TOKEN)}"
+    )
+
+    def _send() -> None:
+        try:
+            urllib.request.urlopen(
+                urllib.request.Request(url, method="POST", data=b""), timeout=4
+            )
+        except Exception:  # noqa: BLE001 - Kopplung ist unkritisch
+            pass
+
+    threading.Thread(target=_send, daemon=True).start()
+
 
 app = FastAPI(title="TU Chemie SR-Trainer")
 app.add_middleware(GZipMiddleware, minimum_size=1024)
@@ -2299,6 +2347,69 @@ def readyz():
     return {"ok": True, "build": os.environ.get("BUILD_ID", "dev")}
 
 
+@app.get("/api/pomodoro/status")
+def pomodoro_status():
+    """Diagnose der Pomodoro-Kopplung: ist ein Token konfiguriert, und erreicht
+    dieser Pod die Pomodoro-App? Fuehrt einen echten Heartbeat-Testaufruf aus und
+    gibt HTTP-Status/Fehler zurueck (ohne den Token preiszugeben)."""
+    out = {"configured": bool(POMODORO_TOKEN), "url": POMODORO_URL}
+    if not POMODORO_TOKEN:
+        out["hint"] = "POMODORO_TOKEN fehlt im Pod — Secret setzen und neu deployen."
+        return out
+    # Nicht-mutierend: nur Erreichbarkeit pruefen (GET /healthz), KEIN Fokus-Start
+    # als Nebeneffekt. Der echte Heartbeat laeuft ausschliesslich beim Lernen.
+    try:
+        resp = urllib.request.urlopen(f"{POMODORO_URL}/api/healthz", timeout=6)
+        out["reachable"] = 200 <= resp.status < 300
+        out["status"] = resp.status
+    except Exception as e:  # noqa: BLE001 - Netzwerk/DNS
+        out["reachable"] = False
+        out["error"] = f"{type(e).__name__}: {e}"
+        out["hint"] = "Pod erreicht Pomodoro nicht (DNS/Netzwerk/Hairpin) — ggf. Cluster-internen URL nutzen."
+    out["ok"] = bool(out.get("reachable"))
+    return out
+
+
+def _pomodoro_request(path: str, method: str = "GET") -> dict:
+    """Server-seitiger Proxy zur Pomodoro-App (der Token bleibt im Pod). Gibt die
+    geparste JSON-Antwort zurueck; Fehler werden als {configured, error} gemeldet."""
+    if not POMODORO_TOKEN:
+        return {"configured": False}
+    sep = "&" if "?" in path else "?"
+    url = f"{POMODORO_URL}{path}{sep}token={urllib.parse.quote(POMODORO_TOKEN)}"
+    try:
+        req = urllib.request.Request(
+            url, method=method, data=(b"" if method == "POST" else None)
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            body = resp.read().decode("utf-8")
+        data = json.loads(body) if body else {}
+        if isinstance(data, dict):
+            data["configured"] = True
+            return data
+        return {"configured": True, "data": data}
+    except Exception as e:  # noqa: BLE001 - Kopplung ist unkritisch
+        return {"configured": True, "error": f"{type(e).__name__}: {e}"}
+
+
+@app.get("/api/pomodoro/timer")
+def pomodoro_timer():
+    """Aktueller Pomodoro-Timer-Zustand (fuer die Anzeige unter der Karte)."""
+    return _pomodoro_request("/api/study-time/timer")
+
+
+@app.post("/api/pomodoro/pause")
+def pomodoro_pause():
+    """„Stopp" — laufenden Fokus pausieren (bleibt pausiert trotz Heartbeats)."""
+    return _pomodoro_request("/api/study-time/timer/pause", "POST")
+
+
+@app.post("/api/pomodoro/resume")
+def pomodoro_resume():
+    """„Weiter" — pausierten Fokus fortsetzen."""
+    return _pomodoro_request("/api/study-time/timer/resume", "POST")
+
+
 @app.post("/api/auth/login")
 def login(inp: LoginIn, request: Request, response: Response):
     conn = db.get_conn()
@@ -3242,6 +3353,7 @@ def submit_open_exam(inp: OpenExamSubmitIn):
         except Exception:  # noqa: BLE001 - Wartungs-Sweep ist unkritisch
             pass
     _invalidate_module_caches(module)
+    _pomodoro_heartbeat(module)  # offene Pruefung ist auch Lernen -> Fokus halten
     return resp
 
 
@@ -3578,6 +3690,8 @@ def review(inp: ReviewIn):
         except Exception:  # noqa: BLE001 - Wartungs-Sweep ist unkritisch
             pass
     _invalidate_module_caches(module)
+    # Manuel lernt gerade -> Pomodoro-Fokus fuer dieses Modul starten/halten.
+    _pomodoro_heartbeat(module)
     return result
 
 

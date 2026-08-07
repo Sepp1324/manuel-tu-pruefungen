@@ -631,6 +631,79 @@ function formatSeconds(s) {
   return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
 }
 
+const POMODORO_HIDDEN_KEY = "pomodoro_widget_hidden";
+
+// Zeigt den (in der Pomodoro-App laufenden) Fokus-Timer unter der Karte mit
+// Stopp/Weiter. Blendet sich per localStorage-Einstellung aus.
+function PomodoroTimer() {
+  const [hidden, setHidden] = useState(() => localStorage.getItem(POMODORO_HIDDEN_KEY) === "1");
+  const [state, setState] = useState(null);
+  const [remaining, setRemaining] = useState(0);
+  const [busy, setBusy] = useState(false);
+
+  // Poll the proxied timer state every few seconds (only while visible).
+  useEffect(() => {
+    if (hidden) return;
+    let alive = true;
+    const load = () =>
+      api("/api/pomodoro/timer").then((d) => alive && setState(d)).catch(() => alive && setState(null));
+    load();
+    const id = setInterval(load, 3000);
+    return () => { alive = false; clearInterval(id); };
+  }, [hidden]);
+
+  // Smooth 1s countdown between polls for a running timer.
+  useEffect(() => {
+    if (!state) return;
+    setRemaining(state.remaining_seconds || 0);
+    if (state.status !== "running") return;
+    const id = setInterval(() => setRemaining((r) => Math.max(0, r - 1)), 1000);
+    return () => clearInterval(id);
+  }, [state]);
+
+  const refetch = () =>
+    api("/api/pomodoro/timer").then(setState).catch(() => {});
+  const pause = async () => { setBusy(true); await api("/api/pomodoro/pause", { method: "POST" }).catch(() => {}); await refetch(); setBusy(false); };
+  const resume = async () => { setBusy(true); await api("/api/pomodoro/resume", { method: "POST" }).catch(() => {}); await refetch(); setBusy(false); };
+  const hide = () => { localStorage.setItem(POMODORO_HIDDEN_KEY, "1"); setHidden(true); };
+  const show = () => { localStorage.removeItem(POMODORO_HIDDEN_KEY); setHidden(false); };
+
+  if (hidden) {
+    return (
+      <div className="pomodoro-widget pomodoro-collapsed">
+        <button className="pomodoro-show" onClick={show}>⏱ Pomodoro-Timer einblenden</button>
+      </div>
+    );
+  }
+
+  const configured = state && state.configured !== false && !state.error;
+  const active = configured && (state.running || state.paused) && state.mode === "focus";
+
+  return (
+    <div className="pomodoro-widget">
+      <span className="pomodoro-label">🍅 Fokus</span>
+      {active ? (
+        <>
+          <span className="pomodoro-time">{formatSeconds(remaining)}</span>
+          <span className="pomodoro-status">
+            {state.paused ? "pausiert" : "läuft"}{state.project ? ` · ${state.project}` : ""}
+          </span>
+          {state.running ? (
+            <button className="pomodoro-btn" disabled={busy} onClick={pause}>⏸ Stopp</button>
+          ) : (
+            <button className="pomodoro-btn primary" disabled={busy} onClick={resume}>▶ Weiter</button>
+          )}
+        </>
+      ) : (
+        <span className="pomodoro-status muted">
+          {configured ? "kein aktiver Fokus" : "nicht verbunden"}
+        </span>
+      )}
+      <button className="pomodoro-hide" title="Timer ausblenden" onClick={hide}>✕</button>
+    </div>
+  );
+}
+
 function currentTheme() {
   const t = (typeof document !== "undefined" && document.documentElement.getAttribute("data-theme")) || "light";
   return t === "dark" ? "dark" : "light";
@@ -1641,6 +1714,7 @@ function Study({ session, setSession, finish }) {
         )}
       </article>
       )}
+      <PomodoroTimer />
     </section>
   );
 }

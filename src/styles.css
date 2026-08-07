@@ -3481,3 +3481,53 @@ p.card-change-date { font-size: 12px; margin: 0 0 8px; }
 }
 .pomo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pomo-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+
+/* Pomodoro-Fokus-Timer unter der Lernkarte */
+.pomodoro-widget {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+.pomodoro-widget.pomodoro-collapsed {
+  justify-content: center;
+  border-style: dashed;
+  background: transparent;
+}
+.pomodoro-label { font-weight: 600; }
+.pomodoro-time { font-variant-numeric: tabular-nums; font-size: 1.15rem; font-weight: 700; }
+.pomodoro-status { color: var(--muted); }
+.pomodoro-status.muted { font-style: italic; }
+.pomodoro-btn {
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.pomodoro-btn.primary { background: var(--tu-blue); border-color: var(--tu-blue); color: #fff; }
+.pomodoro-btn:disabled { opacity: 0.5; cursor: default; }
+.pomodoro-hide {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.pomodoro-show {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+}
