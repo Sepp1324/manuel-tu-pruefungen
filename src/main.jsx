@@ -641,15 +641,21 @@ function PomodoroTimer() {
   const [remaining, setRemaining] = useState(0);
   const [busy, setBusy] = useState(false);
 
-  // Poll the proxied timer state every few seconds (only while visible).
+  // Poll the proxied timer state (only while visible). Selbst-planend statt setInterval:
+  // der naechste Poll startet erst 3s NACH Abschluss des vorherigen. So stapeln sich keine
+  // Requests, wenn eine langsame Pomodoro-Instanz laenger braucht als das Poll-Intervall
+  // (Backend-Timeout ist 6s, Intervall waere 3s).
   useEffect(() => {
     if (hidden) return;
     let alive = true;
-    const load = () =>
-      api("/api/pomodoro/timer").then((d) => alive && setState(d)).catch(() => alive && setState(null));
-    load();
-    const id = setInterval(load, 3000);
-    return () => { alive = false; clearInterval(id); };
+    let timer;
+    const loop = async () => {
+      try { const d = await api("/api/pomodoro/timer"); if (alive) setState(d); }
+      catch { if (alive) setState(null); }
+      if (alive) timer = setTimeout(loop, 3000);
+    };
+    loop();
+    return () => { alive = false; clearTimeout(timer); };
   }, [hidden]);
 
   // Smooth 1s countdown between polls for a running timer.
@@ -5342,13 +5348,15 @@ function pomoFocus(cfg, category, action) {
     .then((r) => r.ok).catch(() => false).finally(() => clearTimeout(t));
 }
 
-function usePomodoroSync(module) {
+function usePomodoroSync(module, learning) {
   const [status, setStatus] = useState({ enabled: false, running: false, category: null, error: null });
   const lastActivity = useRef(Date.now());
   const lastSent = useRef({ run: null, cat: null });
   const inFlight = useRef(false); // verhindert ueberlappende Aufrufe bei langsamen Requests
   const moduleRef = useRef(module);
   moduleRef.current = module;
+  const learningRef = useRef(learning); // nur waehrend einer aktiven Lernsession zaehlen
+  learningRef.current = learning;
 
   // Aktivität erfassen.
   useEffect(() => {
@@ -5421,7 +5429,9 @@ function usePomodoroSync(module) {
       // Aktiv = kürzlich Aktivität. Ein versteckter Tab bekommt keine Maus-/
       // Tastenaktivität -> pausiert nach Ablauf ohnehin; zusätzlich pausiert der
       // visibilitychange-Handler sofort beim Wegwechseln.
-      const active = (Date.now() - lastActivity.current) < cfg.idle * 1000;
+      // Nur waehrend einer AKTIVEN Lernsession zaehlen - sonst wuerden Dashboard, Fotopool,
+      // Kartenbearbeitung oder die Login-Seite den Fokus-Timer starten.
+      const active = learningRef.current && (Date.now() - lastActivity.current) < cfg.idle * 1000;
       if (active) {
         if (lastSent.current.run !== true || lastSent.current.cat !== cat) {
           inFlight.current = true;
@@ -5580,8 +5590,11 @@ function App() {
     setSessionSizeState(v);
     try { localStorage.setItem("sr_session_size", String(v)); } catch (e) { /* Speicher evtl. blockiert */ }
   };
-  // Pomodoro-Verknüpfung: startet/pausiert den externen Fokus-Timer je nach Modul & Aktivität.
-  const pomoStatus = usePomodoroSync(module);
+  // Pomodoro-Verknüpfung: nur waehrend echten Lernens (laufende Karten-Session ODER
+  // Pruefungs-/Antwortcheck-Seite) den Fokus-Timer zaehlen - nicht auf Dashboard, Fotopool,
+  // Kartenbearbeitung oder Login.
+  const pomoLearning = !isLogin && (!!session || route === "exam" || route === "antwortcheck");
+  const pomoStatus = usePomodoroSync(module, pomoLearning);
 
   async function load() {
     // Sequenz-Guard: nur die Antwort des ZULETZT gestarteten load() zaehlt. Sonst koennte
