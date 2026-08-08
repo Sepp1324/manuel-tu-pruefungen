@@ -118,7 +118,10 @@ CHEM_FORMULA_REPAIRS = (
     (r"\bCa\.?\s+CO\b", "CaCO<sub>3</sub>"),
     (r"\bH\s+O\b", "H<sub>2</sub>O"),
     (r"\bH\s+S\b", "H<sub>2</sub>S"),
-    (r"\bNH\b(?![A-Za-z0-9])", "NH<sub>3</sub>"),
+    # NUR freistehendes NH (Ammoniak) -> NH3. NICHT konvertieren, wenn NH an einer Bindung
+    # haengt (Bindestrich) oder Teil einer Struktur ist - sonst wird die korrekte
+    # Amidbindung -CO-NH- faelschlich zu -CO-NH3- (Polyamid-Karten!).
+    (r"(?<![-A-Za-z0-9])NH(?![-A-Za-z0-9])", "NH<sub>3</sub>"),
     (r"\bSi\.?\s+O\b", "SiO<sub>2</sub>"),
     (r"\bAl\s+O\b", "Al<sub>2</sub>O<sub>3</sub>"),
     (r"\bFe\s+O\b", "Fe<sub>2</sub>O<sub>3</sub>"),
@@ -1355,8 +1358,11 @@ def quality_summary(conn: sqlite3.Connection, module: str = "organic") -> dict:
         "active": by_status["active"],
         "needs_review": by_status["needs_review"],
         "suspended": by_status["suspended"],
-        "with_photo": sum(1 for card in media_cards if card.get("has_photo")),
-        "photo_recommended": sum(1 for card in media_cards if card.get("photo_recommended")),
+        # FRISCH aus dem Kartentext berechnen (has_photo/photo_recommended), nicht aus der
+        # evtl. veralteten gespeicherten JSON-Ableitung lesen - sonst zaehlt eine Karte mit
+        # Foto weiter als with_photo=0 bzw. bleibt faelschlich "Foto empfohlen".
+        "with_photo": sum(1 for card in media_cards if has_photo(card)),
+        "photo_recommended": sum(1 for card in media_cards if photo_recommended(card)),
         "reasons": [
             {
                 "event_type": r["event_type"],
@@ -2037,6 +2043,11 @@ def streak(conn: sqlite3.Connection) -> dict:
     days = {r["d"] for r in rows}
     cur = 0
     day = app_today()
+    if day.isoformat() not in days:
+        # Heute noch nicht gelernt -> die Serie ist NICHT gebrochen, solange gestern gelernt
+        # wurde (der heutige Tag ist nur "offen"). Erst ein KOMPLETT verpasster Tag bricht
+        # sie. Also ab gestern zaehlen. Ist auch gestern nichts, bleibt cur=0.
+        day -= timedelta(days=1)
     while day.isoformat() in days:
         cur += 1
         day -= timedelta(days=1)
