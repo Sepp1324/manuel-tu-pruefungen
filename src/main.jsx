@@ -5590,10 +5590,11 @@ function App() {
     setSessionSizeState(v);
     try { localStorage.setItem("sr_session_size", String(v)); } catch (e) { /* Speicher evtl. blockiert */ }
   };
-  // Pomodoro-Verknüpfung: nur waehrend echten Lernens (laufende Karten-Session ODER
-  // Pruefungs-/Antwortcheck-Seite) den Fokus-Timer zaehlen - nicht auf Dashboard, Fotopool,
-  // Kartenbearbeitung oder Login.
-  const pomoLearning = !isLogin && (!!session || route === "exam" || route === "antwortcheck");
+  // Pomodoro-Verknüpfung nach Manuels urspruenglicher Idee: AKTIVE Nutzung der App zaehlt
+  // als Lernen, Inaktivitaet pausiert. Nur die Login-Seite ist ausgenommen (dort lernt man
+  // nicht). (Eine zu enge Begrenzung auf reine Karten-Sessions hatte die Integration
+  // im normalen Ablauf gar nicht mehr starten lassen.)
+  const pomoLearning = !isLogin;
   const pomoStatus = usePomodoroSync(module, pomoLearning);
 
   async function load() {
