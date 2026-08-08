@@ -66,6 +66,22 @@ spec:
                   name: organicsr-secrets
                   key: anthropic-api-key
                   optional: true
+            # Optional: Pomodoro-Kopplung (server-seitiger Fokus-Timer + "Fokus"-Anzeige).
+            # Token: Pomodoro -> Einstellungen -> Konto -> API-Token. Ohne -> die App zeigt
+            # "Fokus nicht verbunden" (Feature aus). POMODORO_URL nur setzen, wenn abweichend
+            # vom Default (https://pomodoro.stoegerer-home.cloud).
+            - name: POMODORO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: organicsr-secrets
+                  key: pomodoro-token
+                  optional: true
+            - name: POMODORO_URL
+              valueFrom:
+                secretKeyRef:
+                  name: organicsr-secrets
+                  key: pomodoro-url
+                  optional: true
           # Readiness prueft die DB (/readyz, mit Schreib-Ping) - bei gesperrter/korrupter/
           # read-only DB wird der Pod aus dem Service genommen, statt weiter 500er zu liefern.
           readinessProbe:
